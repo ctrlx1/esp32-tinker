@@ -4,6 +4,7 @@
 #include "maze_hero.h"
 #include "pixel_art.h"
 #include "scroller.h"
+#include "weather_watch.h"
 
 ProgramId parseProgramId(const String &value) {
   if (value == "fireworks") {
@@ -14,6 +15,9 @@ ProgramId parseProgramId(const String &value) {
   }
   if (value == "pixel_art") {
     return ProgramId::PixelArt;
+  }
+  if (value == "weather_watch") {
+    return ProgramId::WeatherWatch;
   }
   return ProgramId::Scroller;
 }
@@ -26,6 +30,8 @@ const char *programIdToString(ProgramId id) {
     return "maze_hero";
   case ProgramId::PixelArt:
     return "pixel_art";
+  case ProgramId::WeatherWatch:
+    return "weather_watch";
   case ProgramId::Scroller:
   default:
     return "scroller";
@@ -40,6 +46,8 @@ uint8_t programIdToFlag(ProgramId id) {
     return PROGRAM_MAZE_HERO_FLAG;
   case ProgramId::PixelArt:
     return PROGRAM_PIXEL_ART_FLAG;
+  case ProgramId::WeatherWatch:
+    return PROGRAM_WEATHER_WATCH_FLAG;
   case ProgramId::Scroller:
   default:
     return PROGRAM_SCROLLER_FLAG;
@@ -56,6 +64,9 @@ void programStart(const ProgramConfig &cfg) {
     break;
   case ProgramId::PixelArt:
     pixelArtStart(cfg);
+    break;
+  case ProgramId::WeatherWatch:
+    weatherWatchStart(cfg);
     break;
   case ProgramId::Scroller:
   default:
@@ -74,6 +85,9 @@ void programTick(const ProgramConfig &cfg) {
     break;
   case ProgramId::PixelArt:
     pixelArtTick(cfg);
+    break;
+  case ProgramId::WeatherWatch:
+    weatherWatchTick(cfg);
     break;
   case ProgramId::Scroller:
   default:

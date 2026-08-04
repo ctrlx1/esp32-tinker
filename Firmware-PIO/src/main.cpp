@@ -126,6 +126,8 @@ uint8_t parseSelectedProgramsArg(const String &value) {
       selectedPrograms |= PROGRAM_MAZE_HERO_FLAG;
     } else if (token == "pixel_art") {
       selectedPrograms |= PROGRAM_PIXEL_ART_FLAG;
+    } else if (token == "weather_watch") {
+      selectedPrograms |= PROGRAM_WEATHER_WATCH_FLAG;
     }
     start = comma + 1;
   }
@@ -145,24 +147,33 @@ ProgramId firstSelectedProgram(uint8_t selectedPrograms,
   if (selectedPrograms & PROGRAM_MAZE_HERO_FLAG) {
     return ProgramId::MazeHero;
   }
-  return ProgramId::PixelArt;
+  if (selectedPrograms & PROGRAM_PIXEL_ART_FLAG) {
+    return ProgramId::PixelArt;
+  }
+  if (selectedPrograms & PROGRAM_WEATHER_WATCH_FLAG) {
+    return ProgramId::WeatherWatch;
+  }
+  return fallbackProgram;
 }
 
 ProgramId nextSelectedProgram(uint8_t selectedPrograms,
                               ProgramId currentProgram) {
   selectedPrograms = sanitizeSelectedPrograms(selectedPrograms, currentProgram);
+  constexpr uint8_t PROGRAM_COUNT = 5;
   ProgramId orderedPrograms[] = {ProgramId::Scroller, ProgramId::Fireworks,
-                                 ProgramId::MazeHero, ProgramId::PixelArt};
+                                 ProgramId::MazeHero, ProgramId::PixelArt,
+                                 ProgramId::WeatherWatch};
   uint8_t currentIndex = 0;
-  for (uint8_t i = 0; i < 4; i++) {
+  for (uint8_t i = 0; i < PROGRAM_COUNT; i++) {
     if (orderedPrograms[i] == currentProgram) {
       currentIndex = i;
       break;
     }
   }
 
-  for (uint8_t offset = 1; offset <= 4; offset++) {
-    ProgramId candidate = orderedPrograms[(currentIndex + offset) % 4];
+  for (uint8_t offset = 1; offset <= PROGRAM_COUNT; offset++) {
+    ProgramId candidate =
+        orderedPrograms[(currentIndex + offset) % PROGRAM_COUNT];
     if (selectedPrograms & programIdToFlag(candidate)) {
       return candidate;
     }
@@ -184,6 +195,9 @@ bool hasMultipleSelectedPrograms(uint8_t selectedPrograms,
     selectedCount++;
   }
   if (selectedPrograms & PROGRAM_PIXEL_ART_FLAG) {
+    selectedCount++;
+  }
+  if (selectedPrograms & PROGRAM_WEATHER_WATCH_FLAG) {
     selectedCount++;
   }
   return selectedCount > 1;
@@ -268,6 +282,12 @@ String selectedProgramsToString(uint8_t selectedPrograms) {
       value += ",";
     }
     value += "pixel_art";
+  }
+  if (selectedPrograms & PROGRAM_WEATHER_WATCH_FLAG) {
+    if (value.length() > 0) {
+      value += ",";
+    }
+    value += "weather_watch";
   }
   return value;
 }
@@ -496,6 +516,9 @@ void handleSave() {
   }
   if (server.arg("programPixelArt") == "1") {
     selectedPrograms |= PROGRAM_PIXEL_ART_FLAG;
+  }
+  if (server.arg("programWeatherWatch") == "1") {
+    selectedPrograms |= PROGRAM_WEATHER_WATCH_FLAG;
   }
   selectedPrograms &= PROGRAM_ALL_FLAGS;
   if (selectedPrograms == 0) {
