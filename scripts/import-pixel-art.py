@@ -182,6 +182,21 @@ def write_catalog(entries: list[tuple[str, str]]) -> None:
 
 def main() -> int:
     images = source_images()
+    if not images:
+        # Keep a previously generated catalog when pixel-art/ has no sources
+        # (e.g. checked-in generated headers without the gitignored PNGs).
+        catalog = OUTPUT_DIR / "pixel_art_catalog.cpp"
+        if catalog.exists():
+            print(
+                f"No images in {SOURCE_DIR.relative_to(ROOT)}; "
+                f"keeping existing generated catalog in {OUTPUT_DIR.relative_to(ROOT)}"
+            )
+            return 0
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        write_catalog([])
+        print(f"Imported 0 pixel art image(s) into {OUTPUT_DIR.relative_to(ROOT)}")
+        return 0
+
     if OUTPUT_DIR.exists():
         shutil.rmtree(OUTPUT_DIR)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
