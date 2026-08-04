@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Bump, build, commit, and push a firmware release.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+BUMP_FLAG=""
+
+usage() {
+  echo "Usage: $0 --major|--minor|--patch" >&2
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    --major|--minor|--patch)
+      if [[ -n "$BUMP_FLAG" ]]; then
+        usage
+        exit 1
+      fi
+      BUMP_FLAG="$arg"
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -z "$BUMP_FLAG" ]]; then
+  usage
+  exit 1
+fi
+
+cd "$ROOT"
+
+git update-index -q --refresh
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "Cannot deploy: working tree is not clean. Commit or stash changes first." >&2
+  git status --short >&2
+  exit 1
+fi
+
+"$ROOT/scripts/bump-version.sh" "$BUMP_FLAG"
+VERSION="$(<"$ROOT/VERSION")"
+
+"$ROOT/scripts/build-firmware.sh"
+"$ROOT/scripts/update-web-installer.sh"
+
+git add -A -- "$ROOT/VERSION" "$ROOT/docs"
+git commit -m "$(cat <<EOF
+Release $VERSION
+
+EOF
+)"
+git push

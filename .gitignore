@@ -1,0 +1,6 @@
+.env.local
+scripts/.env.local
+Firmware-PIO/include/*.generated.h
+/pixel-art
+/pixel-sheets-320
+.DS_Store

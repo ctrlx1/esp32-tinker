@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "author": "Justin",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-max7219-matrix",
+      "id": "matrix",
+      "top": -20,
+      "left": 280,
+      "attrs": {
+        "chain": "4",
+        "layout": "fc16",
+        "color": "red"
+      }
+    }
+  ],
+  "connections": [
+    ["esp:TX", "$serialMonitor:RX", "", []],
+    ["esp:RX", "$serialMonitor:TX", "", []],
+    ["esp:5V", "matrix:V+", "red", ["h96", "v0"]],
+    ["matrix:DIN", "esp:23", "green", ["h-96", "v105.6"]],
+    ["matrix:CLK", "esp:18", "blue", ["h-96", "v86.4"]],
+    ["matrix:CS", "esp:5", "yellow", ["h-96", "v67.2"]],
+    ["esp:GND.2", "matrix:GND", "black", ["h96", "v48"]]
+  ],
+  "dependencies": {},
+  "serialMonitor": {
+    "display": "terminal",
+    "convertEol": true
+  }
+}

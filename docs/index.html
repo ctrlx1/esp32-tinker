@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32 Tinker — Install</title>
+  <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:      #3b82f6;
+      --blue-dim:  #2563eb;
+      --blue-glow: rgba(59,130,246,0.15);
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --surface2:  #1a1a1a;
+      --border:    #242424;
+      --text:      #e8e8e8;
+      --muted:     #666;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', system-ui, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      width: 100%;
+      max-width: 760px;
+      padding: 64px 24px 0;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-family: var(--mono);
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--blue); }
+
+    .hero p {
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--muted);
+      max-width: 520px;
+      margin: 0 auto 40px;
+    }
+
+    /* ── INSTALL CARD ── */
+    .install-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 480px;
+      width: calc(100% - 48px);
+      margin: 0 auto 16px;
+      text-align: center;
+    }
+
+    .version-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--blue-glow);
+      border: 1px solid rgba(59,130,246,.25);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--blue);
+      margin-bottom: 20px;
+    }
+    .version-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--blue);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50% { opacity: .3; }
+    }
+
+    .install-card h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .install-card p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    /* ESP Web Tools button override */
+    esp-web-install-button {
+      --esp-tools-button-color: var(--blue);
+      --esp-tools-button-text-color: #061a3a;
+    }
+    esp-web-install-button::part(button) {
+      background: var(--blue);
+      color: #061a3a;
+      border: none;
+      border-radius: 10px;
+      padding: 13px 32px;
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background .15s, box-shadow .15s;
+      box-shadow: 0 0 20px rgba(59,130,246,.2);
+    }
+    esp-web-install-button::part(button):hover {
+      background: var(--blue-dim);
+      box-shadow: 0 0 28px rgba(59,130,246,.35);
+    }
+
+    .browser-note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .browser-note svg { flex-shrink: 0; }
+
+    .error-msg {
+      display: none;
+      background: #1a0808;
+      border: 1px solid #3a1515;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: #f87171;
+      text-align: left;
+      margin-top: 16px;
+      line-height: 1.6;
+    }
+    .error-msg a { color: #f87171; }
+
+    /* ── STEPS ── */
+    .steps-wrap {
+      max-width: 480px;
+      width: calc(100% - 48px);
+      margin: 0 auto 48px;
+    }
+
+    .steps-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+      padding-left: 4px;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .step-num {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--blue);
+      background: var(--blue-glow);
+      border: 1px solid rgba(59,130,246,.2);
+      border-radius: 6px;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .step-text {
+      font-size: 13px;
+      color: #bbb;
+      line-height: 1.6;
+    }
+    .step-text strong { color: var(--text); font-weight: 600; }
+    .step-text code {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      color: var(--blue);
+    }
+    .step-text a { color: var(--blue); text-decoration: none; }
+    .step-text a:hover { text-decoration: underline; }
+
+    /* ── FOOTER ── */
+    footer {
+      width: 100%;
+      border-top: 1px solid var(--border);
+      padding: 24px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: auto;
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+    footer .sep { margin: 0 10px; opacity: .4; }
+  </style>
+</head>
+<body>
+
+<section class="hero">
+  <h1>ESP32<br><span>Tinker</span></h1>
+  <p>Flash your ESP32 directly from the browser, then configure Wi-Fi and device settings through the built-in portal.</p>
+</section>
+
+<div class="install-card">
+  <div class="version-badge">
+    <div class="version-dot"></div>
+    <span id="version-label">Checking latest release…</span>
+  </div>
+  <h2>Flash firmware</h2>
+  <p>Connect your ESP32 via USB, then hit the button below. Chrome or Edge required.</p>
+
+  <esp-web-install-button id="install-btn" manifest="" style="display:none">
+    <button slot="activate" style="
+      background: #3b82f6; color: #061a3a; border: none; border-radius: 10px;
+      padding: 13px 32px; font-family: inherit; font-size: 15px; font-weight: 600;
+      cursor: pointer; width: 100%; box-shadow: 0 0 20px rgba(59,130,246,.2);
+    ">⚡ Install now</button>
+  </esp-web-install-button>
+
+  <div id="loading-btn" style="
+    background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px;
+    padding: 13px 32px; font-size: 15px; color: #666; width: 100%; text-align: center;
+  ">Loading…</div>
+
+  <div id="error-msg" class="error-msg">
+    ⚠ Could not load the latest release. Please check the
+    <a href="https://github.com/justinmahar/esp32-tinker/releases" target="_blank">GitHub releases page</a>
+    to download and flash manually.
+  </div>
+
+  <p class="browser-note">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Requires Chrome or Edge on desktop
+  </p>
+</div>
+
+<div class="steps-wrap">
+  <div class="steps-label">After flashing</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text"><strong>Connect to the hotspot</strong> — the device broadcasts <code>Tinker-Setup-XXXX</code> (unique suffix per device, shown on the matrix). Join it from your phone or laptop.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text"><strong>Open the config page</strong> — a browser page opens automatically, or go to <code>192.168.4.1</code>. Tap <strong>Scan for networks</strong> and pick your Wi-Fi.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text"><strong>Save your settings</strong> — enter your Wi-Fi password and any device options, then hit <strong>Save &amp; connect</strong>.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text"><strong>Done</strong> — the matrix scrolls your local IP on boot. Visit that IP any time to reconfigure or push new firmware wirelessly.</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <a href="https://github.com/justinmahar/esp32-tinker" target="_blank">GitHub</a>
+  <span class="sep">·</span>
+  <a href="https://github.com/justinmahar/esp32-tinker/releases" target="_blank">Releases</a>
+  <span class="sep">·</span>
+  <a href="https://github.com/justinmahar/esp32-tinker/blob/main/LICENSE" target="_blank">MIT License</a>
+  <br><br>
+  Maintained by <a href="https://github.com/justinmahar" target="_blank">Justin Mahar</a>
+  <br>
+  Forked from the <a href="https://github.com/ThePrintingPilot/YouTube-Subscriber-Counter" target="_blank">YouTube Subscriber Counter</a> by <a href="https://github.com/ThePrintingPilot" target="_blank">The Printing Pilot</a>
+</footer>
+
+<!-- Load static manifest -->
+<script>
+(async function() {
+  var versionLabel = document.getElementById('version-label');
+  var installBtn   = document.getElementById('install-btn');
+  var loadingBtn   = document.getElementById('loading-btn');
+  var errorMsg     = document.getElementById('error-msg');
+
+  try {
+    var res = await fetch('./manifest.json');
+    if (!res.ok) throw new Error('manifest not found');
+    var manifest = await res.json();
+
+    installBtn.setAttribute('manifest', './manifest.json');
+    versionLabel.textContent = 'Version ' + manifest.version;
+    loadingBtn.style.display = 'none';
+    installBtn.style.display = 'block';
+
+  } catch(e) {
+    versionLabel.textContent = 'No firmware found';
+    loadingBtn.style.display = 'none';
+    errorMsg.style.display = 'block';
+    console.warn('Manifest error:', e);
+  }
+})();
+</script>
+
+</body>
+</html>
