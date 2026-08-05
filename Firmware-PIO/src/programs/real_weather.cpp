@@ -38,6 +38,19 @@ const char *weatherLabel(int code) {
   return "Mixed";
 }
 
+// 8-point direction the wind is coming from (Open-Meteo meteorological degrees).
+// Cardinals use ASCII arrows; diagonals use compass labels for matrix clarity.
+const char *windDirectionLabel(int degrees) {
+  int normalized = degrees % 360;
+  if (normalized < 0) {
+    normalized += 360;
+  }
+  // 8 sectors of 45°, centered on N/NE/E/...
+  int sector = ((normalized + 22) % 360) / 45;
+  static const char *labels[] = {"^", "NE", ">", "SE", "v", "SW", "<", "NW"};
+  return labels[sector];
+}
+
 int dayOfWeek(int year, int month, int day) {
   static const int offsets[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
   if (month < 3) {
@@ -312,9 +325,10 @@ bool fetchForecast(float latitude, float longitude, String &body) {
   url += String(latitude, 4);
   url += "&longitude=";
   url += String(longitude, 4);
-  url += "&current=temperature_2m,weather_code";
+  url += "&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m";
   url += "&daily=weather_code,temperature_2m_max,temperature_2m_min";
-  url += "&temperature_unit=fahrenheit&forecast_days=7&timezone=auto";
+  url += "&temperature_unit=fahrenheit&wind_speed_unit=mph";
+  url += "&forecast_days=7&timezone=auto";
   return httpGet(url, body);
 }
 
@@ -341,9 +355,15 @@ bool buildWeatherScroll(const String &locationLabel, const String &forecastJson,
 
   float currentTemp = 0;
   int currentCode = 0;
+  float windSpeedMph = 0;
+  int windDirectionDeg = 0;
   if (!extractNumberAfterKey(forecastJson, "temperature_2m", currentTemp,
                              currentSection) ||
       !extractIntAfterKey(forecastJson, "weather_code", currentCode,
+                          currentSection) ||
+      !extractNumberAfterKey(forecastJson, "wind_speed_10m", windSpeedMph,
+                             currentSection) ||
+      !extractIntAfterKey(forecastJson, "wind_direction_10m", windDirectionDeg,
                           currentSection)) {
     return false;
   }
@@ -387,10 +407,18 @@ bool buildWeatherScroll(const String &locationLabel, const String &forecastJson,
     return false;
   }
 
+  const char *windDir = windDirectionLabel(windDirectionDeg);
   String message = locationLabel;
   message += " Now ";
   message += String((int)lroundf(currentTemp));
   message += "F ";
+  message += windDir;
+  // Multi-char compass labels need a separator; single-char arrows do not.
+  if (strlen(windDir) > 1) {
+    message += " ";
+  }
+  message += String((int)lroundf(windSpeedMph));
+  message += "mph ";
   message += weatherLabel(currentCode);
 
   for (uint8_t i = 0; i < days; i++) {
