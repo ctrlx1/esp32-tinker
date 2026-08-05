@@ -39,7 +39,6 @@ const char *weatherLabel(int code) {
 }
 
 // 8-point direction the wind is coming from (Open-Meteo meteorological degrees).
-// Cardinals use ASCII arrows; diagonals use compass labels for matrix clarity.
 const char *windDirectionLabel(int degrees) {
   int normalized = degrees % 360;
   if (normalized < 0) {
@@ -47,7 +46,7 @@ const char *windDirectionLabel(int degrees) {
   }
   // 8 sectors of 45°, centered on N/NE/E/...
   int sector = ((normalized + 22) % 360) / 45;
-  static const char *labels[] = {"^", "NE", ">", "SE", "v", "SW", "<", "NW"};
+  static const char *labels[] = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
   return labels[sector];
 }
 
@@ -407,16 +406,12 @@ bool buildWeatherScroll(const String &locationLabel, const String &forecastJson,
     return false;
   }
 
-  const char *windDir = windDirectionLabel(windDirectionDeg);
   String message = locationLabel;
   message += " Now ";
   message += String((int)lroundf(currentTemp));
   message += "F ";
-  message += windDir;
-  // Multi-char compass labels need a separator; single-char arrows do not.
-  if (strlen(windDir) > 1) {
-    message += " ";
-  }
+  message += windDirectionLabel(windDirectionDeg);
+  message += " ";
   message += String((int)lroundf(windSpeedMph));
   message += "mph ";
   message += weatherLabel(currentCode);
