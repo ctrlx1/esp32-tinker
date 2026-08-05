@@ -88,6 +88,108 @@ bool extractIntAfterKey(const String &json, const char *key, int &out,
   return true;
 }
 
+bool extractStringAfterKey(const String &json, const char *key, String &out,
+                           int fromIndex = 0) {
+  String needle = String("\"") + key + "\":";
+  int keyPos = json.indexOf(needle, fromIndex);
+  if (keyPos < 0) {
+    return false;
+  }
+  int valuePos = keyPos + needle.length();
+  while (valuePos < (int)json.length() &&
+         (json.charAt(valuePos) == ' ' || json.charAt(valuePos) == '\t')) {
+    valuePos++;
+  }
+  if (valuePos >= (int)json.length() || json.charAt(valuePos) != '"') {
+    return false;
+  }
+  int endQuote = json.indexOf('"', valuePos + 1);
+  if (endQuote < 0) {
+    return false;
+  }
+  out = json.substring(valuePos + 1, endQuote);
+  return true;
+}
+
+const char *usStateAbbreviation(const String &admin1) {
+  struct StateEntry {
+    const char *name;
+    const char *abbr;
+  };
+  static const StateEntry states[] = {
+      {"Alabama", "AL"},
+      {"Alaska", "AK"},
+      {"Arizona", "AZ"},
+      {"Arkansas", "AR"},
+      {"California", "CA"},
+      {"Colorado", "CO"},
+      {"Connecticut", "CT"},
+      {"Delaware", "DE"},
+      {"District of Columbia", "DC"},
+      {"Florida", "FL"},
+      {"Georgia", "GA"},
+      {"Hawaii", "HI"},
+      {"Idaho", "ID"},
+      {"Illinois", "IL"},
+      {"Indiana", "IN"},
+      {"Iowa", "IA"},
+      {"Kansas", "KS"},
+      {"Kentucky", "KY"},
+      {"Louisiana", "LA"},
+      {"Maine", "ME"},
+      {"Maryland", "MD"},
+      {"Massachusetts", "MA"},
+      {"Michigan", "MI"},
+      {"Minnesota", "MN"},
+      {"Mississippi", "MS"},
+      {"Missouri", "MO"},
+      {"Montana", "MT"},
+      {"Nebraska", "NE"},
+      {"Nevada", "NV"},
+      {"New Hampshire", "NH"},
+      {"New Jersey", "NJ"},
+      {"New Mexico", "NM"},
+      {"New York", "NY"},
+      {"North Carolina", "NC"},
+      {"North Dakota", "ND"},
+      {"Ohio", "OH"},
+      {"Oklahoma", "OK"},
+      {"Oregon", "OR"},
+      {"Pennsylvania", "PA"},
+      {"Rhode Island", "RI"},
+      {"South Carolina", "SC"},
+      {"South Dakota", "SD"},
+      {"Tennessee", "TN"},
+      {"Texas", "TX"},
+      {"Utah", "UT"},
+      {"Vermont", "VT"},
+      {"Virginia", "VA"},
+      {"Washington", "WA"},
+      {"West Virginia", "WV"},
+      {"Wisconsin", "WI"},
+      {"Wyoming", "WY"},
+  };
+
+  for (const StateEntry &entry : states) {
+    if (admin1.equalsIgnoreCase(entry.name)) {
+      return entry.abbr;
+    }
+  }
+  return nullptr;
+}
+
+String buildLocationLabel(const String &town, const String &admin1,
+                          const String &postalCode) {
+  if (town.length() > 0) {
+    const char *abbr = usStateAbbreviation(admin1);
+    if (abbr != nullptr) {
+      return town + ", " + abbr;
+    }
+    return town;
+  }
+  return postalCode;
+}
+
 int findArrayAfterKey(const String &json, const char *key) {
   String needle = String("\"") + key + "\":";
   int keyPos = json.indexOf(needle);
@@ -180,7 +282,7 @@ bool httpGet(const String &url, String &body) {
 }
 
 bool geocodePostalCode(const String &postalCode, float &latitude,
-                       float &longitude) {
+                       float &longitude, String &town, String &admin1) {
   String url = "http://geocoding-api.open-meteo.com/v1/search?name=";
   url += postalCode;
   url += "&count=1&countryCode=US";
@@ -189,11 +291,20 @@ bool geocodePostalCode(const String &postalCode, float &latitude,
   if (!httpGet(url, body)) {
     return false;
   }
-  if (body.indexOf("\"results\"") < 0) {
+  int resultsPos = body.indexOf("\"results\"");
+  if (resultsPos < 0) {
     return false;
   }
-  return extractNumberAfterKey(body, "latitude", latitude) &&
-         extractNumberAfterKey(body, "longitude", longitude);
+  if (!extractNumberAfterKey(body, "latitude", latitude, resultsPos) ||
+      !extractNumberAfterKey(body, "longitude", longitude, resultsPos)) {
+    return false;
+  }
+
+  town = "";
+  admin1 = "";
+  extractStringAfterKey(body, "name", town, resultsPos);
+  extractStringAfterKey(body, "admin1", admin1, resultsPos);
+  return true;
 }
 
 bool fetchForecast(float latitude, float longitude, String &body) {
@@ -221,7 +332,7 @@ void startScroll(const ProgramConfig &cfg) {
   Display.displayScroll(scrollTextBuffer, PA_LEFT, PA_SCROLL_LEFT, speed);
 }
 
-bool buildWeatherScroll(const String &postalCode, const String &forecastJson,
+bool buildWeatherScroll(const String &locationLabel, const String &forecastJson,
                         char *out, size_t outSize) {
   int currentSection = forecastJson.indexOf("\"current\":");
   if (currentSection < 0) {
@@ -276,7 +387,7 @@ bool buildWeatherScroll(const String &postalCode, const String &forecastJson,
     return false;
   }
 
-  String message = postalCode;
+  String message = locationLabel;
   message += " Now ";
   message += String((int)lroundf(currentTemp));
   message += "F ";
@@ -324,7 +435,9 @@ bool refreshWeather(const ProgramConfig &cfg) {
 
   float latitude = 0;
   float longitude = 0;
-  if (!geocodePostalCode(postalCode, latitude, longitude)) {
+  String town;
+  String admin1;
+  if (!geocodePostalCode(postalCode, latitude, longitude, town, admin1)) {
     setScrollText("Weather unavailable");
     fetchSucceeded = false;
     return false;
@@ -337,7 +450,8 @@ bool refreshWeather(const ProgramConfig &cfg) {
     return false;
   }
 
-  if (!buildWeatherScroll(postalCode, forecastJson, scrollTextBuffer,
+  String locationLabel = buildLocationLabel(town, admin1, postalCode);
+  if (!buildWeatherScroll(locationLabel, forecastJson, scrollTextBuffer,
                           SCROLL_BUFFER_SIZE)) {
     setScrollText("Weather unavailable");
     fetchSucceeded = false;
