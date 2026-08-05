@@ -1,6 +1,6 @@
 {
   "name": "ESP32 Tinker",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "builds": [
     {
       "chipFamily": "ESP32",
@@ -14,7 +14,7 @@
           "offset": 32768
         },
         {
-          "path": "firmware_1.4.5.bin",
+          "path": "firmware_1.4.6.bin",
           "offset": 65536
         }
       ]
