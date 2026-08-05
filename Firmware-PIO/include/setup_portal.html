@@ -511,6 +511,14 @@
                 />
                 <span>Weather Watch</span>
               </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  id="program-real-weather"
+                  value="real_weather"
+                />
+                <span>Real Weather</span>
+              </label>
             </div>
             <div class="hint">
               Checked programs cycle in this order and are remembered here.
@@ -685,6 +693,22 @@
             </div>
           </div>
         </div>
+        <div id="real-weather-config" class="settings-card program-config" hidden>
+          <div class="settings-card-title">Real Weather Settings</div>
+          <div>
+            <label>ZIP / postal code</label>
+            <input
+              type="text"
+              id="weather-postal-code"
+              maxlength="16"
+              placeholder="14169"
+              value="WEATHER_ZIP_PLACEHOLDER"
+            />
+            <div class="hint">
+              Used to fetch current conditions and a 7-day forecast.
+            </div>
+          </div>
+        </div>
         <div class="settings-card">
           <div class="settings-card-title">Display Settings</div>
           <div>
@@ -734,6 +758,7 @@
         "maze_hero",
         "pixel_art",
         "weather_watch",
+        "real_weather",
       ];
       var PROGRAM_CHECKBOX_IDS = {
         scroller: "program-scroller",
@@ -741,6 +766,7 @@
         maze_hero: "program-maze-hero",
         pixel_art: "program-pixel-art",
         weather_watch: "program-weather-watch",
+        real_weather: "program-real-weather",
       };
       var PROGRAM_DEFAULTS = {
         scroller: {
@@ -761,6 +787,9 @@
           mazeHeroMinSpeed: "120",
           mazeHeroMaxSpeed: "200",
         },
+        real_weather: {
+          weatherPostalCode: "",
+        },
       };
       var PROGRAM_LABELS = {
         scroller: "Simple Scroller",
@@ -768,6 +797,7 @@
         maze_hero: "Maze Hero",
         pixel_art: "Pixel Art",
         weather_watch: "Weather Watch",
+        real_weather: "Real Weather",
       };
       function isProgramSelected(program) {
         return document.getElementById(PROGRAM_CHECKBOX_IDS[program]).checked;
@@ -805,6 +835,8 @@
           !isProgramSelected("fireworks");
         document.getElementById("maze-hero-config").hidden =
           !isProgramSelected("maze_hero");
+        document.getElementById("real-weather-config").hidden =
+          !isProgramSelected("real_weather");
         document.getElementById("brightness-label").textContent =
           isProgramSelected("fireworks") ? "Min brightness" : "Brightness";
         document.getElementById("brightness-hint").textContent =
@@ -839,6 +871,9 @@
               ).value,
               mazeHeroMaxSpeed: document.getElementById(
                 "maze-hero-max-speed",
+              ).value,
+              weatherPostalCode: document.getElementById(
+                "weather-postal-code",
               ).value,
               brightness: document.getElementById("brightness").value,
               fireworksMaxBrightness: document.getElementById(
@@ -902,6 +937,9 @@
           if (d.mazeHeroSpeed != null && d.mazeHeroMaxSpeed == null)
             document.getElementById("maze-hero-max-speed").value =
               d.mazeHeroSpeed;
+          if (d.weatherPostalCode != null)
+            document.getElementById("weather-postal-code").value =
+              d.weatherPostalCode;
           if (d.brightness != null)
             document.getElementById("brightness").value = d.brightness;
           if (d.fireworksMaxBrightness != null)
@@ -916,6 +954,8 @@
           "program-fireworks",
           "program-maze-hero",
           "program-pixel-art",
+          "program-weather-watch",
+          "program-real-weather",
           "program-duration-minutes",
           "scroll-message",
           "scroll-speed",
@@ -928,6 +968,7 @@
           "maze-max-height",
           "maze-hero-min-speed",
           "maze-hero-max-speed",
+          "weather-postal-code",
           "brightness",
           "fireworks-max-brightness",
         ].forEach(function (id) {
@@ -985,6 +1026,12 @@
           setValue(
             "maze-hero-max-speed",
             PROGRAM_DEFAULTS.maze_hero.mazeHeroMaxSpeed,
+          );
+        }
+        if (programs.indexOf("real_weather") !== -1) {
+          setValue(
+            "weather-postal-code",
+            PROGRAM_DEFAULTS.real_weather.weatherPostalCode,
           );
         }
 
@@ -1120,6 +1167,9 @@
           document.getElementById("maze-hero-max-speed").value,
           10,
         );
+        var weatherPostalCode = document
+          .getElementById("weather-postal-code")
+          .value.trim();
         var brightness = parseInt(
           document.getElementById("brightness").value,
           10,
@@ -1225,6 +1275,13 @@
             return;
           }
         }
+        if (isProgramSelected("real_weather")) {
+          if (weatherPostalCode.length > 16) {
+            msg.className = "msg err";
+            msg.textContent = "ZIP/postal code must be 16 characters or fewer.";
+            return;
+          }
+        }
         persistSetupForm();
         msg.className = "msg ok";
         msg.textContent = "Saving\u2026 device will reboot and connect.";
@@ -1247,6 +1304,8 @@
           (isProgramSelected("pixel_art") ? "1" : "0") +
           "&programWeatherWatch=" +
           (isProgramSelected("weather_watch") ? "1" : "0") +
+          "&programRealWeather=" +
+          (isProgramSelected("real_weather") ? "1" : "0") +
           "&programDurationMinutes=" +
           encodeURIComponent(programDurationMinutes) +
           "&scrollMessage=" +
@@ -1271,6 +1330,8 @@
           mazeHeroMinSpeed +
           "&mazeHeroMaxSpeed=" +
           mazeHeroMaxSpeed +
+          "&weatherPostalCode=" +
+          encodeURIComponent(weatherPostalCode) +
           "&brightness=" +
           brightness +
           "&fireworksMaxBrightness=" +

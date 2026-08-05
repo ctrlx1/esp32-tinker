@@ -128,6 +128,8 @@ uint8_t parseSelectedProgramsArg(const String &value) {
       selectedPrograms |= PROGRAM_PIXEL_ART_FLAG;
     } else if (token == "weather_watch") {
       selectedPrograms |= PROGRAM_WEATHER_WATCH_FLAG;
+    } else if (token == "real_weather") {
+      selectedPrograms |= PROGRAM_REAL_WEATHER_FLAG;
     }
     start = comma + 1;
   }
@@ -153,16 +155,20 @@ ProgramId firstSelectedProgram(uint8_t selectedPrograms,
   if (selectedPrograms & PROGRAM_WEATHER_WATCH_FLAG) {
     return ProgramId::WeatherWatch;
   }
+  if (selectedPrograms & PROGRAM_REAL_WEATHER_FLAG) {
+    return ProgramId::RealWeather;
+  }
   return fallbackProgram;
 }
 
 ProgramId nextSelectedProgram(uint8_t selectedPrograms,
                               ProgramId currentProgram) {
   selectedPrograms = sanitizeSelectedPrograms(selectedPrograms, currentProgram);
-  constexpr uint8_t PROGRAM_COUNT = 5;
+  constexpr uint8_t PROGRAM_COUNT = 6;
   ProgramId orderedPrograms[] = {ProgramId::Scroller, ProgramId::Fireworks,
                                  ProgramId::MazeHero, ProgramId::PixelArt,
-                                 ProgramId::WeatherWatch};
+                                 ProgramId::WeatherWatch,
+                                 ProgramId::RealWeather};
   uint8_t currentIndex = 0;
   for (uint8_t i = 0; i < PROGRAM_COUNT; i++) {
     if (orderedPrograms[i] == currentProgram) {
@@ -198,6 +204,9 @@ bool hasMultipleSelectedPrograms(uint8_t selectedPrograms,
     selectedCount++;
   }
   if (selectedPrograms & PROGRAM_WEATHER_WATCH_FLAG) {
+    selectedCount++;
+  }
+  if (selectedPrograms & PROGRAM_REAL_WEATHER_FLAG) {
     selectedCount++;
   }
   return selectedCount > 1;
@@ -289,6 +298,12 @@ String selectedProgramsToString(uint8_t selectedPrograms) {
     }
     value += "weather_watch";
   }
+  if (selectedPrograms & PROGRAM_REAL_WEATHER_FLAG) {
+    if (value.length() > 0) {
+      value += ",";
+    }
+    value += "real_weather";
+  }
   return value;
 }
 
@@ -372,6 +387,13 @@ void loadPrefs() {
       prefs.getUChar("brightness", DEFAULT_DISPLAY_BRIGHTNESS);
   programConfig.fireworksMaxBrightness =
       prefs.getUChar("fwMaxBright", DEFAULT_FIREWORKS_MAX_BRIGHTNESS);
+  programConfig.weatherPostalCode = prefs.getString("wxZip", "");
+  if (programConfig.weatherPostalCode.length() >
+      MAX_WEATHER_POSTAL_CODE_LENGTH) {
+    programConfig.weatherPostalCode =
+        programConfig.weatherPostalCode.substring(0,
+                                                  MAX_WEATHER_POSTAL_CODE_LENGTH);
+  }
   prefs.end();
 
   if (programConfig.brightness > 15) {
@@ -419,7 +441,11 @@ void loadPrefs() {
   Serial.print(", brightness=");
   Serial.print(programConfig.brightness);
   Serial.print(", fwMaxBright=");
-  Serial.println(programConfig.fireworksMaxBrightness);
+  Serial.print(programConfig.fireworksMaxBrightness);
+  Serial.print(", wxZip=");
+  Serial.println(programConfig.weatherPostalCode.length()
+                     ? programConfig.weatherPostalCode
+                     : "(empty)");
 }
 
 void savePrefs(const String &ssid, const String &pass,
@@ -444,6 +470,7 @@ void savePrefs(const String &ssid, const String &pass,
   prefs.putUInt("mzHeroMaxMs", cfg.mazeHeroMaxSpeedMs);
   prefs.putUChar("brightness", cfg.brightness);
   prefs.putUChar("fwMaxBright", cfg.fireworksMaxBrightness);
+  prefs.putString("wxZip", cfg.weatherPostalCode);
   prefs.end();
 }
 
@@ -495,6 +522,8 @@ String buildPage() {
   page.replace("MIN_BRIGHTNESS_PLACEHOLDER", String(programConfig.brightness));
   page.replace("MAX_BRIGHTNESS_PLACEHOLDER",
                String(programConfig.fireworksMaxBrightness));
+  page.replace("WEATHER_ZIP_PLACEHOLDER",
+               html_escape(programConfig.weatherPostalCode));
   return page;
 }
 
@@ -519,6 +548,9 @@ void handleSave() {
   }
   if (server.arg("programWeatherWatch") == "1") {
     selectedPrograms |= PROGRAM_WEATHER_WATCH_FLAG;
+  }
+  if (server.arg("programRealWeather") == "1") {
+    selectedPrograms |= PROGRAM_REAL_WEATHER_FLAG;
   }
   selectedPrograms &= PROGRAM_ALL_FLAGS;
   if (selectedPrograms == 0) {
@@ -646,6 +678,15 @@ void handleSave() {
     newConfig.mazeMaxHeight = mazeMaxHeight;
     newConfig.mazeHeroMinSpeedMs = mazeHeroMinSpeedMs;
     newConfig.mazeHeroMaxSpeedMs = mazeHeroMaxSpeedMs;
+  }
+  if (newConfig.selectedPrograms & PROGRAM_REAL_WEATHER_FLAG) {
+    String weatherPostalCode = server.arg("weatherPostalCode");
+    weatherPostalCode.trim();
+    if (weatherPostalCode.length() > MAX_WEATHER_POSTAL_CODE_LENGTH) {
+      server.send(400, "text/plain", "ZIP/postal code is too long.");
+      return;
+    }
+    newConfig.weatherPostalCode = weatherPostalCode;
   }
 
   String new_ssid = server.arg("ssid");
