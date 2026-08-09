@@ -11,8 +11,8 @@
 namespace {
 constexpr uint8_t DISPLAY_HEIGHT = 8;
 constexpr uint8_t DISPLAY_WIDTH = 32;
-constexpr uint8_t MOON_CANVAS_HEIGHT = 24;
-constexpr uint8_t MOON_DIAMETER = 24;
+constexpr uint8_t MOON_CANVAS_HEIGHT = DISPLAY_WIDTH; // full-width disc, taller canvas
+constexpr uint8_t MOON_DIAMETER = DISPLAY_WIDTH;
 constexpr size_t SCROLL_BUFFER_SIZE = 128;
 constexpr unsigned long FRAME_MS = 80UL;
 constexpr unsigned long PAN_STEP_MS = 100UL;
@@ -42,7 +42,6 @@ struct State {
   uint8_t illuminationPercent = 0;
   uint8_t topRow = 0;
   char *scrollBuffer = nullptr;
-  uint16_t twinkle = 0;
 };
 
 uint8_t maxTopRow() {
@@ -272,26 +271,12 @@ bool moonPixelLit(int16_t canvasRow, int16_t col, float phase) {
   return waxing ? (u >= limb) : (u <= -limb);
 }
 
-bool starAt(int16_t canvasRow, int16_t col) {
-  // Sparse stars in the canvas margins outside the moon disc.
-  static const int8_t starCoords[][2] = {
-      {0, 1},  {1, 30}, {2, 0},  {3, 31}, {5, 2},  {8, 29},
-      {11, 0}, {14, 31}, {17, 1}, {20, 30}, {22, 2}, {23, 29}};
-  for (uint8_t i = 0; i < sizeof(starCoords) / sizeof(starCoords[0]); i++) {
-    if (starCoords[i][0] == canvasRow && starCoords[i][1] == col) {
-      return ((state.twinkle + i * 3) / 4) % 5 != 0;
-    }
-  }
-  return false;
-}
-
 void renderMoonFrame() {
   beginFrame();
   for (uint8_t row = 0; row < DISPLAY_HEIGHT; row++) {
     int16_t canvasRow = static_cast<int16_t>(state.topRow) + row;
     for (uint8_t col = 0; col < DISPLAY_WIDTH; col++) {
-      if (moonPixelLit(canvasRow, col, state.phase) ||
-          starAt(canvasRow, col)) {
+      if (moonPixelLit(canvasRow, col, state.phase)) {
         setPixel(row, col);
       }
     }
@@ -386,7 +371,6 @@ void moonPhaseStart(const ProgramConfig &cfg) {
   Display.displayClear();
   state.timeSynced = false;
   state.lastNtpAttemptMs = 0;
-  state.twinkle = 0;
   state.lastFrameMs = 0;
   unsigned long now = millis();
   updatePhaseFromClockOrDemo(now);
@@ -409,7 +393,6 @@ void moonPhaseTick(const ProgramConfig &cfg) {
     return;
   }
   state.lastFrameMs = now;
-  state.twinkle++;
 
   updatePhaseFromClockOrDemo(now);
   const bool cycleDone = updateMoonPan(now);
