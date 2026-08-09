@@ -11,27 +11,45 @@
 namespace {
 constexpr uint8_t DISPLAY_HEIGHT = 8;
 constexpr uint8_t DISPLAY_WIDTH = 32;
+constexpr uint8_t MOON_CANVAS_HEIGHT = 24;
+constexpr uint8_t MOON_DIAMETER = 24;
 constexpr size_t SCROLL_BUFFER_SIZE = 128;
 constexpr unsigned long FRAME_MS = 80UL;
-constexpr unsigned long MOON_HOLD_MS = 8000UL;
+constexpr unsigned long PAN_STEP_MS = 100UL;
+constexpr unsigned long PAN_HOLD_MS = 900UL;
 constexpr unsigned long NTP_RETRY_MS = 30000UL;
 constexpr double SYNODIC_MONTH_DAYS = 29.530588853;
 // Known new moon near 2000-01-06 18:14 UTC
 constexpr double KNOWN_NEW_MOON_JD = 2451550.1;
 
 enum class View : uint8_t { Moon, Name };
+enum class PanPhase : uint8_t {
+  HoldingTop,
+  ScrollingDown,
+  HoldingBottom,
+  ScrollingUp
+};
 
 struct State {
   View view = View::Moon;
+  PanPhase panPhase = PanPhase::HoldingTop;
   unsigned long viewStartMs = 0;
   unsigned long lastFrameMs = 0;
+  unsigned long lastPanStepMs = 0;
   unsigned long lastNtpAttemptMs = 0;
   bool timeSynced = false;
   float phase = 0.0f; // 0=new .. 0.5=full .. 1=new
   uint8_t illuminationPercent = 0;
+  uint8_t topRow = 0;
   char *scrollBuffer = nullptr;
   uint16_t twinkle = 0;
 };
+
+uint8_t maxTopRow() {
+  return MOON_CANVAS_HEIGHT > DISPLAY_HEIGHT
+             ? static_cast<uint8_t>(MOON_CANVAS_HEIGHT - DISPLAY_HEIGHT)
+             : 0;
+}
 
 State state;
 
@@ -237,46 +255,55 @@ void updatePhaseFromClockOrDemo(unsigned long now) {
   state.illuminationPercent = illuminationPercent(state.phase);
 }
 
-void drawStars() {
-  // Sparse twinkling field away from the moon.
-  static const int8_t starCoords[][2] = {
-      {1, 22}, {0, 27}, {2, 30}, {5, 24}, {6, 29}, {3, 20}, {7, 26}, {4, 31}};
-  for (uint8_t i = 0; i < sizeof(starCoords) / sizeof(starCoords[0]); i++) {
-    if (((state.twinkle + i * 3) / 4) % 5 != 0) {
-      setPixel(starCoords[i][0], starCoords[i][1]);
-    }
-  }
-}
-
-void drawMoonDisc(float phase) {
-  constexpr float cx = 8.0f;
-  constexpr float cy = 3.5f;
-  constexpr float radius = 3.4f;
+bool moonPixelLit(int16_t canvasRow, int16_t col, float phase) {
+  constexpr float cx = (DISPLAY_WIDTH - 1) / 2.0f; // 15.5
+  constexpr float cy = (MOON_CANVAS_HEIGHT - 1) / 2.0f;
+  constexpr float radius = (MOON_DIAMETER - 1) / 2.0f;
   float p = normalizePhase(phase);
   constexpr float kPi = 3.14159265f;
   float limb = std::cos(2.0f * kPi * p);
   bool waxing = p <= 0.5f;
 
-  for (int16_t row = 0; row < DISPLAY_HEIGHT; row++) {
-    for (int16_t col = 0; col < 16; col++) {
-      float u = (static_cast<float>(col) - cx) / radius;
-      float v = (static_cast<float>(row) - cy) / radius;
-      if (u * u + v * v > 1.0f) {
-        continue;
-      }
-      bool lit = waxing ? (u >= limb) : (u <= -limb);
-      if (lit) {
-        setPixel(row, col);
-      }
+  float u = (static_cast<float>(col) - cx) / radius;
+  float v = (static_cast<float>(canvasRow) - cy) / radius;
+  if (u * u + v * v > 1.0f) {
+    return false;
+  }
+  return waxing ? (u >= limb) : (u <= -limb);
+}
+
+bool starAt(int16_t canvasRow, int16_t col) {
+  // Sparse stars in the canvas margins outside the moon disc.
+  static const int8_t starCoords[][2] = {
+      {0, 1},  {1, 30}, {2, 0},  {3, 31}, {5, 2},  {8, 29},
+      {11, 0}, {14, 31}, {17, 1}, {20, 30}, {22, 2}, {23, 29}};
+  for (uint8_t i = 0; i < sizeof(starCoords) / sizeof(starCoords[0]); i++) {
+    if (starCoords[i][0] == canvasRow && starCoords[i][1] == col) {
+      return ((state.twinkle + i * 3) / 4) % 5 != 0;
     }
   }
+  return false;
 }
 
 void renderMoonFrame() {
   beginFrame();
-  drawMoonDisc(state.phase);
-  drawStars();
+  for (uint8_t row = 0; row < DISPLAY_HEIGHT; row++) {
+    int16_t canvasRow = static_cast<int16_t>(state.topRow) + row;
+    for (uint8_t col = 0; col < DISPLAY_WIDTH; col++) {
+      if (moonPixelLit(canvasRow, col, state.phase) ||
+          starAt(canvasRow, col)) {
+        setPixel(row, col);
+      }
+    }
+  }
   endFrame();
+}
+
+void resetMoonPan(unsigned long now) {
+  state.panPhase = PanPhase::HoldingTop;
+  state.topRow = 0;
+  state.lastPanStepMs = now;
+  state.viewStartMs = now;
 }
 
 void startNameScroll(const ProgramConfig &cfg) {
@@ -296,10 +323,61 @@ void enterView(View view, const ProgramConfig &cfg, unsigned long now) {
   state.view = view;
   state.viewStartMs = now;
   if (view == View::Moon) {
+    resetMoonPan(now);
     renderMoonFrame();
   } else {
     startNameScroll(cfg);
   }
+}
+
+// Returns true when one full top->bottom->top pan cycle is complete.
+bool updateMoonPan(unsigned long now) {
+  const uint8_t bottom = maxTopRow();
+
+  switch (state.panPhase) {
+  case PanPhase::HoldingTop:
+    if (now - state.lastPanStepMs >= PAN_HOLD_MS) {
+      state.panPhase = PanPhase::ScrollingDown;
+      state.lastPanStepMs = now;
+    }
+    break;
+
+  case PanPhase::ScrollingDown:
+    if (now - state.lastPanStepMs < PAN_STEP_MS) {
+      break;
+    }
+    state.lastPanStepMs = now;
+    if (state.topRow < bottom) {
+      state.topRow++;
+    }
+    if (state.topRow >= bottom) {
+      state.panPhase = PanPhase::HoldingBottom;
+      state.lastPanStepMs = now;
+    }
+    break;
+
+  case PanPhase::HoldingBottom:
+    if (now - state.lastPanStepMs >= PAN_HOLD_MS) {
+      state.panPhase = PanPhase::ScrollingUp;
+      state.lastPanStepMs = now;
+    }
+    break;
+
+  case PanPhase::ScrollingUp:
+    if (now - state.lastPanStepMs < PAN_STEP_MS) {
+      break;
+    }
+    state.lastPanStepMs = now;
+    if (state.topRow > 0) {
+      state.topRow--;
+    }
+    if (state.topRow == 0) {
+      return true; // completed one vertical cycle
+    }
+    break;
+  }
+
+  return false;
 }
 } // namespace
 
@@ -334,8 +412,9 @@ void moonPhaseTick(const ProgramConfig &cfg) {
   state.twinkle++;
 
   updatePhaseFromClockOrDemo(now);
+  const bool cycleDone = updateMoonPan(now);
   renderMoonFrame();
-  if (now - state.viewStartMs >= MOON_HOLD_MS) {
+  if (cycleDone) {
     enterView(View::Name, cfg, now);
   }
 }
