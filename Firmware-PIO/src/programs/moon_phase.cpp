@@ -11,8 +11,9 @@
 namespace {
 constexpr uint8_t DISPLAY_HEIGHT = 8;
 constexpr uint8_t DISPLAY_WIDTH = 32;
-constexpr uint8_t MOON_CANVAS_HEIGHT = DISPLAY_WIDTH; // full-width disc, taller canvas
-constexpr uint8_t MOON_DIAMETER = DISPLAY_WIDTH;
+// Centered disc with equal side margins; canvas tall enough to pan.
+constexpr uint8_t MOON_DIAMETER = 24;
+constexpr uint8_t MOON_CANVAS_HEIGHT = MOON_DIAMETER;
 constexpr size_t SCROLL_BUFFER_SIZE = 128;
 constexpr unsigned long FRAME_MS = 80UL;
 constexpr unsigned long PAN_STEP_MS = 100UL;
@@ -255,6 +256,7 @@ void updatePhaseFromClockOrDemo(unsigned long now) {
 }
 
 bool moonPixelLit(int16_t canvasRow, int16_t col, float phase) {
+  // Geometric center of the 32-wide matrix / tall canvas.
   constexpr float cx = (DISPLAY_WIDTH - 1) / 2.0f; // 15.5
   constexpr float cy = (MOON_CANVAS_HEIGHT - 1) / 2.0f;
   constexpr float radius = (MOON_DIAMETER - 1) / 2.0f;
@@ -263,7 +265,8 @@ bool moonPixelLit(int16_t canvasRow, int16_t col, float phase) {
   float limb = std::cos(2.0f * kPi * p);
   bool waxing = p <= 0.5f;
 
-  float u = (static_cast<float>(col) - cx) / radius;
+  // Negate u so waxing lights the viewer's right (FC16 col 0 is physical right).
+  float u = (cx - static_cast<float>(col)) / radius;
   float v = (static_cast<float>(canvasRow) - cy) / radius;
   if (u * u + v * v > 1.0f) {
     return false;
