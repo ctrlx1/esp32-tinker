@@ -255,23 +255,43 @@ void updatePhaseFromClockOrDemo(unsigned long now) {
   state.illuminationPercent = illuminationPercent(state.phase);
 }
 
-bool moonPixelLit(int16_t canvasRow, int16_t col, float phase) {
-  // Geometric center of the 32-wide matrix / tall canvas.
+void moonUv(int16_t canvasRow, int16_t col, float &u, float &v) {
   constexpr float cx = (DISPLAY_WIDTH - 1) / 2.0f; // 15.5
   constexpr float cy = (MOON_CANVAS_HEIGHT - 1) / 2.0f;
   constexpr float radius = (MOON_DIAMETER - 1) / 2.0f;
+  // Negate u so waxing lights the viewer's right (FC16 col 0 is physical right).
+  u = (cx - static_cast<float>(col)) / radius;
+  v = (static_cast<float>(canvasRow) - cy) / radius;
+}
+
+bool inMoonDisk(int16_t canvasRow, int16_t col) {
+  float u = 0.0f;
+  float v = 0.0f;
+  moonUv(canvasRow, col, u, v);
+  return (u * u + v * v) <= 1.0f;
+}
+
+bool moonIlluminated(int16_t canvasRow, int16_t col, float phase) {
+  float u = 0.0f;
+  float v = 0.0f;
+  moonUv(canvasRow, col, u, v);
+  if (u * u + v * v > 1.0f) {
+    return false;
+  }
   float p = normalizePhase(phase);
   constexpr float kPi = 3.14159265f;
   float limb = std::cos(2.0f * kPi * p);
   bool waxing = p <= 0.5f;
+  return waxing ? (u >= limb) : (u <= -limb);
+}
 
-  // Negate u so waxing lights the viewer's right (FC16 col 0 is physical right).
-  float u = (cx - static_cast<float>(col)) / radius;
-  float v = (static_cast<float>(canvasRow) - cy) / radius;
-  if (u * u + v * v > 1.0f) {
+bool onMoonRim(int16_t canvasRow, int16_t col) {
+  if (!inMoonDisk(canvasRow, col)) {
     return false;
   }
-  return waxing ? (u >= limb) : (u <= -limb);
+  // Edge pixel if any 4-neighbor falls outside the disc.
+  return !inMoonDisk(canvasRow - 1, col) || !inMoonDisk(canvasRow + 1, col) ||
+         !inMoonDisk(canvasRow, col - 1) || !inMoonDisk(canvasRow, col + 1);
 }
 
 void renderMoonFrame() {
@@ -279,7 +299,9 @@ void renderMoonFrame() {
   for (uint8_t row = 0; row < DISPLAY_HEIGHT; row++) {
     int16_t canvasRow = static_cast<int16_t>(state.topRow) + row;
     for (uint8_t col = 0; col < DISPLAY_WIDTH; col++) {
-      if (moonPixelLit(canvasRow, col, state.phase)) {
+      // Full disk outline + solid fill for the illuminated fraction.
+      if (moonIlluminated(canvasRow, col, state.phase) ||
+          onMoonRim(canvasRow, col)) {
         setPixel(row, col);
       }
     }
