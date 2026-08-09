@@ -13,7 +13,6 @@ constexpr uint8_t DISPLAY_HEIGHT = 8;
 constexpr uint8_t DISPLAY_WIDTH = 32;
 constexpr size_t SCROLL_BUFFER_SIZE = 128;
 constexpr unsigned long FRAME_MS = 80UL;
-constexpr unsigned long NAME_HOLD_MS = 16000UL;
 constexpr unsigned long MOON_HOLD_MS = 8000UL;
 constexpr unsigned long NTP_RETRY_MS = 30000UL;
 constexpr double SYNODIC_MONTH_DAYS = 29.530588853;
@@ -318,30 +317,25 @@ void moonPhaseStart(const ProgramConfig &cfg) {
 
 void moonPhaseTick(const ProgramConfig &cfg) {
   unsigned long now = millis();
-  if (now - state.lastFrameMs < FRAME_MS) {
-    if (state.view == View::Name && Display.displayAnimate()) {
-      Display.displayReset();
+
+  // Keep Parola scrolling smooth; switch back only after one full pass.
+  if (state.view == View::Name) {
+    updatePhaseFromClockOrDemo(now);
+    if (Display.displayAnimate()) {
+      enterView(View::Moon, cfg, now);
     }
+    return;
+  }
+
+  if (now - state.lastFrameMs < FRAME_MS) {
     return;
   }
   state.lastFrameMs = now;
   state.twinkle++;
 
   updatePhaseFromClockOrDemo(now);
-
-  if (state.view == View::Moon) {
-    renderMoonFrame();
-    if (now - state.viewStartMs >= MOON_HOLD_MS) {
-      enterView(View::Name, cfg, now);
-    }
-    return;
-  }
-
-  // Name/upcoming scroll view
-  if (Display.displayAnimate()) {
-    Display.displayReset();
-  }
-  if (now - state.viewStartMs >= NAME_HOLD_MS) {
-    enterView(View::Moon, cfg, now);
+  renderMoonFrame();
+  if (now - state.viewStartMs >= MOON_HOLD_MS) {
+    enterView(View::Name, cfg, now);
   }
 }
