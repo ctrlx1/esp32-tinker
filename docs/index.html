@@ -135,6 +135,29 @@
       box-shadow: 0 0 28px rgba(59,130,246,.35);
     }
 
+    .download-btn {
+      display: none;
+      margin-top: 10px;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 32px;
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      text-align: center;
+      text-decoration: none;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .download-btn:hover {
+      background: var(--surface2);
+      border-color: #333;
+      color: #fff;
+    }
+
     .browser-note {
       font-size: 12px;
       color: var(--muted);
@@ -267,6 +290,8 @@
     ">⚡ Install now</button>
   </esp-web-install-button>
 
+  <a id="download-btn" class="download-btn" href="#" download>Download firmware</a>
+
   <div id="loading-btn" style="
     background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px;
     padding: 13px 32px; font-size: 15px; color: #666; width: 100%; text-align: center;
@@ -323,6 +348,7 @@
 (async function() {
   var versionLabel = document.getElementById('version-label');
   var installBtn   = document.getElementById('install-btn');
+  var downloadBtn  = document.getElementById('download-btn');
   var loadingBtn   = document.getElementById('loading-btn');
   var errorMsg     = document.getElementById('error-msg');
 
@@ -331,10 +357,22 @@
     if (!res.ok) throw new Error('manifest not found');
     var manifest = await res.json();
 
+    var parts = (manifest.builds && manifest.builds[0] && manifest.builds[0].parts) || [];
+    var firmwarePart = parts.find(function(p) {
+      return p.path && p.path.indexOf('firmware_') === 0;
+    });
+    var firmwarePath = firmwarePart
+      ? firmwarePart.path
+      : ('firmware_' + manifest.version + '.bin');
+    var firmwareName = firmwarePath.split('/').pop();
+
     installBtn.setAttribute('manifest', './manifest.json');
+    downloadBtn.href = './' + firmwarePath;
+    downloadBtn.setAttribute('download', firmwareName);
     versionLabel.textContent = 'Version ' + manifest.version;
     loadingBtn.style.display = 'none';
     installBtn.style.display = 'block';
+    downloadBtn.style.display = 'block';
 
   } catch(e) {
     versionLabel.textContent = 'No firmware found';
