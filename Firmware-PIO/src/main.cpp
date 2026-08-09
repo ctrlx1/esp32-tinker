@@ -130,6 +130,8 @@ uint8_t parseSelectedProgramsArg(const String &value) {
       selectedPrograms |= PROGRAM_WEATHER_WATCH_FLAG;
     } else if (token == "real_weather") {
       selectedPrograms |= PROGRAM_REAL_WEATHER_FLAG;
+    } else if (token == "moon_phase") {
+      selectedPrograms |= PROGRAM_MOON_PHASE_FLAG;
     }
     start = comma + 1;
   }
@@ -158,17 +160,20 @@ ProgramId firstSelectedProgram(uint8_t selectedPrograms,
   if (selectedPrograms & PROGRAM_REAL_WEATHER_FLAG) {
     return ProgramId::RealWeather;
   }
+  if (selectedPrograms & PROGRAM_MOON_PHASE_FLAG) {
+    return ProgramId::MoonPhase;
+  }
   return fallbackProgram;
 }
 
 ProgramId nextSelectedProgram(uint8_t selectedPrograms,
                               ProgramId currentProgram) {
   selectedPrograms = sanitizeSelectedPrograms(selectedPrograms, currentProgram);
-  constexpr uint8_t PROGRAM_COUNT = 6;
-  ProgramId orderedPrograms[] = {ProgramId::Scroller, ProgramId::Fireworks,
-                                 ProgramId::MazeHero, ProgramId::PixelArt,
-                                 ProgramId::WeatherWatch,
-                                 ProgramId::RealWeather};
+  constexpr uint8_t PROGRAM_COUNT = 7;
+  ProgramId orderedPrograms[] = {
+      ProgramId::Scroller,     ProgramId::Fireworks, ProgramId::MazeHero,
+      ProgramId::PixelArt,     ProgramId::WeatherWatch, ProgramId::RealWeather,
+      ProgramId::MoonPhase};
   uint8_t currentIndex = 0;
   for (uint8_t i = 0; i < PROGRAM_COUNT; i++) {
     if (orderedPrograms[i] == currentProgram) {
@@ -207,6 +212,9 @@ bool hasMultipleSelectedPrograms(uint8_t selectedPrograms,
     selectedCount++;
   }
   if (selectedPrograms & PROGRAM_REAL_WEATHER_FLAG) {
+    selectedCount++;
+  }
+  if (selectedPrograms & PROGRAM_MOON_PHASE_FLAG) {
     selectedCount++;
   }
   return selectedCount > 1;
@@ -303,6 +311,12 @@ String selectedProgramsToString(uint8_t selectedPrograms) {
       value += ",";
     }
     value += "real_weather";
+  }
+  if (selectedPrograms & PROGRAM_MOON_PHASE_FLAG) {
+    if (value.length() > 0) {
+      value += ",";
+    }
+    value += "moon_phase";
   }
   return value;
 }
@@ -551,6 +565,9 @@ void handleSave() {
   }
   if (server.arg("programRealWeather") == "1") {
     selectedPrograms |= PROGRAM_REAL_WEATHER_FLAG;
+  }
+  if (server.arg("programMoonPhase") == "1") {
+    selectedPrograms |= PROGRAM_MOON_PHASE_FLAG;
   }
   selectedPrograms &= PROGRAM_ALL_FLAGS;
   if (selectedPrograms == 0) {

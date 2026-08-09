@@ -2,6 +2,7 @@
 
 #include "fireworks.h"
 #include "maze_hero.h"
+#include "moon_phase.h"
 #include "pixel_art.h"
 #include "real_weather.h"
 #include "scroller.h"
@@ -23,6 +24,9 @@ ProgramId parseProgramId(const String &value) {
   if (value == "real_weather") {
     return ProgramId::RealWeather;
   }
+  if (value == "moon_phase") {
+    return ProgramId::MoonPhase;
+  }
   return ProgramId::Scroller;
 }
 
@@ -38,6 +42,8 @@ const char *programIdToString(ProgramId id) {
     return "weather_watch";
   case ProgramId::RealWeather:
     return "real_weather";
+  case ProgramId::MoonPhase:
+    return "moon_phase";
   case ProgramId::Scroller:
   default:
     return "scroller";
@@ -56,6 +62,8 @@ uint8_t programIdToFlag(ProgramId id) {
     return PROGRAM_WEATHER_WATCH_FLAG;
   case ProgramId::RealWeather:
     return PROGRAM_REAL_WEATHER_FLAG;
+  case ProgramId::MoonPhase:
+    return PROGRAM_MOON_PHASE_FLAG;
   case ProgramId::Scroller:
   default:
     return PROGRAM_SCROLLER_FLAG;
@@ -78,6 +86,9 @@ void programStart(const ProgramConfig &cfg) {
     break;
   case ProgramId::RealWeather:
     realWeatherStart(cfg);
+    break;
+  case ProgramId::MoonPhase:
+    moonPhaseStart(cfg);
     break;
   case ProgramId::Scroller:
   default:
@@ -102,6 +113,9 @@ void programTick(const ProgramConfig &cfg) {
     break;
   case ProgramId::RealWeather:
     realWeatherTick(cfg);
+    break;
+  case ProgramId::MoonPhase:
+    moonPhaseTick(cfg);
     break;
   case ProgramId::Scroller:
   default:

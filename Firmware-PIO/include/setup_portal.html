@@ -519,6 +519,14 @@
                 />
                 <span>Real Weather</span>
               </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  id="program-moon-phase"
+                  value="moon_phase"
+                />
+                <span>Moon Phase</span>
+              </label>
             </div>
             <div class="hint">
               Checked programs cycle in this order and are remembered here.
@@ -759,6 +767,7 @@
         "pixel_art",
         "weather_watch",
         "real_weather",
+        "moon_phase",
       ];
       var PROGRAM_CHECKBOX_IDS = {
         scroller: "program-scroller",
@@ -767,6 +776,7 @@
         pixel_art: "program-pixel-art",
         weather_watch: "program-weather-watch",
         real_weather: "program-real-weather",
+        moon_phase: "program-moon-phase",
       };
       var PROGRAM_DEFAULTS = {
         scroller: {
@@ -798,6 +808,7 @@
         pixel_art: "Pixel Art",
         weather_watch: "Weather Watch",
         real_weather: "Real Weather",
+        moon_phase: "Moon Phase",
       };
       function isProgramSelected(program) {
         return document.getElementById(PROGRAM_CHECKBOX_IDS[program]).checked;
@@ -956,6 +967,7 @@
           "program-pixel-art",
           "program-weather-watch",
           "program-real-weather",
+          "program-moon-phase",
           "program-duration-minutes",
           "scroll-message",
           "scroll-speed",
@@ -1306,6 +1318,8 @@
           (isProgramSelected("weather_watch") ? "1" : "0") +
           "&programRealWeather=" +
           (isProgramSelected("real_weather") ? "1" : "0") +
+          "&programMoonPhase=" +
+          (isProgramSelected("moon_phase") ? "1" : "0") +
           "&programDurationMinutes=" +
           encodeURIComponent(programDurationMinutes) +
           "&scrollMessage=" +

@@ -11,7 +11,8 @@ enum class ProgramId : uint8_t {
   MazeHero,
   PixelArt,
   WeatherWatch,
-  RealWeather
+  RealWeather,
+  MoonPhase
 };
 
 constexpr uint8_t PROGRAM_SCROLLER_FLAG = 1U << 0;
@@ -20,10 +21,11 @@ constexpr uint8_t PROGRAM_MAZE_HERO_FLAG = 1U << 2;
 constexpr uint8_t PROGRAM_PIXEL_ART_FLAG = 1U << 3;
 constexpr uint8_t PROGRAM_WEATHER_WATCH_FLAG = 1U << 4;
 constexpr uint8_t PROGRAM_REAL_WEATHER_FLAG = 1U << 5;
+constexpr uint8_t PROGRAM_MOON_PHASE_FLAG = 1U << 6;
 constexpr uint8_t PROGRAM_ALL_FLAGS =
     PROGRAM_SCROLLER_FLAG | PROGRAM_FIREWORKS_FLAG | PROGRAM_MAZE_HERO_FLAG |
     PROGRAM_PIXEL_ART_FLAG | PROGRAM_WEATHER_WATCH_FLAG |
-    PROGRAM_REAL_WEATHER_FLAG;
+    PROGRAM_REAL_WEATHER_FLAG | PROGRAM_MOON_PHASE_FLAG;
 constexpr uint8_t DEFAULT_SELECTED_PROGRAMS =
     PROGRAM_FIREWORKS_FLAG | PROGRAM_MAZE_HERO_FLAG;
 constexpr float DEFAULT_PROGRAM_DURATION_MINUTES = 5.0f;
