@@ -3,14 +3,17 @@
 #include <MD_MAX72xx.h>
 #include <WiFi.h>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <time.h>
 
 namespace {
 constexpr uint8_t DISPLAY_HEIGHT = 8;
 constexpr uint8_t DISPLAY_WIDTH = 32;
+constexpr size_t SCROLL_BUFFER_SIZE = 128;
 constexpr unsigned long FRAME_MS = 80UL;
-constexpr unsigned long NAME_HOLD_MS = 5000UL;
+constexpr unsigned long NAME_HOLD_MS = 16000UL;
 constexpr unsigned long MOON_HOLD_MS = 8000UL;
 constexpr unsigned long NTP_RETRY_MS = 30000UL;
 constexpr double SYNODIC_MONTH_DAYS = 29.530588853;
@@ -26,11 +29,24 @@ struct State {
   unsigned long lastNtpAttemptMs = 0;
   bool timeSynced = false;
   float phase = 0.0f; // 0=new .. 0.5=full .. 1=new
-  char nameBuffer[24];
+  uint8_t illuminationPercent = 0;
+  char *scrollBuffer = nullptr;
   uint16_t twinkle = 0;
 };
 
 State state;
+
+bool ensureScrollBuffer() {
+  if (state.scrollBuffer != nullptr) {
+    return true;
+  }
+  state.scrollBuffer =
+      static_cast<char *>(malloc(SCROLL_BUFFER_SIZE));
+  if (state.scrollBuffer != nullptr) {
+    state.scrollBuffer[0] = '\0';
+  }
+  return state.scrollBuffer != nullptr;
+}
 
 MD_MAX72XX *matrix() { return Display.getGraphicObject(); }
 
@@ -79,14 +95,109 @@ float moonPhaseFromJulianDay(double jd) {
   return static_cast<float>(days / SYNODIC_MONTH_DAYS);
 }
 
+float normalizePhase(float phase) {
+  float p = phase - std::floor(phase);
+  if (p < 0.0f) {
+    p += 1.0f;
+  }
+  return p;
+}
+
 const char *phaseName(float phase) {
   // Eight named phases centered on their peaks.
-  float p = phase - std::floor(phase);
+  float p = normalizePhase(phase);
   int index = static_cast<int>(std::floor(p * 8.0f + 0.5f)) % 8;
   static const char *names[] = {
       "New Moon",         "Waxing Crescent", "First Quarter", "Waxing Gibbous",
       "Full Moon",        "Waning Gibbous",  "Last Quarter",  "Waning Crescent"};
   return names[index];
+}
+
+uint8_t illuminationPercent(float phase) {
+  constexpr float kPi = 3.14159265f;
+  float p = normalizePhase(phase);
+  float fraction = 0.5f * (1.0f - std::cos(2.0f * kPi * p));
+  int percent = static_cast<int>(std::lround(fraction * 100.0f));
+  if (percent < 0) {
+    percent = 0;
+  }
+  if (percent > 100) {
+    percent = 100;
+  }
+  return static_cast<uint8_t>(percent);
+}
+
+// Days until the next occurrence of targetPhase in [0,1).
+double daysUntilPhase(float currentPhase, float targetPhase) {
+  float current = normalizePhase(currentPhase);
+  float target = normalizePhase(targetPhase);
+  float delta = target - current;
+  if (delta <= 0.0001f) {
+    delta += 1.0f;
+  }
+  return static_cast<double>(delta) * SYNODIC_MONTH_DAYS;
+}
+
+void appendDuration(char *out, size_t outSize, double days) {
+  if (days < 0.0) {
+    days = 0.0;
+  }
+  long totalMinutes = static_cast<long>(std::lround(days * 24.0 * 60.0));
+  if (totalMinutes < 1) {
+    totalMinutes = 1;
+  }
+
+  long wholeDays = totalMinutes / (24L * 60L);
+  long hours = (totalMinutes % (24L * 60L)) / 60L;
+  long minutes = totalMinutes % 60L;
+
+  char piece[24];
+  if (wholeDays > 0) {
+    snprintf(piece, sizeof(piece), "%ldd %ldh", wholeDays, hours);
+  } else if (hours > 0) {
+    snprintf(piece, sizeof(piece), "%ldh %ldm", hours, minutes);
+  } else {
+    snprintf(piece, sizeof(piece), "%ldm", minutes);
+  }
+
+  size_t used = strlen(out);
+  if (used + 1 >= outSize) {
+    return;
+  }
+  strncat(out, piece, outSize - used - 1);
+}
+
+void appendUpcoming(char *out, size_t outSize, const char *label,
+                    float currentPhase, float targetPhase) {
+  size_t used = strlen(out);
+  if (used + 3 >= outSize) {
+    return;
+  }
+  strncat(out, " | ", outSize - used - 1);
+  used = strlen(out);
+  strncat(out, label, outSize - used - 1);
+  used = strlen(out);
+  strncat(out, " in ", outSize - used - 1);
+  appendDuration(out, outSize, daysUntilPhase(currentPhase, targetPhase));
+}
+
+void buildScrollText() {
+  if (!ensureScrollBuffer()) {
+    return;
+  }
+  // Example:
+  // Full Moon 87% | New 3d 14h | 1st Qtr 11d 2h | Full 18d 8h | Last Qtr 25d 20h
+  snprintf(state.scrollBuffer, SCROLL_BUFFER_SIZE, "%s %u%%",
+           phaseName(state.phase),
+           static_cast<unsigned>(state.illuminationPercent));
+  appendUpcoming(state.scrollBuffer, SCROLL_BUFFER_SIZE, "New", state.phase,
+                 0.0f);
+  appendUpcoming(state.scrollBuffer, SCROLL_BUFFER_SIZE, "1st Qtr", state.phase,
+                 0.25f);
+  appendUpcoming(state.scrollBuffer, SCROLL_BUFFER_SIZE, "Full", state.phase,
+                 0.5f);
+  appendUpcoming(state.scrollBuffer, SCROLL_BUFFER_SIZE, "Last Qtr",
+                 state.phase, 0.75f);
 }
 
 bool syncTimeIfNeeded(unsigned long now) {
@@ -123,8 +234,8 @@ void updatePhaseFromClockOrDemo(unsigned long now) {
     // Slow demo cycle (~60s per synodic month visualization)
     state.phase = std::fmod((now / 1000.0f) / 60.0f, 1.0f);
   }
-  strncpy(state.nameBuffer, phaseName(state.phase), sizeof(state.nameBuffer) - 1);
-  state.nameBuffer[sizeof(state.nameBuffer) - 1] = '\0';
+  state.phase = normalizePhase(state.phase);
+  state.illuminationPercent = illuminationPercent(state.phase);
 }
 
 void drawStars() {
@@ -142,7 +253,7 @@ void drawMoonDisc(float phase) {
   constexpr float cx = 8.0f;
   constexpr float cy = 3.5f;
   constexpr float radius = 3.4f;
-  float p = phase - std::floor(phase);
+  float p = normalizePhase(phase);
   constexpr float kPi = 3.14159265f;
   float limb = std::cos(2.0f * kPi * p);
   bool waxing = p <= 0.5f;
@@ -170,11 +281,16 @@ void renderMoonFrame() {
 }
 
 void startNameScroll(const ProgramConfig &cfg) {
+  buildScrollText();
   Display.displayClear();
   Display.setIntensity(sanitizedBrightness(cfg.brightness));
   Display.setTextAlignment(PA_LEFT);
   unsigned int speed = cfg.scrollSpeedMs > 0 ? cfg.scrollSpeedMs : 75U;
-  Display.displayScroll(state.nameBuffer, PA_LEFT, PA_SCROLL_LEFT, speed);
+  const char *text =
+      (state.scrollBuffer != nullptr && state.scrollBuffer[0] != '\0')
+          ? state.scrollBuffer
+          : phaseName(state.phase);
+  Display.displayScroll(text, PA_LEFT, PA_SCROLL_LEFT, speed);
 }
 
 void enterView(View view, const ProgramConfig &cfg, unsigned long now) {
@@ -221,7 +337,7 @@ void moonPhaseTick(const ProgramConfig &cfg) {
     return;
   }
 
-  // Name scroll view
+  // Name/upcoming scroll view
   if (Display.displayAnimate()) {
     Display.displayReset();
   }
