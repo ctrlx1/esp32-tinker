@@ -11,8 +11,8 @@
 namespace {
 constexpr uint8_t DISPLAY_HEIGHT = 8;
 constexpr uint8_t DISPLAY_WIDTH = 32;
-// Centered disc with equal side margins; canvas tall enough to pan.
-constexpr uint8_t MOON_DIAMETER = 24;
+// Full-width disc; canvas tall enough to pan.
+constexpr uint8_t MOON_DIAMETER = 32;
 constexpr uint8_t MOON_CANVAS_HEIGHT = MOON_DIAMETER;
 constexpr size_t SCROLL_BUFFER_SIZE = 128;
 constexpr unsigned long FRAME_MS = 80UL;
