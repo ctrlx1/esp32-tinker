@@ -789,6 +789,18 @@
               available from the live feed.
             </div>
           </div>
+          <div>
+            <label>Air speed</label>
+            <select id="flight-speed-unit" aria-label="Air speed unit">
+              <option value="0">Kt</option>
+              <option value="1">Mph</option>
+              <option value="2">Kph</option>
+            </select>
+            <div class="hint">
+              Ground speed on the display uses this unit (ADS-B data is
+              always knots).
+            </div>
+          </div>
         </div>
         <div class="settings-card">
           <div class="settings-card-title">Display Settings</div>
@@ -880,6 +892,7 @@
           flightLon: "-73.7781",
           flightRadius: "25",
           flightRadiusUnit: "0",
+          flightSpeedUnit: "0",
         },
       };
       var PROGRAM_LABELS = {
@@ -975,6 +988,8 @@
               flightRadius: document.getElementById("flight-radius").value,
               flightRadiusUnit: document.getElementById("flight-radius-unit")
                 .value,
+              flightSpeedUnit: document.getElementById("flight-speed-unit")
+                .value,
               brightness: document.getElementById("brightness").value,
               fireworksMaxBrightness: document.getElementById(
                 "fireworks-max-brightness",
@@ -1049,6 +1064,9 @@
           if (d.flightRadiusUnit != null)
             document.getElementById("flight-radius-unit").value =
               d.flightRadiusUnit;
+          if (d.flightSpeedUnit != null)
+            document.getElementById("flight-speed-unit").value =
+              d.flightSpeedUnit;
           if (d.brightness != null)
             document.getElementById("brightness").value = d.brightness;
           if (d.fireworksMaxBrightness != null)
@@ -1084,6 +1102,7 @@
           "flight-lon",
           "flight-radius",
           "flight-radius-unit",
+          "flight-speed-unit",
           "brightness",
           "fireworks-max-brightness",
         ].forEach(function (id) {
@@ -1156,6 +1175,10 @@
           setValue(
             "flight-radius-unit",
             PROGRAM_DEFAULTS.flight_watch.flightRadiusUnit,
+          );
+          setValue(
+            "flight-speed-unit",
+            PROGRAM_DEFAULTS.flight_watch.flightSpeedUnit,
           );
         }
 
@@ -1307,6 +1330,10 @@
           document.getElementById("flight-radius-unit").value,
           10,
         );
+        var flightSpeedUnit = parseInt(
+          document.getElementById("flight-speed-unit").value,
+          10,
+        );
         var brightness = parseInt(
           document.getElementById("brightness").value,
           10,
@@ -1445,6 +1472,15 @@
               "Flight radius must be at most 250 nautical miles.";
             return;
           }
+          if (
+            isNaN(flightSpeedUnit) ||
+            flightSpeedUnit < 0 ||
+            flightSpeedUnit > 2
+          ) {
+            msg.className = "msg err";
+            msg.textContent = "Select a valid air speed unit.";
+            return;
+          }
         }
         persistSetupForm();
         msg.className = "msg ok";
@@ -1508,6 +1544,8 @@
           encodeURIComponent(flightRadius) +
           "&flightRadiusUnit=" +
           encodeURIComponent(flightRadiusUnit) +
+          "&flightSpeedUnit=" +
+          encodeURIComponent(flightSpeedUnit) +
           "&brightness=" +
           brightness +
           "&fireworksMaxBrightness=" +
@@ -1568,6 +1606,8 @@
       }
       document.getElementById("flight-radius-unit").value =
         "FLIGHT_RADIUS_UNIT_PLACEHOLDER";
+      document.getElementById("flight-speed-unit").value =
+        "FLIGHT_SPEED_UNIT_PLACEHOLDER";
       setSelectedPrograms(defaultSelectedPrograms());
       restoreSetupForm();
       if (!selectedPrograms().length) {

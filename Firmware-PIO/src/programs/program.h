@@ -37,6 +37,9 @@ constexpr size_t MAX_SCROLL_MESSAGE_LENGTH = 64;
 constexpr size_t MAX_WEATHER_POSTAL_CODE_LENGTH = 16;
 constexpr uint8_t FLIGHT_RADIUS_UNIT_MI = 0;
 constexpr uint8_t FLIGHT_RADIUS_UNIT_KM = 1;
+constexpr uint8_t FLIGHT_SPEED_UNIT_KT = 0;
+constexpr uint8_t FLIGHT_SPEED_UNIT_MPH = 1;
+constexpr uint8_t FLIGHT_SPEED_UNIT_KPH = 2;
 constexpr float DEFAULT_FLIGHT_LAT = 40.6413f;
 constexpr float DEFAULT_FLIGHT_LON = -73.7781f;
 constexpr float DEFAULT_FLIGHT_RADIUS = 25.0f;
@@ -64,6 +67,7 @@ struct ProgramConfig {
   float flightLon;
   float flightRadius;
   uint8_t flightRadiusUnit;
+  uint8_t flightSpeedUnit;
 };
 
 ProgramId parseProgramId(const String &value);

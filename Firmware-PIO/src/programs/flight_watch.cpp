@@ -35,6 +35,7 @@ float lastLat = 0;
 float lastLon = 0;
 float lastRadius = 0;
 uint8_t lastRadiusUnit = 0;
+uint8_t lastSpeedUnit = 0;
 
 bool airlineNameFromCallsign(const char *callsign, char *out, size_t outSize) {
   struct AirlineEntry {
@@ -166,7 +167,7 @@ void startScroll(const ProgramConfig &cfg) {
   Display.displayScroll(gProgramScrollBuffer, PA_LEFT, PA_SCROLL_LEFT, speed);
 }
 
-void buildAircraftScroll(const Aircraft &ac) {
+void buildAircraftScroll(const Aircraft &ac, uint8_t speedUnit) {
   String message;
   char airline[12];
   if (airlineNameFromCallsign(ac.callsign, airline, sizeof(airline))) {
@@ -185,8 +186,21 @@ void buildAircraftScroll(const Aircraft &ac) {
   message += " ";
   message += String(ac.altFt);
   message += "ft ";
-  message += String(ac.gsKt);
-  message += "kt ";
+
+  float speedKt = (float)ac.gsKt;
+  int speedValue = ac.gsKt;
+  const char *speedSuffix = "kt";
+  if (speedUnit == FLIGHT_SPEED_UNIT_MPH) {
+    speedValue = (int)lroundf(speedKt * 1.15078f);
+    speedSuffix = "mph";
+  } else if (speedUnit == FLIGHT_SPEED_UNIT_KPH) {
+    speedValue = (int)lroundf(speedKt * 1.852f);
+    speedSuffix = "kph";
+  }
+  message += String(speedValue);
+  message += speedSuffix;
+  message += " ";
+
   char trackBuf[8];
   snprintf(trackBuf, sizeof(trackBuf), "%03d", ac.trackDeg % 360);
   message += trackBuf;
@@ -217,7 +231,7 @@ void showCurrentOrEmpty(const ProgramConfig &cfg) {
     if (aircraftIndex >= aircraftCount) {
       aircraftIndex = 0;
     }
-    buildAircraftScroll(aircraftQueue[aircraftIndex]);
+    buildAircraftScroll(aircraftQueue[aircraftIndex], cfg.flightSpeedUnit);
   }
   startScroll(cfg);
 }
@@ -449,6 +463,7 @@ void flightWatchStart(const ProgramConfig &cfg) {
   lastLon = cfg.flightLon;
   lastRadius = cfg.flightRadius;
   lastRadiusUnit = cfg.flightRadiusUnit;
+  lastSpeedUnit = cfg.flightSpeedUnit;
   lastFetchMs = 0;
   aircraftCount = 0;
   aircraftIndex = 0;
@@ -467,17 +482,25 @@ void flightWatchTick(const ProgramConfig &cfg) {
   unsigned long now = millis();
   unsigned long interval =
       fetchSucceeded ? REFRESH_INTERVAL_MS : RETRY_INTERVAL_MS;
-  bool configChanged = cfg.flightLat != lastLat || cfg.flightLon != lastLon ||
-                       cfg.flightRadius != lastRadius ||
-                       cfg.flightRadiusUnit != lastRadiusUnit;
+  bool locationChanged = cfg.flightLat != lastLat || cfg.flightLon != lastLon ||
+                         cfg.flightRadius != lastRadius ||
+                         cfg.flightRadiusUnit != lastRadiusUnit;
+  bool speedUnitChanged = cfg.flightSpeedUnit != lastSpeedUnit;
 
-  if (configChanged || now - lastFetchMs >= interval) {
+  if (locationChanged || now - lastFetchMs >= interval) {
     lastLat = cfg.flightLat;
     lastLon = cfg.flightLon;
     lastRadius = cfg.flightRadius;
     lastRadiusUnit = cfg.flightRadiusUnit;
+    lastSpeedUnit = cfg.flightSpeedUnit;
     refreshFlights(cfg);
     lastFetchMs = now;
+    showCurrentOrEmpty(cfg);
+    return;
+  }
+
+  if (speedUnitChanged) {
+    lastSpeedUnit = cfg.flightSpeedUnit;
     showCurrentOrEmpty(cfg);
     return;
   }
@@ -485,7 +508,7 @@ void flightWatchTick(const ProgramConfig &cfg) {
   if (Display.displayAnimate()) {
     if (aircraftCount > 0) {
       aircraftIndex = (uint8_t)((aircraftIndex + 1) % aircraftCount);
-      buildAircraftScroll(aircraftQueue[aircraftIndex]);
+      buildAircraftScroll(aircraftQueue[aircraftIndex], cfg.flightSpeedUnit);
     }
     startScroll(cfg);
   }

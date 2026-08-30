@@ -433,6 +433,11 @@ void loadPrefs() {
   if (programConfig.flightRadiusUnit > FLIGHT_RADIUS_UNIT_KM) {
     programConfig.flightRadiusUnit = FLIGHT_RADIUS_UNIT_MI;
   }
+  programConfig.flightSpeedUnit =
+      prefs.getUChar("fltSpdUnit", FLIGHT_SPEED_UNIT_KT);
+  if (programConfig.flightSpeedUnit > FLIGHT_SPEED_UNIT_KPH) {
+    programConfig.flightSpeedUnit = FLIGHT_SPEED_UNIT_KT;
+  }
   prefs.end();
 
   if (programConfig.brightness > 15) {
@@ -491,9 +496,15 @@ void loadPrefs() {
   Serial.print(programConfig.flightLon, 4);
   Serial.print(" r=");
   Serial.print(programConfig.flightRadius, 1);
-  Serial.println(programConfig.flightRadiusUnit == FLIGHT_RADIUS_UNIT_KM
-                     ? "km"
-                     : "mi");
+  Serial.print(programConfig.flightRadiusUnit == FLIGHT_RADIUS_UNIT_KM
+                   ? "km"
+                   : "mi");
+  Serial.print(" spd=");
+  Serial.println(programConfig.flightSpeedUnit == FLIGHT_SPEED_UNIT_MPH
+                     ? "mph"
+                     : (programConfig.flightSpeedUnit == FLIGHT_SPEED_UNIT_KPH
+                            ? "kph"
+                            : "kt"));
 }
 
 void savePrefs(const String &ssid, const String &pass,
@@ -523,6 +534,7 @@ void savePrefs(const String &ssid, const String &pass,
   prefs.putFloat("fltLon", cfg.flightLon);
   prefs.putFloat("fltRad", cfg.flightRadius);
   prefs.putUChar("fltRadUnit", cfg.flightRadiusUnit);
+  prefs.putUChar("fltSpdUnit", cfg.flightSpeedUnit);
   prefs.end();
 }
 
@@ -582,6 +594,8 @@ String buildPage() {
                String(programConfig.flightRadius, 1));
   page.replace("FLIGHT_RADIUS_UNIT_PLACEHOLDER",
                String(programConfig.flightRadiusUnit));
+  page.replace("FLIGHT_SPEED_UNIT_PLACEHOLDER",
+               String(programConfig.flightSpeedUnit));
   return page;
 }
 
@@ -758,6 +772,8 @@ void handleSave() {
     float flightRadius = server.arg("flightRadius").toFloat();
     uint8_t flightRadiusUnit =
         (uint8_t)server.arg("flightRadiusUnit").toInt();
+    uint8_t flightSpeedUnit =
+        (uint8_t)server.arg("flightSpeedUnit").toInt();
     if (flightLat < -90.0f || flightLat > 90.0f) {
       server.send(400, "text/plain", "Latitude must be between -90 and 90.");
       return;
@@ -773,6 +789,9 @@ void handleSave() {
     if (flightRadiusUnit > FLIGHT_RADIUS_UNIT_KM) {
       flightRadiusUnit = FLIGHT_RADIUS_UNIT_MI;
     }
+    if (flightSpeedUnit > FLIGHT_SPEED_UNIT_KPH) {
+      flightSpeedUnit = FLIGHT_SPEED_UNIT_KT;
+    }
     float radiusNm = flightRadiusUnit == FLIGHT_RADIUS_UNIT_KM
                          ? flightRadius * 0.539957f
                          : flightRadius * 0.868976f;
@@ -785,6 +804,7 @@ void handleSave() {
     newConfig.flightLon = flightLon;
     newConfig.flightRadius = flightRadius;
     newConfig.flightRadiusUnit = flightRadiusUnit;
+    newConfig.flightSpeedUnit = flightSpeedUnit;
   }
 
   String new_ssid = server.arg("ssid");
