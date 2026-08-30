@@ -6,12 +6,10 @@
 #include <cstring>
 
 namespace {
-constexpr size_t SCROLL_BUFFER_SIZE = 256;
 constexpr unsigned long REFRESH_INTERVAL_MS = 15UL * 60UL * 1000UL;
 constexpr unsigned long RETRY_INTERVAL_MS = 60UL * 1000UL;
 constexpr uint8_t FORECAST_DAYS = 7;
 
-char scrollTextBuffer[SCROLL_BUFFER_SIZE];
 unsigned long lastFetchMs = 0;
 bool fetchSucceeded = false;
 String lastPostalCode;
@@ -332,8 +330,8 @@ bool fetchForecast(float latitude, float longitude, String &body) {
 }
 
 void setScrollText(const char *text) {
-  strncpy(scrollTextBuffer, text, SCROLL_BUFFER_SIZE - 1);
-  scrollTextBuffer[SCROLL_BUFFER_SIZE - 1] = '\0';
+  strncpy(gProgramScrollBuffer, text, PROGRAM_SCROLL_BUFFER_SIZE - 1);
+  gProgramScrollBuffer[PROGRAM_SCROLL_BUFFER_SIZE - 1] = '\0';
 }
 
 void startScroll(const ProgramConfig &cfg) {
@@ -342,7 +340,7 @@ void startScroll(const ProgramConfig &cfg) {
   Display.setTextAlignment(PA_LEFT);
   unsigned int speed =
       cfg.scrollSpeedMs > 0 ? cfg.scrollSpeedMs : 75U;
-  Display.displayScroll(scrollTextBuffer, PA_LEFT, PA_SCROLL_LEFT, speed);
+  Display.displayScroll(gProgramScrollBuffer, PA_LEFT, PA_SCROLL_LEFT, speed);
 }
 
 bool buildWeatherScroll(const String &locationLabel, const String &forecastJson,
@@ -474,8 +472,8 @@ bool refreshWeather(const ProgramConfig &cfg) {
   }
 
   String locationLabel = buildLocationLabel(town, admin1, postalCode);
-  if (!buildWeatherScroll(locationLabel, forecastJson, scrollTextBuffer,
-                          SCROLL_BUFFER_SIZE)) {
+  if (!buildWeatherScroll(locationLabel, forecastJson, gProgramScrollBuffer,
+                          PROGRAM_SCROLL_BUFFER_SIZE)) {
     setScrollText("Weather unavailable");
     fetchSucceeded = false;
     return false;

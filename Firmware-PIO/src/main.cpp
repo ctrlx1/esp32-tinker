@@ -132,6 +132,8 @@ uint8_t parseSelectedProgramsArg(const String &value) {
       selectedPrograms |= PROGRAM_REAL_WEATHER_FLAG;
     } else if (token == "moon_phase") {
       selectedPrograms |= PROGRAM_MOON_PHASE_FLAG;
+    } else if (token == "flight_watch") {
+      selectedPrograms |= PROGRAM_FLIGHT_WATCH_FLAG;
     }
     start = comma + 1;
   }
@@ -163,17 +165,20 @@ ProgramId firstSelectedProgram(uint8_t selectedPrograms,
   if (selectedPrograms & PROGRAM_MOON_PHASE_FLAG) {
     return ProgramId::MoonPhase;
   }
+  if (selectedPrograms & PROGRAM_FLIGHT_WATCH_FLAG) {
+    return ProgramId::FlightWatch;
+  }
   return fallbackProgram;
 }
 
 ProgramId nextSelectedProgram(uint8_t selectedPrograms,
                               ProgramId currentProgram) {
   selectedPrograms = sanitizeSelectedPrograms(selectedPrograms, currentProgram);
-  constexpr uint8_t PROGRAM_COUNT = 7;
+  constexpr uint8_t PROGRAM_COUNT = 8;
   ProgramId orderedPrograms[] = {
-      ProgramId::Scroller,     ProgramId::Fireworks, ProgramId::MazeHero,
+      ProgramId::Scroller,     ProgramId::Fireworks,    ProgramId::MazeHero,
       ProgramId::PixelArt,     ProgramId::WeatherWatch, ProgramId::RealWeather,
-      ProgramId::MoonPhase};
+      ProgramId::MoonPhase,    ProgramId::FlightWatch};
   uint8_t currentIndex = 0;
   for (uint8_t i = 0; i < PROGRAM_COUNT; i++) {
     if (orderedPrograms[i] == currentProgram) {
@@ -215,6 +220,9 @@ bool hasMultipleSelectedPrograms(uint8_t selectedPrograms,
     selectedCount++;
   }
   if (selectedPrograms & PROGRAM_MOON_PHASE_FLAG) {
+    selectedCount++;
+  }
+  if (selectedPrograms & PROGRAM_FLIGHT_WATCH_FLAG) {
     selectedCount++;
   }
   return selectedCount > 1;
@@ -318,6 +326,12 @@ String selectedProgramsToString(uint8_t selectedPrograms) {
     }
     value += "moon_phase";
   }
+  if (selectedPrograms & PROGRAM_FLIGHT_WATCH_FLAG) {
+    if (value.length() > 0) {
+      value += ",";
+    }
+    value += "flight_watch";
+  }
   return value;
 }
 
@@ -408,6 +422,17 @@ void loadPrefs() {
         programConfig.weatherPostalCode.substring(0,
                                                   MAX_WEATHER_POSTAL_CODE_LENGTH);
   }
+  programConfig.flightLat = prefs.getFloat("fltLat", DEFAULT_FLIGHT_LAT);
+  programConfig.flightLon = prefs.getFloat("fltLon", DEFAULT_FLIGHT_LON);
+  programConfig.flightRadius = prefs.getFloat("fltRad", DEFAULT_FLIGHT_RADIUS);
+  if (programConfig.flightRadius <= 0.0f) {
+    programConfig.flightRadius = DEFAULT_FLIGHT_RADIUS;
+  }
+  programConfig.flightRadiusUnit =
+      prefs.getUChar("fltRadUnit", FLIGHT_RADIUS_UNIT_MI);
+  if (programConfig.flightRadiusUnit > FLIGHT_RADIUS_UNIT_KM) {
+    programConfig.flightRadiusUnit = FLIGHT_RADIUS_UNIT_MI;
+  }
   prefs.end();
 
   if (programConfig.brightness > 15) {
@@ -457,9 +482,18 @@ void loadPrefs() {
   Serial.print(", fwMaxBright=");
   Serial.print(programConfig.fireworksMaxBrightness);
   Serial.print(", wxZip=");
-  Serial.println(programConfig.weatherPostalCode.length()
-                     ? programConfig.weatherPostalCode
-                     : "(empty)");
+  Serial.print(programConfig.weatherPostalCode.length()
+                   ? programConfig.weatherPostalCode
+                   : "(empty)");
+  Serial.print(", flight=");
+  Serial.print(programConfig.flightLat, 4);
+  Serial.print(",");
+  Serial.print(programConfig.flightLon, 4);
+  Serial.print(" r=");
+  Serial.print(programConfig.flightRadius, 1);
+  Serial.println(programConfig.flightRadiusUnit == FLIGHT_RADIUS_UNIT_KM
+                     ? "km"
+                     : "mi");
 }
 
 void savePrefs(const String &ssid, const String &pass,
@@ -485,6 +519,10 @@ void savePrefs(const String &ssid, const String &pass,
   prefs.putUChar("brightness", cfg.brightness);
   prefs.putUChar("fwMaxBright", cfg.fireworksMaxBrightness);
   prefs.putString("wxZip", cfg.weatherPostalCode);
+  prefs.putFloat("fltLat", cfg.flightLat);
+  prefs.putFloat("fltLon", cfg.flightLon);
+  prefs.putFloat("fltRad", cfg.flightRadius);
+  prefs.putUChar("fltRadUnit", cfg.flightRadiusUnit);
   prefs.end();
 }
 
@@ -538,6 +576,12 @@ String buildPage() {
                String(programConfig.fireworksMaxBrightness));
   page.replace("WEATHER_ZIP_PLACEHOLDER",
                html_escape(programConfig.weatherPostalCode));
+  page.replace("FLIGHT_LAT_PLACEHOLDER", String(programConfig.flightLat, 5));
+  page.replace("FLIGHT_LON_PLACEHOLDER", String(programConfig.flightLon, 5));
+  page.replace("FLIGHT_RADIUS_PLACEHOLDER",
+               String(programConfig.flightRadius, 1));
+  page.replace("FLIGHT_RADIUS_UNIT_PLACEHOLDER",
+               String(programConfig.flightRadiusUnit));
   return page;
 }
 
@@ -568,6 +612,9 @@ void handleSave() {
   }
   if (server.arg("programMoonPhase") == "1") {
     selectedPrograms |= PROGRAM_MOON_PHASE_FLAG;
+  }
+  if (server.arg("programFlightWatch") == "1") {
+    selectedPrograms |= PROGRAM_FLIGHT_WATCH_FLAG;
   }
   selectedPrograms &= PROGRAM_ALL_FLAGS;
   if (selectedPrograms == 0) {
@@ -704,6 +751,40 @@ void handleSave() {
       return;
     }
     newConfig.weatherPostalCode = weatherPostalCode;
+  }
+  if (newConfig.selectedPrograms & PROGRAM_FLIGHT_WATCH_FLAG) {
+    float flightLat = server.arg("flightLat").toFloat();
+    float flightLon = server.arg("flightLon").toFloat();
+    float flightRadius = server.arg("flightRadius").toFloat();
+    uint8_t flightRadiusUnit =
+        (uint8_t)server.arg("flightRadiusUnit").toInt();
+    if (flightLat < -90.0f || flightLat > 90.0f) {
+      server.send(400, "text/plain", "Latitude must be between -90 and 90.");
+      return;
+    }
+    if (flightLon < -180.0f || flightLon > 180.0f) {
+      server.send(400, "text/plain", "Longitude must be between -180 and 180.");
+      return;
+    }
+    if (flightRadius <= 0.0f) {
+      server.send(400, "text/plain", "Flight radius must be greater than 0.");
+      return;
+    }
+    if (flightRadiusUnit > FLIGHT_RADIUS_UNIT_KM) {
+      flightRadiusUnit = FLIGHT_RADIUS_UNIT_MI;
+    }
+    float radiusNm = flightRadiusUnit == FLIGHT_RADIUS_UNIT_KM
+                         ? flightRadius * 0.539957f
+                         : flightRadius * 0.868976f;
+    if (radiusNm > MAX_FLIGHT_RADIUS_NM) {
+      server.send(400, "text/plain",
+                  "Flight radius must be at most 250 nautical miles.");
+      return;
+    }
+    newConfig.flightLat = flightLat;
+    newConfig.flightLon = flightLon;
+    newConfig.flightRadius = flightRadius;
+    newConfig.flightRadiusUnit = flightRadiusUnit;
   }
 
   String new_ssid = server.arg("ssid");

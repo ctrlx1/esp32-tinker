@@ -527,6 +527,14 @@
                 />
                 <span>Moon Phase</span>
               </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  id="program-flight-watch"
+                  value="flight_watch"
+                />
+                <span>Flight Watch</span>
+              </label>
             </div>
             <div class="hint">
               Checked programs cycle in this order and are remembered here.
@@ -717,6 +725,55 @@
             </div>
           </div>
         </div>
+        <div id="flight-watch-config" class="settings-card program-config" hidden>
+          <div class="settings-card-title">Flight Watch Settings</div>
+          <div>
+            <label>Latitude</label>
+            <input
+              type="number"
+              id="flight-lat"
+              min="-90"
+              max="90"
+              step="0.00001"
+              value="FLIGHT_LAT_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Longitude</label>
+            <input
+              type="number"
+              id="flight-lon"
+              min="-180"
+              max="180"
+              step="0.00001"
+              value="FLIGHT_LON_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Watch radius</label>
+            <div style="display: flex; gap: 0.5rem; align-items: center">
+              <input
+                type="number"
+                id="flight-radius"
+                min="0.1"
+                max="287.5"
+                step="0.1"
+                value="FLIGHT_RADIUS_PLACEHOLDER"
+                style="flex: 1"
+              />
+              <select id="flight-radius-unit">
+                <option value="0">mi</option>
+                <option value="1">km</option>
+              </select>
+            </div>
+            <div class="hint">
+              Aircraft within this radius of the lat/lon are shown (max ~250
+              nautical miles). Cycles nearby airborne flights. Airline names
+              come from callsign prefix; airport origin/destination are not
+              available from the live feed.
+            </div>
+          </div>
+        </div>
         <div class="settings-card">
           <div class="settings-card-title">Display Settings</div>
           <div>
@@ -768,6 +825,7 @@
         "weather_watch",
         "real_weather",
         "moon_phase",
+        "flight_watch",
       ];
       var PROGRAM_CHECKBOX_IDS = {
         scroller: "program-scroller",
@@ -777,6 +835,7 @@
         weather_watch: "program-weather-watch",
         real_weather: "program-real-weather",
         moon_phase: "program-moon-phase",
+        flight_watch: "program-flight-watch",
       };
       var PROGRAM_DEFAULTS = {
         scroller: {
@@ -800,6 +859,12 @@
         real_weather: {
           weatherPostalCode: "",
         },
+        flight_watch: {
+          flightLat: "40.6413",
+          flightLon: "-73.7781",
+          flightRadius: "25",
+          flightRadiusUnit: "0",
+        },
       };
       var PROGRAM_LABELS = {
         scroller: "Simple Scroller",
@@ -809,6 +874,7 @@
         weather_watch: "Weather Watch",
         real_weather: "Real Weather",
         moon_phase: "Moon Phase",
+        flight_watch: "Flight Watch",
       };
       function isProgramSelected(program) {
         return document.getElementById(PROGRAM_CHECKBOX_IDS[program]).checked;
@@ -848,6 +914,8 @@
           !isProgramSelected("maze_hero");
         document.getElementById("real-weather-config").hidden =
           !isProgramSelected("real_weather");
+        document.getElementById("flight-watch-config").hidden =
+          !isProgramSelected("flight_watch");
         document.getElementById("brightness-label").textContent =
           isProgramSelected("fireworks") ? "Min brightness" : "Brightness";
         document.getElementById("brightness-hint").textContent =
@@ -886,6 +954,11 @@
               weatherPostalCode: document.getElementById(
                 "weather-postal-code",
               ).value,
+              flightLat: document.getElementById("flight-lat").value,
+              flightLon: document.getElementById("flight-lon").value,
+              flightRadius: document.getElementById("flight-radius").value,
+              flightRadiusUnit: document.getElementById("flight-radius-unit")
+                .value,
               brightness: document.getElementById("brightness").value,
               fireworksMaxBrightness: document.getElementById(
                 "fireworks-max-brightness",
@@ -951,6 +1024,15 @@
           if (d.weatherPostalCode != null)
             document.getElementById("weather-postal-code").value =
               d.weatherPostalCode;
+          if (d.flightLat != null)
+            document.getElementById("flight-lat").value = d.flightLat;
+          if (d.flightLon != null)
+            document.getElementById("flight-lon").value = d.flightLon;
+          if (d.flightRadius != null)
+            document.getElementById("flight-radius").value = d.flightRadius;
+          if (d.flightRadiusUnit != null)
+            document.getElementById("flight-radius-unit").value =
+              d.flightRadiusUnit;
           if (d.brightness != null)
             document.getElementById("brightness").value = d.brightness;
           if (d.fireworksMaxBrightness != null)
@@ -968,6 +1050,7 @@
           "program-weather-watch",
           "program-real-weather",
           "program-moon-phase",
+          "program-flight-watch",
           "program-duration-minutes",
           "scroll-message",
           "scroll-speed",
@@ -981,6 +1064,10 @@
           "maze-hero-min-speed",
           "maze-hero-max-speed",
           "weather-postal-code",
+          "flight-lat",
+          "flight-lon",
+          "flight-radius",
+          "flight-radius-unit",
           "brightness",
           "fireworks-max-brightness",
         ].forEach(function (id) {
@@ -1044,6 +1131,15 @@
           setValue(
             "weather-postal-code",
             PROGRAM_DEFAULTS.real_weather.weatherPostalCode,
+          );
+        }
+        if (programs.indexOf("flight_watch") !== -1) {
+          setValue("flight-lat", PROGRAM_DEFAULTS.flight_watch.flightLat);
+          setValue("flight-lon", PROGRAM_DEFAULTS.flight_watch.flightLon);
+          setValue("flight-radius", PROGRAM_DEFAULTS.flight_watch.flightRadius);
+          setValue(
+            "flight-radius-unit",
+            PROGRAM_DEFAULTS.flight_watch.flightRadiusUnit,
           );
         }
 
@@ -1182,6 +1278,19 @@
         var weatherPostalCode = document
           .getElementById("weather-postal-code")
           .value.trim();
+        var flightLat = parseFloat(
+          document.getElementById("flight-lat").value,
+        );
+        var flightLon = parseFloat(
+          document.getElementById("flight-lon").value,
+        );
+        var flightRadius = parseFloat(
+          document.getElementById("flight-radius").value,
+        );
+        var flightRadiusUnit = parseInt(
+          document.getElementById("flight-radius-unit").value,
+          10,
+        );
         var brightness = parseInt(
           document.getElementById("brightness").value,
           10,
@@ -1294,6 +1403,33 @@
             return;
           }
         }
+        if (isProgramSelected("flight_watch")) {
+          if (isNaN(flightLat) || flightLat < -90 || flightLat > 90) {
+            msg.className = "msg err";
+            msg.textContent = "Latitude must be between -90 and 90.";
+            return;
+          }
+          if (isNaN(flightLon) || flightLon < -180 || flightLon > 180) {
+            msg.className = "msg err";
+            msg.textContent = "Longitude must be between -180 and 180.";
+            return;
+          }
+          if (isNaN(flightRadius) || flightRadius <= 0) {
+            msg.className = "msg err";
+            msg.textContent = "Flight radius must be greater than 0.";
+            return;
+          }
+          var radiusNm =
+            flightRadiusUnit === 1
+              ? flightRadius * 0.539957
+              : flightRadius * 0.868976;
+          if (radiusNm > 250) {
+            msg.className = "msg err";
+            msg.textContent =
+              "Flight radius must be at most 250 nautical miles.";
+            return;
+          }
+        }
         persistSetupForm();
         msg.className = "msg ok";
         msg.textContent = "Saving\u2026 device will reboot and connect.";
@@ -1320,6 +1456,8 @@
           (isProgramSelected("real_weather") ? "1" : "0") +
           "&programMoonPhase=" +
           (isProgramSelected("moon_phase") ? "1" : "0") +
+          "&programFlightWatch=" +
+          (isProgramSelected("flight_watch") ? "1" : "0") +
           "&programDurationMinutes=" +
           encodeURIComponent(programDurationMinutes) +
           "&scrollMessage=" +
@@ -1346,6 +1484,14 @@
           mazeHeroMaxSpeed +
           "&weatherPostalCode=" +
           encodeURIComponent(weatherPostalCode) +
+          "&flightLat=" +
+          encodeURIComponent(flightLat) +
+          "&flightLon=" +
+          encodeURIComponent(flightLon) +
+          "&flightRadius=" +
+          encodeURIComponent(flightRadius) +
+          "&flightRadiusUnit=" +
+          encodeURIComponent(flightRadiusUnit) +
           "&brightness=" +
           brightness +
           "&fireworksMaxBrightness=" +
@@ -1404,6 +1550,8 @@
         fd.append("firmware", file, file.name);
         xhr.send(fd);
       }
+      document.getElementById("flight-radius-unit").value =
+        "FLIGHT_RADIUS_UNIT_PLACEHOLDER";
       setSelectedPrograms(defaultSelectedPrograms());
       restoreSetupForm();
       if (!selectedPrograms().length) {
