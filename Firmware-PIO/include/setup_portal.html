@@ -168,6 +168,23 @@
       input[type="number"]:focus {
         border-color: #3b82f6;
       }
+      .flight-radius-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: stretch;
+      }
+      .flight-radius-row input[type="number"] {
+        flex: 1 1 auto;
+        min-width: 0;
+        width: auto;
+      }
+      .flight-radius-row select {
+        flex: 0 0 4.25rem;
+        width: 4.25rem;
+        min-width: 4.25rem;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
       .checks {
         display: flex;
         flex-direction: column;
@@ -751,7 +768,7 @@
           </div>
           <div>
             <label>Watch radius</label>
-            <div style="display: flex; gap: 0.5rem; align-items: center">
+            <div class="flight-radius-row">
               <input
                 type="number"
                 id="flight-radius"
@@ -759,9 +776,8 @@
                 max="287.5"
                 step="0.1"
                 value="FLIGHT_RADIUS_PLACEHOLDER"
-                style="flex: 1"
               />
-              <select id="flight-radius-unit">
+              <select id="flight-radius-unit" aria-label="Radius unit">
                 <option value="0">mi</option>
                 <option value="1">km</option>
               </select>

@@ -322,27 +322,66 @@ bool parseAircraftList(const String &json) {
   return true;
 }
 
-bool httpGet(const String &url, String &body) {
+bool httpGetCapped(const String &url, String &body, size_t maxBytes) {
+  body = "";
   if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Flight watch: WiFi not connected");
     return false;
   }
 
   HTTPClient http;
-  http.setTimeout(12000);
+  http.setTimeout(15000);
   http.setReuse(false);
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+  http.setUserAgent("ESP32-Tinker-FlightWatch");
   if (!http.begin(url)) {
+    Serial.println("Flight watch: http.begin failed");
     return false;
   }
 
   int code = http.GET();
   if (code != HTTP_CODE_OK) {
-    Serial.printf("Flight watch HTTP %d\n", code);
+    Serial.printf("Flight watch HTTP %d for %s\n", code, url.c_str());
     http.end();
     return false;
   }
 
-  body = http.getString();
+  int contentLength = http.getSize();
+  WiFiClient *stream = http.getStreamPtr();
+  if (stream == nullptr) {
+    Serial.println("Flight watch: no response stream");
+    http.end();
+    return false;
+  }
+
+  // Cap body size to avoid heap exhaustion near busy airports.
+  body.reserve(maxBytes > 64 ? maxBytes : 64);
+  unsigned long idleStart = millis();
+  while (http.connected() && body.length() < maxBytes) {
+    size_t available = stream->available();
+    if (available == 0) {
+      if (contentLength > 0 && (int)body.length() >= contentLength) {
+        break;
+      }
+      if (millis() - idleStart > 4000) {
+        break;
+      }
+      delay(1);
+      continue;
+    }
+    idleStart = millis();
+    while (available-- > 0 && body.length() < maxBytes) {
+      int c = stream->read();
+      if (c < 0) {
+        break;
+      }
+      body += (char)c;
+    }
+  }
+
   http.end();
+  Serial.printf("Flight watch got %u bytes (cap %u)\n",
+                (unsigned)body.length(), (unsigned)maxBytes);
   return body.length() > 0;
 }
 
@@ -365,22 +404,31 @@ bool refreshFlights(const ProgramConfig &cfg) {
     return false;
   }
 
-  String url = "http://api.adsb.lol/v2/lat/";
-  url += String(cfg.flightLat, 5);
-  url += "/lon/";
-  url += String(cfg.flightLon, 5);
-  url += "/dist/";
-  url += String(radiusNm, 2);
+  // Prefer a modest radius for the request when the UI radius is huge — still
+  // honors cfg up to API max, but keep path formatting explicit for negatives.
+  char urlBuf[128];
+  snprintf(urlBuf, sizeof(urlBuf),
+           "http://api.adsb.lol/v2/lat/%.5f/lon/%.5f/dist/%.2f", cfg.flightLat,
+           cfg.flightLon, radiusNm);
 
   Serial.print("Flight watch fetch: ");
-  Serial.println(url);
+  Serial.println(urlBuf);
 
   String body;
-  if (!httpGet(url, body)) {
-    setScrollText("Flight fetch failed");
-    aircraftCount = 0;
-    fetchSucceeded = false;
-    return false;
+  constexpr size_t MAX_BODY_BYTES = 8192;
+  if (!httpGetCapped(urlBuf, body, MAX_BODY_BYTES)) {
+    // Fallback: single closest aircraft (much smaller payload).
+    snprintf(urlBuf, sizeof(urlBuf),
+             "http://api.adsb.lol/v2/closest/%.5f/%.5f/%.2f", cfg.flightLat,
+             cfg.flightLon, radiusNm);
+    Serial.print("Flight watch fallback: ");
+    Serial.println(urlBuf);
+    if (!httpGetCapped(urlBuf, body, MAX_BODY_BYTES)) {
+      setScrollText("Flight fetch failed");
+      aircraftCount = 0;
+      fetchSucceeded = false;
+      return false;
+    }
   }
 
   if (!parseAircraftList(body)) {
