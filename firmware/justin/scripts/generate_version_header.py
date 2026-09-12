@@ -4,8 +4,7 @@ import os
 import re
 
 project_dir = env.subst("$PROJECT_DIR")
-root_dir = os.path.abspath(os.path.join(project_dir, ".."))
-version_path = os.path.join(root_dir, "VERSION")
+version_path = os.path.join(project_dir, "VERSION")
 out_path = os.path.join(project_dir, "include", "app_version.generated.h")
 
 SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")

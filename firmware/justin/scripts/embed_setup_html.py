@@ -4,8 +4,7 @@ import os
 import re
 
 project_dir = env.subst("$PROJECT_DIR")
-root_dir = os.path.abspath(os.path.join(project_dir, ".."))
-version_path = os.path.join(root_dir, "VERSION")
+version_path = os.path.join(project_dir, "VERSION")
 html_path = os.path.join(project_dir, "include", "setup_portal.html")
 out_path = os.path.join(project_dir, "include", "setup_html.generated.h")
 

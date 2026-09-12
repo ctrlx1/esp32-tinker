@@ -22,7 +22,9 @@ IMAGE_EXTENSIONS = {".bmp", ".gif", ".jpg", ".jpeg", ".png", ".webp"}
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_DIR = ROOT / "pixel-art"
-OUTPUT_DIR = ROOT / "Firmware-PIO" / "src" / "programs" / "pixel_art" / "generated"
+OUTPUT_DIR = (
+    ROOT / "firmware" / "justin" / "src" / "programs" / "pixel_art" / "generated"
+)
 
 
 def natural_key(path: Path) -> list[object]:

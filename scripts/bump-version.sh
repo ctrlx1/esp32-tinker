@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION_FILE="$ROOT/VERSION"
+VERSION_FILE="$ROOT/firmware/justin/VERSION"
 INCREMENT="patch"
 INCREMENT_FLAGS=0
 

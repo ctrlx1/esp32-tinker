@@ -53,7 +53,7 @@ An ESP32 tinkering platform built around a 4-module MAX7219 LED matrix. Flash fr
 [![Printables](https://img.shields.io/badge/Printables-FA6831?style=for-the-badge&logoColor=white)](https://www.printables.com/model/1756251-youtube-subscriber-v20)
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-000000?style=for-the-badge&logoColor=white)](https://makerworld.com/en/models/2941691-youtube-subscriber-v2-0#profileId-3294669)
 
-Circuit wiring is defined in `Firmware-PIO/diagram.json` (DIN→GPIO23, CLK→GPIO18, CS→GPIO5, power via `V+` / `GND.2`).
+Circuit wiring is defined in `firmware/justin/diagram.json` (DIN→GPIO23, CLK→GPIO18, CS→GPIO5, power via `V+` / `GND.2`).
 
 ---
 
@@ -71,7 +71,7 @@ Requires Chrome or Edge on desktop.
 
 **Option B — PlatformIO**
 
-1. Open the `Firmware-PIO` folder in VS Code or Cursor (PlatformIO extension required)
+1. Open the `firmware/justin` folder in VS Code or Cursor (PlatformIO extension required)
 2. Build and upload to your ESP32 board
 
 ### 2. Configure via the portal
@@ -97,7 +97,7 @@ Leave the Wi-Fi fields blank when saving and the device keeps the previously sto
 
 ## OTA firmware updates
 
-1. Build with PlatformIO — the OTA `.bin` is at `Firmware-PIO/.pio/build/esp32dev/firmware.bin`
+1. Build with PlatformIO — the OTA `.bin` is at `firmware/justin/.pio/build/esp32dev/firmware.bin`
 2. Open the device IP in your browser
 3. Scroll to **Firmware update**, pick the main firmware `.bin`, click **Upload firmware**
 4. The matrix shows `OTA...` then `Rebooting` — done
@@ -106,7 +106,7 @@ Leave the Wi-Fi fields blank when saving and the device keeps the previously sto
 
 ## Development
 
-All firmware source lives in `Firmware-PIO/`. Open that folder as your Cursor/VS Code workspace when building, flashing, or simulating.
+The current firmware source lives in `firmware/justin/`. Open that folder as your Cursor/VS Code workspace when building, flashing, or simulating.
 
 ### Check dependencies
 
@@ -118,7 +118,7 @@ Verify Python, PlatformIO, and the Wokwi extension are installed:
 
 The script exits non-zero if anything required to build or simulate is missing, and prints install hints.
 
-The project version lives in `VERSION`. Increment it with:
+The project version lives in `firmware/justin/VERSION`. Increment it with:
 
 ```bash
 ./scripts/bump-version.sh           # patch bump
@@ -131,7 +131,7 @@ The project version lives in `VERSION`. Increment it with:
 ```bash
 ./scripts/build-firmware.sh              # compile
 ./scripts/build-firmware.sh -t upload    # flash via USB
-cd Firmware-PIO && pio device monitor      # serial log at 9600 baud
+cd firmware/justin && pio device monitor   # serial log at 9600 baud
 ```
 
 ### Wokwi simulator
@@ -140,7 +140,7 @@ Simulate the ESP32 + 4-module MAX7219 matrix without hardware.
 
 **Requirements:** [PlatformIO](https://platformio.org/) and the [Wokwi for VS Code](https://marketplace.visualstudio.com/items?itemName=wokwi.wokwi-vscode) extension.
 
-1. Open **`Firmware-PIO`** as your workspace root (where `wokwi.toml` lives). If the workspace root is the repo folder instead, Wokwi will not load port forwarding.
+1. Open **`firmware/justin`** as your workspace root (where `wokwi.toml` lives). If the workspace root is the repo folder instead, Wokwi will not load port forwarding.
 2. Build the simulator environment: `./scripts/build-firmware.sh -e wokwi` or `pio run -e wokwi`
 3. Start: `Cmd+Shift+P` → **Wokwi: Start Simulator**
 4. Keep the **simulator tab visible** — Wokwi pauses when you switch away.
@@ -151,7 +151,7 @@ The `wokwi` PlatformIO environment defines `WOKWI_SIM=1`, so the firmware tries 
 
 If `localhost:8180` does not load:
 
-- Confirm the workspace root is **`Firmware-PIO`**, not the parent repo folder.
+- Confirm the workspace root is **`firmware/justin`**, not the repository root.
 - Stop and restart the simulator after changing `wokwi.toml`.
 - Check the serial log for `Wokwi setup portal ready.` and `Open http://localhost:8180`.
 - If you see `Setup AP` instead, the sim did not join `Wokwi-GUEST`; reset the ESP32 in the simulator and try again.
@@ -162,9 +162,9 @@ The [browser installer](https://justinmahar.github.io/esp32-tinker/) uses pre-bu
 
 | File                         | Source (after `pio run`)                          |
 | ---------------------------- | ------------------------------------------------- |
-| `docs/bootloader.bin`        | `Firmware-PIO/.pio/build/esp32dev/bootloader.bin` |
-| `docs/partitions.bin`        | `Firmware-PIO/.pio/build/esp32dev/partitions.bin` |
-| `docs/firmware_VERSION.bin`  | `Firmware-PIO/.pio/build/esp32dev/firmware.bin`   |
+| `docs/bootloader.bin`        | `firmware/justin/.pio/build/esp32dev/bootloader.bin` |
+| `docs/partitions.bin`        | `firmware/justin/.pio/build/esp32dev/partitions.bin` |
+| `docs/firmware_VERSION.bin`  | `firmware/justin/.pio/build/esp32dev/firmware.bin`   |
 
 To refresh the web installer after firmware changes:
 
@@ -174,7 +174,7 @@ To refresh the web installer after firmware changes:
 ./scripts/update-web-installer.sh
 ```
 
-`scripts/update-web-installer.sh` reads `VERSION`, copies the app binary to `docs/firmware_VERSION.bin`, and rewrites `docs/manifest.json` to reference that versioned firmware file. Commit `VERSION`, `docs/manifest.json`, and the updated `docs/*.bin` files, then push so GitHub Pages serves the new build.
+`scripts/update-web-installer.sh` reads `firmware/justin/VERSION`, copies the app binary to `docs/firmware_VERSION.bin`, and rewrites `docs/manifest.json` to reference that versioned firmware file. Commit `firmware/justin/VERSION`, `docs/manifest.json`, and the updated `docs/*.bin` files, then push so GitHub Pages serves the new build.
 
 **Note:** OTA updates on a flashed device use the app partition binary only. The browser installer flashes the full image (bootloader + partition table + app).
 

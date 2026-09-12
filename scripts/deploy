@@ -44,12 +44,12 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 
 "$ROOT/scripts/bump-version.sh" "$BUMP_FLAG"
-VERSION="$(<"$ROOT/VERSION")"
+VERSION="$(<"$ROOT/firmware/justin/VERSION")"
 
 "$ROOT/scripts/build-firmware.sh"
 "$ROOT/scripts/update-web-installer.sh"
 
-git add -A -- "$ROOT/VERSION" "$ROOT/docs"
+git add -A -- "$ROOT/firmware/justin/VERSION" "$ROOT/docs"
 git commit -m "$(cat <<EOF
 Release $VERSION
 

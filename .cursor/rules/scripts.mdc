@@ -20,10 +20,10 @@ Run this first when setting up a new machine: `./scripts/check-deps.sh`
 
 ## `scripts/build-firmware.sh`
 
-Builds the ESP32 firmware with PlatformIO in `Firmware-PIO/`.
+Builds the Justin ESP32 firmware with PlatformIO in `firmware/justin/`.
 
 - Finds `pio` on PATH or at `~/.platformio/penv/bin/pio`
-- Equivalent to `cd Firmware-PIO && pio run`
+- Equivalent to `cd firmware/justin && pio run`
 - Extra PlatformIO args are forwarded (e.g. `./scripts/build-firmware.sh -t upload`)
 
 Use this instead of calling `pio` directly when you want a consistent entry point from the repo root.
@@ -32,16 +32,16 @@ Use this instead of calling `pio` directly when you want a consistent entry poin
 
 Refreshes the browser installer binaries in `docs/` after a successful build.
 
-- Copies from `Firmware-PIO/.pio/build/esp32dev/`:
+- Copies from `firmware/justin/.pio/build/esp32dev/`:
   - `bootloader.bin`
   - `partitions.bin`
 - Copies `firmware.bin` to `docs/firmware_VERSION.bin`
-- Rewrites `docs/manifest.json` with the current `VERSION` and versioned firmware path
+- Rewrites `docs/manifest.json` with the current `firmware/justin/VERSION` and versioned firmware path
 - Requires a prior build; exits with an error if any file is missing
 
 ## `scripts/bump-version.sh`
 
-Increments the root `VERSION` file.
+Increments the `firmware/justin/VERSION` file.
 
 - Defaults to a patch bump when no flag is provided
 - Accepts `--major`, `--minor`, or `--patch`

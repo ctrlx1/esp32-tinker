@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Build the ESP32 firmware in Firmware-PIO with PlatformIO.
+# Build the Justin ESP32 firmware with PlatformIO.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-FIRMWARE="$ROOT/Firmware-PIO"
+FIRMWARE="$ROOT/firmware/justin"
 
 if command -v pio >/dev/null 2>&1; then
   PIO=pio

@@ -3,9 +3,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-BUILD="$ROOT/Firmware-PIO/.pio/build/esp32dev"
+BUILD="$ROOT/firmware/justin/.pio/build/esp32dev"
 DOCS="$ROOT/docs"
-VERSION_FILE="$ROOT/VERSION"
+VERSION_FILE="$ROOT/firmware/justin/VERSION"
 
 VERSION="$(<"$VERSION_FILE")"
 if [[ ! "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
