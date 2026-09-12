@@ -108,6 +108,16 @@ Leave the Wi-Fi fields blank when saving and the device keeps the previously sto
 
 All firmware source lives in `Firmware-PIO/`. Open that folder as your Cursor/VS Code workspace when building, flashing, or simulating.
 
+### Check dependencies
+
+Verify Python, PlatformIO, and the Wokwi extension are installed:
+
+```bash
+./scripts/check-deps.sh
+```
+
+The script exits non-zero if anything required to build or simulate is missing, and prints install hints.
+
 The project version lives in `VERSION`. Increment it with:
 
 ```bash

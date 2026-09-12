@@ -7,6 +7,17 @@ alwaysApply: true
 
 All scripts live in `scripts/` at the repo root. Run them from anywhere; each resolves paths relative to the repo root.
 
+## `scripts/check-deps.sh`
+
+Checks that local tools needed to build, flash, and simulate are present.
+
+- Required: `python3`, PlatformIO CLI (`pio`), Wokwi VS Code/Cursor extension
+- Optional: PlatformIO IDE extension (CLI is enough to build)
+- Finds `pio` on PATH, `~/.platformio/penv/bin/pio`, or `~/.local/bin/pio`
+- Exits non-zero if a required tool is missing
+
+Run this first when setting up a new machine: `./scripts/check-deps.sh`
+
 ## `scripts/build-firmware.sh`
 
 Builds the ESP32 firmware with PlatformIO in `Firmware-PIO/`.
