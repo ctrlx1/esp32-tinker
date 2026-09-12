@@ -9,50 +9,49 @@ All scripts live in `scripts/` at the repo root. Run them from anywhere; each re
 
 ## `scripts/check-deps.sh`
 
-Checks that local tools needed to build, flash, and simulate are present.
+Checks shared and project-specific tools using `projects.json`.
 
-- Required: `python3`, PlatformIO CLI (`pio`), Wokwi VS Code/Cursor extension
+- Accepts a project ID or `all` (default), plus optional `--env production|wokwi`
+- Required globally: `python3` and PlatformIO CLI (`pio`)
+- Checks Wokwi only when the selected scope includes it
 - Optional: PlatformIO IDE extension (CLI is enough to build)
-- Finds `pio` on PATH, `~/.platformio/penv/bin/pio`, or `~/.local/bin/pio`
 - Exits non-zero if a required tool is missing
 
 Run this first when setting up a new machine: `./scripts/check-deps.sh`
 
-## `scripts/build-firmware.sh`
+## `scripts/build.sh`
 
-Builds the Justin ESP32 firmware with PlatformIO in `firmware/justin/`.
+Builds registered firmware projects with PlatformIO.
 
-- Finds `pio` on PATH or at `~/.platformio/penv/bin/pio`
-- Equivalent to `cd firmware/justin && pio run`
-- Extra PlatformIO args are forwarded (e.g. `./scripts/build-firmware.sh -t upload`)
+- Usage: `./scripts/build.sh <project|all> [--env production|wokwi] [--target upload]`
+- Runs project pre-build hooks from `projects.json`
+- `scripts/build-firmware.sh` is a temporary `justin` migration wrapper for documented `-e`, `-t`, and `-v` usage only
 
-Use this instead of calling `pio` directly when you want a consistent entry point from the repo root.
+Use this instead of calling `pio` directly.
 
-## `scripts/update-web-installer.sh`
+## `scripts/publish.sh`
 
-Refreshes the browser installer binaries in `docs/` after a successful build.
+Publishes browser-installer binaries for a registered project after a successful production build.
 
-- Copies from `firmware/justin/.pio/build/esp32dev/`:
-  - `bootloader.bin`
-  - `partitions.bin`
-- Copies `firmware.bin` to `docs/firmware_VERSION.bin`
-- Rewrites `docs/manifest.json` with the current `firmware/justin/VERSION` and versioned firmware path
+- Usage: `./scripts/publish.sh <project|all>`
+- Reads build, docs, chip, offset, and naming metadata from `projects.json`
 - Requires a prior build; exits with an error if any file is missing
+- `scripts/update-web-installer.sh` is a temporary compatibility wrapper for `justin`
 
 ## `scripts/bump-version.sh`
 
-Increments the `firmware/justin/VERSION` file.
+Increments one registered project's version file.
 
+- Usage: `./scripts/bump-version.sh <project> [--major|--minor|--patch]`
 - Defaults to a patch bump when no flag is provided
-- Accepts `--major`, `--minor`, or `--patch`
 - Uses strict `MAJOR.MINOR.PATCH` semver
 
 Typical release workflow:
 
 ```bash
-./scripts/bump-version.sh
-./scripts/build-firmware.sh
-./scripts/update-web-installer.sh
+./scripts/bump-version.sh justin
+./scripts/build.sh justin
+./scripts/publish.sh justin
 ```
 
 The [browser installer](https://justinmahar.github.io/esp32-tinker/) (esp-web-tools) serves these files from GitHub Pages. OTA updates on a flashed device use the app partition binary only; the browser installer flashes the full image.
@@ -70,7 +69,7 @@ Use this to verify `docs/index.html`, `docs/manifest.json`, and the `.bin` files
 ## Deploy / Dev
 
 If users says to prepare to deploy, do the following:
-- Run `./scripts/build-firmware.sh`
+- Run `./scripts/build.sh justin`
 
 If users says to go back to development mode, do the following:
-- Run `./scripts/build-firmware.sh -e wokwi`
+- Run `./scripts/build.sh justin --env wokwi`

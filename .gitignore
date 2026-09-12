@@ -3,4 +3,6 @@ scripts/.env.local
 firmware/*/include/*.generated.h
 /pixel-art
 /pixel-sheets-320
+__pycache__/
+*.pyc
 .DS_Store

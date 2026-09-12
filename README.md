@@ -106,33 +106,39 @@ Leave the Wi-Fi fields blank when saving and the device keeps the previously sto
 
 ## Development
 
-The current firmware source lives in `firmware/justin/`. Open that folder as your Cursor/VS Code workspace when building, flashing, or simulating.
+Firmware projects are registered in `projects.json`. The current firmware source lives in `firmware/justin/`; open that folder as your Cursor/VS Code workspace when simulating.
 
 ### Check dependencies
 
-Verify Python, PlatformIO, and the Wokwi extension are installed:
+Verify Python, PlatformIO, project-specific tools, and supported simulator environments:
 
 ```bash
-./scripts/check-deps.sh
+./scripts/check-deps.sh                        # every project and environment
+./scripts/check-deps.sh justin                 # one project
+./scripts/check-deps.sh justin --env production
+./scripts/check-deps.sh all --env wokwi
 ```
 
-The script exits non-zero if anything required to build or simulate is missing, and prints install hints.
+The checker reads `projects.json`, exits non-zero if the requested scope is not ready, and prints install hints.
 
 The project version lives in `firmware/justin/VERSION`. Increment it with:
 
 ```bash
-./scripts/bump-version.sh           # patch bump
-./scripts/bump-version.sh --minor   # minor bump
-./scripts/bump-version.sh --major   # major bump
+./scripts/bump-version.sh justin           # patch bump
+./scripts/bump-version.sh justin --minor
+./scripts/bump-version.sh justin --major
 ```
 
 ### Build and flash (PlatformIO)
 
 ```bash
-./scripts/build-firmware.sh              # compile
-./scripts/build-firmware.sh -t upload    # flash via USB
+./scripts/build.sh justin                         # compile production
+./scripts/build.sh justin --target upload         # flash via USB
+./scripts/build.sh all                             # compile all production projects
 cd firmware/justin && pio device monitor   # serial log at 9600 baud
 ```
+
+`scripts/build-firmware.sh` remains temporarily as a migration wrapper for the documented `-e`, `-t`, and `-v` options; it does not forward arbitrary PlatformIO options.
 
 ### Wokwi simulator
 
@@ -141,7 +147,7 @@ Simulate the ESP32 + 4-module MAX7219 matrix without hardware.
 **Requirements:** [PlatformIO](https://platformio.org/) and the [Wokwi for VS Code](https://marketplace.visualstudio.com/items?itemName=wokwi.wokwi-vscode) extension.
 
 1. Open **`firmware/justin`** as your workspace root (where `wokwi.toml` lives). If the workspace root is the repo folder instead, Wokwi will not load port forwarding.
-2. Build the simulator environment: `./scripts/build-firmware.sh -e wokwi` or `pio run -e wokwi`
+2. Build the simulator environment: `./scripts/build.sh justin --env wokwi`
 3. Start: `Cmd+Shift+P` → **Wokwi: Start Simulator**
 4. Keep the **simulator tab visible** — Wokwi pauses when you switch away.
 5. Open **`http://localhost:8180`** (not `https://`) in your browser to access the simulated setup portal.
@@ -169,12 +175,12 @@ The [browser installer](https://justinmahar.github.io/esp32-tinker/) uses pre-bu
 To refresh the web installer after firmware changes:
 
 ```bash
-./scripts/bump-version.sh
-./scripts/build-firmware.sh
-./scripts/update-web-installer.sh
+./scripts/bump-version.sh justin
+./scripts/build.sh justin
+./scripts/publish.sh justin
 ```
 
-`scripts/update-web-installer.sh` reads `firmware/justin/VERSION`, copies the app binary to `docs/firmware_VERSION.bin`, and rewrites `docs/manifest.json` to reference that versioned firmware file. Commit `firmware/justin/VERSION`, `docs/manifest.json`, and the updated `docs/*.bin` files, then push so GitHub Pages serves the new build.
+`scripts/publish.sh` reads the registered production environment and version, copies its artifacts, and generates the project's installer manifest. `scripts/update-web-installer.sh` remains as a temporary compatibility wrapper for `justin`.
 
 **Note:** OTA updates on a flashed device use the app partition binary only. The browser installer flashes the full image (bootloader + partition table + app).
 

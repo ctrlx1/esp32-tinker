@@ -1,58 +1,17 @@
 #!/usr/bin/env bash
-# Bump, build, commit, and push a firmware release.
+# Bump, build, publish, commit, and push one registered project.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-BUMP_FLAG=""
 
-usage() {
-  echo "Usage: $0 --major|--minor|--patch" >&2
-}
-
-for arg in "$@"; do
-  case "$arg" in
-    --major|--minor|--patch)
-      if [[ -n "$BUMP_FLAG" ]]; then
-        usage
-        exit 1
-      fi
-      BUMP_FLAG="$arg"
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      usage
-      exit 1
-      ;;
-  esac
-done
-
-if [[ -z "$BUMP_FLAG" ]]; then
-  usage
-  exit 1
+if [[ "$#" -eq 0 ]]; then
+  echo "Usage: $0 <project> --major|--minor|--patch" >&2
+  exit 2
 fi
 
-cd "$ROOT"
-
-git update-index -q --refresh
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "Cannot deploy: working tree is not clean. Commit or stash changes first." >&2
-  git status --short >&2
-  exit 1
+if [[ "${1:-}" == -* ]]; then
+  echo "Compatibility mode: defaulting to project 'justin'." >&2
+  set -- justin "$@"
 fi
 
-"$ROOT/scripts/bump-version.sh" "$BUMP_FLAG"
-VERSION="$(<"$ROOT/firmware/justin/VERSION")"
-
-"$ROOT/scripts/build-firmware.sh"
-"$ROOT/scripts/update-web-installer.sh"
-
-git add -A -- "$ROOT/firmware/justin/VERSION" "$ROOT/docs"
-git commit -m "$(cat <<EOF
-Release $VERSION
-
-EOF
-)"
-git push
+exec python3 "$ROOT/scripts/project_tool.py" deploy "$@"

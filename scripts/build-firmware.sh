@@ -1,24 +1,45 @@
 #!/usr/bin/env bash
-# Build the Justin ESP32 firmware with PlatformIO.
+# Migration wrapper for the former command's documented -e, -t, and -v options.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-FIRMWARE="$ROOT/firmware/justin"
+MODE="production"
+TARGET=()
+VERBOSE=()
 
-if command -v pio >/dev/null 2>&1; then
-  PIO=pio
-elif [[ -x "$HOME/.platformio/penv/bin/pio" ]]; then
-  PIO="$HOME/.platformio/penv/bin/pio"
-elif [[ -x "$HOME/.local/bin/pio" ]]; then
-  # pipx / user-local install
-  PIO="$HOME/.local/bin/pio"
-else
-  echo "PlatformIO not found. Install with: pipx install platformio" >&2
-  echo "Or install the PlatformIO extension / add pio to PATH." >&2
-  exit 1
-fi
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    -e|--environment|--env)
+      [[ "$#" -ge 2 ]] || { echo "Missing environment value" >&2; exit 2; }
+      case "$2" in
+        esp32dev|production) MODE="production" ;;
+        wokwi) MODE="wokwi" ;;
+        *) echo "Unknown Justin environment: $2" >&2; exit 2 ;;
+      esac
+      shift 2
+      ;;
+    -t|--target)
+      [[ "$#" -ge 2 ]] || { echo "Missing target value" >&2; exit 2; }
+      TARGET+=(--target "$2")
+      shift 2
+      ;;
+    -v|--verbose)
+      VERBOSE=(--verbose)
+      shift
+      ;;
+    -h|--help)
+      echo "Deprecated: use ./scripts/build.sh justin [--env production|wokwi] [--target TARGET] [--verbose]"
+      echo "This migration wrapper supports only -e/--environment, -t/--target, and -v/--verbose."
+      exit 0
+      ;;
+    *)
+      echo "Unsupported legacy argument: $1" >&2
+      echo "The migration wrapper supports only -e/--environment, -t/--target, and -v/--verbose." >&2
+      echo "Use ./scripts/build.sh justin --help" >&2
+      exit 2
+      ;;
+  esac
+done
 
-python3 "$ROOT/scripts/import-pixel-art.py"
-
-cd "$FIRMWARE"
-exec "$PIO" run "$@"
+echo "Deprecated: use ./scripts/build.sh justin --env $MODE ${TARGET[*]:-} ${VERBOSE[*]:-}" >&2
+exec "$ROOT/scripts/build.sh" justin --env "$MODE" "${TARGET[@]}" "${VERBOSE[@]}"
