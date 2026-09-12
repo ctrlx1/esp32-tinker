@@ -75,6 +75,8 @@ const char *programIdToString(ProgramId id);
 uint8_t programIdToFlag(ProgramId id);
 void programStart(const ProgramConfig &cfg);
 void programTick(const ProgramConfig &cfg);
+void programStart(ProgramId id, const ProgramConfig &cfg);
+void programTick(ProgramId id, const ProgramConfig &cfg);
 
 // Shared by text-scroll programs (only one runs at a time).
 constexpr size_t PROGRAM_SCROLL_BUFFER_SIZE = 128;

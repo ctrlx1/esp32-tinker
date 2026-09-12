@@ -108,6 +108,18 @@ Leave the Wi-Fi fields blank when saving and the device keeps the previously sto
 
 Firmware projects are registered in `projects.json`. The current firmware source lives in `firmware/justin/`; open that folder as your Cursor/VS Code workspace when simulating.
 
+### Shared firmware runtime
+
+`packages/tinker-core` is a local PlatformIO library shared by firmware
+projects. It owns the ESP32 Wi-Fi/AP lifecycle, captive-portal routes, NVS
+sessions and schema hooks, OTA uploads, program descriptors/scheduling, and
+display-transition algorithms.
+
+Each project supplies its own project definition, settings validation, portal
+fields, programs, and hardware adapter. The `justin` project still owns its
+MAX7219/MD_Parola implementation; that driver will move to the dedicated
+display package in the next migration stage.
+
 ### Check dependencies
 
 Verify Python, PlatformIO, project-specific tools, and supported simulator environments:
@@ -146,18 +158,21 @@ Simulate the ESP32 + 4-module MAX7219 matrix without hardware.
 
 **Requirements:** [PlatformIO](https://platformio.org/) and the [Wokwi for VS Code](https://marketplace.visualstudio.com/items?itemName=wokwi.wokwi-vscode) extension.
 
-1. Open **`firmware/justin`** as your workspace root (where `wokwi.toml` lives). If the workspace root is the repo folder instead, Wokwi will not load port forwarding.
+1. Keep the repository root open as your Cursor workspace.
 2. Build the simulator environment: `./scripts/build.sh justin --env wokwi`
-3. Start: `Cmd+Shift+P` → **Wokwi: Start Simulator**
-4. Keep the **simulator tab visible** — Wokwi pauses when you switch away.
-5. Open **`http://localhost:8180`** (not `https://`) in your browser to access the simulated setup portal.
-6. On first boot the firmware auto-connects to **`Wokwi-GUEST`** for simulator setup.
+3. Run `Cmd+Shift+P` → **Wokwi: Select Config File**, then choose
+   `firmware/justin/wokwi.toml`.
+4. Run `Cmd+Shift+P` → **Wokwi: Start Simulator**.
+5. Keep the **simulator tab visible** — Wokwi pauses when you switch away.
+6. Open **`http://localhost:8180`** (not `https://`) in your browser to access the simulated setup portal.
+7. On first boot the firmware auto-connects to **`Wokwi-GUEST`** for simulator setup.
 
 The `wokwi` PlatformIO environment defines `WOKWI_SIM=1`, so the firmware tries `Wokwi-GUEST` before starting the normal setup hotspot. Hardware builds use the default `esp32dev` environment.
 
 If `localhost:8180` does not load:
 
-- Confirm the workspace root is **`firmware/justin`**, not the repository root.
+- Run **Wokwi: Select Config File** again and confirm
+  `firmware/justin/wokwi.toml` is selected.
 - Stop and restart the simulator after changing `wokwi.toml`.
 - Check the serial log for `Wokwi setup portal ready.` and `Open http://localhost:8180`.
 - If you see `Setup AP` instead, the sim did not join `Wokwi-GUEST`; reset the ESP32 in the simulator and try again.

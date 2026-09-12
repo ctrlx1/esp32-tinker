@@ -80,8 +80,10 @@ uint8_t programIdToFlag(ProgramId id) {
   }
 }
 
-void programStart(const ProgramConfig &cfg) {
-  switch (cfg.program) {
+void programStart(const ProgramConfig &cfg) { programStart(cfg.program, cfg); }
+
+void programStart(ProgramId id, const ProgramConfig &cfg) {
+  switch (id) {
   case ProgramId::Fireworks:
     fireworksStart(cfg);
     break;
@@ -110,8 +112,10 @@ void programStart(const ProgramConfig &cfg) {
   }
 }
 
-void programTick(const ProgramConfig &cfg) {
-  switch (cfg.program) {
+void programTick(const ProgramConfig &cfg) { programTick(cfg.program, cfg); }
+
+void programTick(ProgramId id, const ProgramConfig &cfg) {
+  switch (id) {
   case ProgramId::Fireworks:
     fireworksTick(cfg);
     break;
