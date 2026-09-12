@@ -6,8 +6,6 @@
 namespace MazeHero {
 namespace {
 
-MD_MAX72XX *matrix() { return Display.getGraphicObject(); }
-
 constexpr int16_t CLOSEUP_CELL_PITCH = 10;
 constexpr int16_t CLOSEUP_SAMPLE_RADIUS_CELLS = 10;
 constexpr int16_t CLOSEUP_WALL_HALF_THICKNESS = 1;
@@ -15,21 +13,18 @@ constexpr uint16_t CLOSEUP_START_ZOOM_Q8 = 2U * 256U;
 constexpr uint16_t CLOSEUP_HOLD_ZOOM_Q8 = 7U * 256U;
 
 void beginFrame() {
-  matrix()->control(MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
-  matrix()->clear();
+  programRuntimeContext().beginFrame();
+  programRuntimeContext().clearFrame();
 }
 
-void endFrame() {
-  matrix()->control(MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
-  matrix()->update();
-}
+void endFrame() { programRuntimeContext().endFrame(); }
 
 void setPixel(int16_t row, int16_t col, bool on = true) {
   if (row < 0 || row >= DISPLAY_HEIGHT || col < 0 ||
-      col >= matrix()->getColumnCount()) {
+      col >= programRuntimeContext().displayWidth()) {
     return;
   }
-  matrix()->setPoint(row, col, on);
+  programRuntimeContext().setPoint(row, col, on);
 }
 
 void clearPixel(int16_t row, int16_t col) { setPixel(row, col, false); }
@@ -466,7 +461,9 @@ void drawEnteringHero(const Maze &maze, Coord hero, uint16_t width,
 
 } // namespace
 
-uint16_t Renderer::viewWidth() const { return matrix()->getColumnCount(); }
+uint16_t Renderer::viewWidth() const {
+  return programRuntimeContext().displayWidth();
+}
 
 ZoomView Renderer::playZoomView(const Maze &maze,
                                 const CameraRenderPosition &cameraRender,

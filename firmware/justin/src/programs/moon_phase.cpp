@@ -1,10 +1,8 @@
 #include "moon_phase.h"
 
-#include <MD_MAX72xx.h>
 #include <WiFi.h>
 #include <cmath>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <time.h>
 
@@ -14,7 +12,6 @@ constexpr uint8_t DISPLAY_WIDTH = 32;
 // Full-width disc; canvas tall enough to pan.
 constexpr uint8_t MOON_DIAMETER = 32;
 constexpr uint8_t MOON_CANVAS_HEIGHT = MOON_DIAMETER;
-constexpr size_t SCROLL_BUFFER_SIZE = 128;
 constexpr unsigned long FRAME_MS = 80UL;
 constexpr unsigned long PAN_STEP_MS = 100UL;
 constexpr unsigned long PAN_HOLD_MS = 900UL;
@@ -42,7 +39,6 @@ struct State {
   float phase = 0.0f; // 0=new .. 0.5=full .. 1=new
   uint8_t illuminationPercent = 0;
   uint8_t topRow = 0;
-  char *scrollBuffer = nullptr;
 };
 
 uint8_t maxTopRow() {
@@ -53,39 +49,22 @@ uint8_t maxTopRow() {
 
 State state;
 
-bool ensureScrollBuffer() {
-  if (state.scrollBuffer != nullptr) {
-    return true;
-  }
-  state.scrollBuffer =
-      static_cast<char *>(malloc(SCROLL_BUFFER_SIZE));
-  if (state.scrollBuffer != nullptr) {
-    state.scrollBuffer[0] = '\0';
-  }
-  return state.scrollBuffer != nullptr;
-}
-
-MD_MAX72XX *matrix() { return Display.getGraphicObject(); }
-
 uint8_t sanitizedBrightness(uint8_t brightness) {
   return brightness > 15 ? 15 : brightness;
 }
 
 void beginFrame() {
-  matrix()->control(MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
-  matrix()->clear();
+  programRuntimeContext().beginFrame();
+  programRuntimeContext().clearFrame();
 }
 
-void endFrame() {
-  matrix()->control(MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
-  matrix()->update();
-}
+void endFrame() { programRuntimeContext().endFrame(); }
 
 void setPixel(int16_t row, int16_t col, bool on = true) {
   if (row < 0 || row >= DISPLAY_HEIGHT || col < 0 || col >= DISPLAY_WIDTH) {
     return;
   }
-  matrix()->setPoint(row, col, on);
+  programRuntimeContext().setPoint(row, col, on);
 }
 
 double julianDay(int year, int month, int day, int hour, int minute,
@@ -199,22 +178,23 @@ void appendUpcoming(char *out, size_t outSize, const char *label,
 }
 
 void buildScrollText() {
-  if (!ensureScrollBuffer()) {
+  tinker::RuntimeContext &runtime = programRuntimeContext();
+  char *scrollBuffer = runtime.textBuffer();
+  size_t scrollBufferSize = runtime.textBufferSize();
+  if (!scrollBuffer || scrollBufferSize == 0) {
     return;
   }
   // Example:
   // Full Moon 87% | New 3d 14h | 1st Qtr 11d 2h | Full 18d 8h | Last Qtr 25d 20h
-  snprintf(state.scrollBuffer, SCROLL_BUFFER_SIZE, "%s %u%%",
+  snprintf(scrollBuffer, scrollBufferSize, "%s %u%%",
            phaseName(state.phase),
            static_cast<unsigned>(state.illuminationPercent));
-  appendUpcoming(state.scrollBuffer, SCROLL_BUFFER_SIZE, "New", state.phase,
-                 0.0f);
-  appendUpcoming(state.scrollBuffer, SCROLL_BUFFER_SIZE, "1st Qtr", state.phase,
+  appendUpcoming(scrollBuffer, scrollBufferSize, "New", state.phase, 0.0f);
+  appendUpcoming(scrollBuffer, scrollBufferSize, "1st Qtr", state.phase,
                  0.25f);
-  appendUpcoming(state.scrollBuffer, SCROLL_BUFFER_SIZE, "Full", state.phase,
-                 0.5f);
-  appendUpcoming(state.scrollBuffer, SCROLL_BUFFER_SIZE, "Last Qtr",
-                 state.phase, 0.75f);
+  appendUpcoming(scrollBuffer, scrollBufferSize, "Full", state.phase, 0.5f);
+  appendUpcoming(scrollBuffer, scrollBufferSize, "Last Qtr", state.phase,
+                 0.75f);
 }
 
 bool syncTimeIfNeeded(unsigned long now) {
@@ -317,16 +297,16 @@ void resetMoonPan(unsigned long now) {
 }
 
 void startNameScroll(const ProgramConfig &cfg) {
+  tinker::RuntimeContext &runtime = programRuntimeContext();
   buildScrollText();
-  Display.displayClear();
-  Display.setIntensity(sanitizedBrightness(cfg.brightness));
-  Display.setTextAlignment(PA_LEFT);
+  runtime.clearText();
+  runtime.setBrightness(sanitizedBrightness(cfg.brightness));
   unsigned int speed = cfg.scrollSpeedMs > 0 ? cfg.scrollSpeedMs : 75U;
-  const char *text =
-      (state.scrollBuffer != nullptr && state.scrollBuffer[0] != '\0')
-          ? state.scrollBuffer
-          : phaseName(state.phase);
-  Display.displayScroll(text, PA_LEFT, PA_SCROLL_LEFT, speed);
+  char *scrollBuffer = runtime.textBuffer();
+  const char *text = scrollBuffer && scrollBuffer[0] != '\0'
+                         ? scrollBuffer
+                         : phaseName(state.phase);
+  runtime.startTextScroll(text, tinker::TextAlignment::Left, speed);
 }
 
 void enterView(View view, const ProgramConfig &cfg, unsigned long now) {
@@ -392,8 +372,9 @@ bool updateMoonPan(unsigned long now) {
 } // namespace
 
 void moonPhaseStart(const ProgramConfig &cfg) {
-  Display.setIntensity(sanitizedBrightness(cfg.brightness));
-  Display.displayClear();
+  tinker::RuntimeContext &runtime = programRuntimeContext();
+  runtime.setBrightness(sanitizedBrightness(cfg.brightness));
+  runtime.clearText();
   state.timeSynced = false;
   state.lastNtpAttemptMs = 0;
   state.lastFrameMs = 0;
@@ -408,7 +389,7 @@ void moonPhaseTick(const ProgramConfig &cfg) {
   // Keep Parola scrolling smooth; switch back only after one full pass.
   if (state.view == View::Name) {
     updatePhaseFromClockOrDemo(now);
-    if (Display.displayAnimate()) {
+    if (programRuntimeContext().animateText()) {
       enterView(View::Moon, cfg, now);
     }
     return;

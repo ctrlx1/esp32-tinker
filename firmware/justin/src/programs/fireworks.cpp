@@ -1,7 +1,6 @@
 #include "fireworks.h"
 
 #include <Arduino.h>
-#include <MD_MAX72xx.h>
 #include <esp_system.h>
 #include <math.h>
 
@@ -210,9 +209,7 @@ uint16_t litPixelCount = 0;
 void resetAllFireworks();
 void resetAllGroundComets();
 
-MD_MAX72XX *matrix() { return Display.getGraphicObject(); }
-
-uint16_t matrixWidth() { return matrix()->getColumnCount(); }
+uint16_t matrixWidth() { return programRuntimeContext().displayWidth(); }
 
 bool isShapedKind(FireworkKind kind) {
   return kind == FireworkKind::Smiley || kind == FireworkKind::Star ||
@@ -312,7 +309,7 @@ void setPixel(int8_t row, int16_t col) {
       litPixelCount++;
     }
   }
-  matrix()->setPoint(row, col, true);
+  programRuntimeContext().setPoint(row, col, true);
 }
 
 void beginFrame() {
@@ -320,8 +317,8 @@ void beginFrame() {
     litPixelRows[row] = 0;
   }
   litPixelCount = 0;
-  matrix()->control(MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
-  matrix()->clear();
+  programRuntimeContext().beginFrame();
+  programRuntimeContext().clearFrame();
 }
 
 uint8_t calculateFireworksBrightness(const ProgramConfig &cfg,
@@ -351,7 +348,7 @@ uint8_t calculateFireworksBrightness(const ProgramConfig &cfg,
 void applyFireworksBrightness(const ProgramConfig &cfg) {
   float brightnessPercent = 0.0f;
   uint8_t brightness = calculateFireworksBrightness(cfg, brightnessPercent);
-  matrix()->control(MD_MAX72XX::INTENSITY, brightness);
+  programRuntimeContext().setBrightness(brightness);
 
   if (DEBUG_FIREWORKS_BRIGHTNESS) {
     Serial.print("Fireworks brightness: ");
@@ -362,8 +359,7 @@ void applyFireworksBrightness(const ProgramConfig &cfg) {
 }
 
 void endFrame() {
-  matrix()->control(MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
-  matrix()->update();
+  programRuntimeContext().endFrame();
 }
 
 void fillScreen() {
@@ -1512,8 +1508,8 @@ void fireworksStart(const ProgramConfig &cfg) {
   }
 
   unsigned long now = millis();
-  Display.setIntensity(sanitizedBrightness(cfg.brightness));
-  Display.displayClear();
+  programRuntimeContext().setBrightness(sanitizedBrightness(cfg.brightness));
+  programRuntimeContext().clearText();
   resetAllFireworks();
   resetAllGroundComets();
   fireworksSystem.nextLaunchMs = now;

@@ -462,7 +462,8 @@ void start(const ProgramConfig &cfg) {
     randomSeed(esp_random());
     game.seeded = true;
   }
-  Display.setIntensity(cfg.brightness > 15 ? 15 : cfg.brightness);
+  programRuntimeContext().setBrightness(cfg.brightness > 15 ? 15
+                                                             : cfg.brightness);
   startNewMaze(cfg);
 }
 

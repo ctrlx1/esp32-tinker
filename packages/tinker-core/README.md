@@ -26,3 +26,11 @@ legacy unversioned schema to preserve its `esp32tinker` NVS layout byte-for-byte
 
 The interfaces use plain structs, templates, and function pointers rather than
 virtual classes. This keeps allocation and static RAM costs explicit on ESP32.
+`RuntimeContext` borrows its hardware adapter and capability table, so both must
+outlive every project and program that uses the context. Missing capability
+groups safely behave as unavailable/no-op operations.
+
+Text adapters own the mutable scroll buffer exposed by `RuntimeContext`.
+Asynchronous text animation retains that buffer, so programs must keep its
+contents unchanged until they stop or restart the animation. The scheduler's
+single-active-program model enforces that ownership for the current projects.

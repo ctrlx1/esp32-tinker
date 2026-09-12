@@ -155,16 +155,18 @@ float radiusToNm(float radius, uint8_t unit) {
 }
 
 void setScrollText(const char *text) {
-  strncpy(gProgramScrollBuffer, text, PROGRAM_SCROLL_BUFFER_SIZE - 1);
-  gProgramScrollBuffer[PROGRAM_SCROLL_BUFFER_SIZE - 1] = '\0';
+  programRuntimeContext().copyText(text);
 }
 
 void startScroll(const ProgramConfig &cfg) {
-  Display.displayClear();
-  Display.setIntensity(cfg.brightness > 15 ? 15 : cfg.brightness);
-  Display.setTextAlignment(PA_LEFT);
+  tinker::RuntimeContext &runtime = programRuntimeContext();
+  runtime.clearText();
+  runtime.setBrightness(cfg.brightness > 15 ? 15 : cfg.brightness);
   unsigned int speed = cfg.scrollSpeedMs > 0 ? cfg.scrollSpeedMs : 75U;
-  Display.displayScroll(gProgramScrollBuffer, PA_LEFT, PA_SCROLL_LEFT, speed);
+  const char *text = runtime.textBuffer();
+  if (text) {
+    runtime.startTextScroll(text, tinker::TextAlignment::Left, speed);
+  }
 }
 
 void buildAircraftScroll(const Aircraft &ac, uint8_t speedUnit) {
@@ -218,8 +220,9 @@ void buildAircraftScroll(const Aircraft &ac, uint8_t speedUnit) {
     }
   }
 
-  if (message.length() >= PROGRAM_SCROLL_BUFFER_SIZE) {
-    message = message.substring(0, PROGRAM_SCROLL_BUFFER_SIZE - 1);
+  size_t bufferSize = programRuntimeContext().textBufferSize();
+  if (bufferSize > 0 && message.length() >= bufferSize) {
+    message = message.substring(0, bufferSize - 1);
   }
   setScrollText(message.c_str());
 }
@@ -505,7 +508,7 @@ void flightWatchTick(const ProgramConfig &cfg) {
     return;
   }
 
-  if (Display.displayAnimate()) {
+  if (programRuntimeContext().animateText()) {
     if (aircraftCount > 0) {
       aircraftIndex = (uint8_t)((aircraftIndex + 1) % aircraftCount);
       buildAircraftScroll(aircraftQueue[aircraftIndex], cfg.flightSpeedUnit);

@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include <esp_system.h>
 
-#include "display_capabilities.h"
+#include "runtime_context.h"
 
 namespace tinker {
 
@@ -20,11 +20,11 @@ public:
     step_ = 0;
   }
 
-  bool tick(const FramebufferDisplayCapabilities &display) {
+  bool tick(const RuntimeContext &display) {
     if (!active_) {
       return true;
     }
-    if (!display.valid()) {
+    if (!display.hasFramebuffer()) {
       active_ = false;
       return true;
     }
@@ -65,33 +65,33 @@ private:
   static constexpr uint8_t kSparkleFrames = 32;
   static constexpr uint8_t kSparklePixelsPerFrame = 8;
 
-  static void beginFrame(const FramebufferDisplayCapabilities &display) {
-    display.beginFrame(display.context);
+  static void beginFrame(const RuntimeContext &display) {
+    display.beginFrame();
   }
 
-  static void endFrame(const FramebufferDisplayCapabilities &display) {
-    display.endFrame(display.context);
+  static void endFrame(const RuntimeContext &display) {
+    display.endFrame();
   }
 
-  static void setColumn(const FramebufferDisplayCapabilities &display,
+  static void setColumn(const RuntimeContext &display,
                         uint16_t column, bool on) {
-    if (column >= display.width(display.context)) {
+    if (column >= display.displayWidth()) {
       return;
     }
-    uint8_t height = display.height(display.context);
+    uint8_t height = display.displayHeight();
     for (uint8_t row = 0; row < height; row++) {
-      display.setPoint(display.context, row, column, on);
+      display.setPoint(row, column, on);
     }
   }
 
-  static void clearDisplay(const FramebufferDisplayCapabilities &display) {
+  static void clearDisplay(const RuntimeContext &display) {
     beginFrame(display);
-    display.clear(display.context);
+    display.clearFrame();
     endFrame(display);
   }
 
-  bool tickColumnWipe(const FramebufferDisplayCapabilities &display) {
-    uint16_t width = display.width(display.context);
+  bool tickColumnWipe(const RuntimeContext &display) {
+    uint16_t width = display.displayWidth();
     if (step_ >= width) {
       clearDisplay(display);
       return true;
@@ -103,24 +103,24 @@ private:
     return false;
   }
 
-  bool tickSparkleDissolve(const FramebufferDisplayCapabilities &display) {
-    uint16_t width = display.width(display.context);
-    uint8_t height = display.height(display.context);
+  bool tickSparkleDissolve(const RuntimeContext &display) {
+    uint16_t width = display.displayWidth();
+    uint8_t height = display.displayHeight();
     if (step_ >= kSparkleFrames || width == 0 || height == 0) {
       clearDisplay(display);
       return true;
     }
     beginFrame(display);
     for (uint8_t i = 0; i < kSparklePixelsPerFrame; i++) {
-      display.setPoint(display.context, random(height), random(width), false);
+      display.setPoint(random(height), random(width), false);
     }
     step_++;
     endFrame(display);
     return false;
   }
 
-  bool tickCurtainClose(const FramebufferDisplayCapabilities &display) {
-    uint16_t width = display.width(display.context);
+  bool tickCurtainClose(const RuntimeContext &display) {
+    uint16_t width = display.displayWidth();
     uint16_t halfSteps = (width + 1) / 2;
     if (step_ >= halfSteps) {
       clearDisplay(display);

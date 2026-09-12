@@ -2,7 +2,7 @@
 
 #include "generated/pixel_art_catalog.h"
 
-#include <MD_MAX72xx.h>
+#include <Arduino.h>
 #include <esp_system.h>
 #include <pgmspace.h>
 
@@ -39,8 +39,6 @@ struct State {
 
 State state;
 
-MD_MAX72XX *matrix() { return Display.getGraphicObject(); }
-
 uint8_t sanitizedBrightness(uint8_t brightness) {
   return brightness > 15 ? 15 : brightness;
 }
@@ -63,23 +61,18 @@ uint16_t maxTopRow(const Image &image) {
   return image.height > DISPLAY_HEIGHT ? image.height - DISPLAY_HEIGHT : 0;
 }
 
-void beginUpdate() {
-  matrix()->control(MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
-}
+void beginUpdate() { programRuntimeContext().beginFrame(); }
 
 void beginFrame() {
   beginUpdate();
-  matrix()->clear();
+  programRuntimeContext().clearFrame();
 }
 
-void endFrame() {
-  matrix()->control(MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
-  matrix()->update();
-}
+void endFrame() { programRuntimeContext().endFrame(); }
 
 void renderImageWindow(const Image &image, uint16_t topRow) {
   beginFrame();
-  uint16_t matrixWidth = matrix()->getColumnCount();
+  uint16_t matrixWidth = programRuntimeContext().displayWidth();
   uint8_t drawWidth = matrixWidth < ART_WIDTH ? matrixWidth : ART_WIDTH;
 
   for (uint8_t row = 0; row < DISPLAY_HEIGHT; row++) {
@@ -91,7 +84,7 @@ void renderImageWindow(const Image &image, uint16_t topRow) {
     uint32_t rowBits = pgm_read_dword(&image.rows[sourceRow]);
     for (uint8_t col = 0; col < drawWidth; col++) {
       if ((rowBits & (1UL << col)) != 0) {
-        matrix()->setPoint(row, col, true);
+        programRuntimeContext().setPoint(row, col, true);
       }
     }
   }
@@ -207,8 +200,8 @@ void clearDissolvePixel(uint16_t index) {
   uint16_t permutedIndex = (index * DISSOLVE_STEP) % DISSOLVE_PIXEL_COUNT;
   uint8_t row = permutedIndex / ART_WIDTH;
   uint8_t col = permutedIndex % ART_WIDTH;
-  if (col < matrix()->getColumnCount()) {
-    matrix()->setPoint(row, col, false);
+  if (col < programRuntimeContext().displayWidth()) {
+    programRuntimeContext().setPoint(row, col, false);
   }
 }
 
@@ -236,7 +229,7 @@ void updateDissolve(unsigned long now) {
 } // namespace
 
 void start(const ProgramConfig &cfg) {
-  Display.setIntensity(sanitizedBrightness(cfg.brightness));
+  programRuntimeContext().setBrightness(sanitizedBrightness(cfg.brightness));
   if (IMAGE_COUNT == 0 || IMAGES == nullptr) {
     clearDisplay();
     return;

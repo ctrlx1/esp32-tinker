@@ -1,7 +1,6 @@
 #include "weather_watch.h"
 
 #include <Arduino.h>
-#include <MD_MAX72xx.h>
 
 namespace {
 constexpr uint8_t DISPLAY_HEIGHT = 8;
@@ -45,27 +44,22 @@ struct State {
 
 State state;
 
-MD_MAX72XX *matrix() { return Display.getGraphicObject(); }
-
 uint8_t sanitizedBrightness(uint8_t brightness) {
   return brightness > 15 ? 15 : brightness;
 }
 
 void beginFrame() {
-  matrix()->control(MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
-  matrix()->clear();
+  programRuntimeContext().beginFrame();
+  programRuntimeContext().clearFrame();
 }
 
-void endFrame() {
-  matrix()->control(MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
-  matrix()->update();
-}
+void endFrame() { programRuntimeContext().endFrame(); }
 
 void setPixel(int16_t row, int16_t col, bool on = true) {
   if (row < 0 || row >= DISPLAY_HEIGHT || col < 0 || col >= DISPLAY_WIDTH) {
     return;
   }
-  matrix()->setPoint(row, col, on);
+  programRuntimeContext().setPoint(row, col, on);
 }
 
 void drawSun(int16_t cx, int16_t cy, uint16_t frame) {
@@ -203,7 +197,7 @@ void triggerLightning() {
     state.bolts[i].life = BOLT_HOLD_FRAMES;
   }
   state.flashFrames = FLASH_FRAMES;
-  matrix()->control(MD_MAX72XX::INTENSITY, 15);
+  programRuntimeContext().setBrightness(15);
   state.nextStrikeIn = static_cast<int8_t>(random(10, 28));
 }
 
@@ -211,7 +205,7 @@ void tickLightning() {
   if (state.flashFrames > 0) {
     state.flashFrames--;
     if (state.flashFrames == 0) {
-      matrix()->control(MD_MAX72XX::INTENSITY, state.brightness);
+      programRuntimeContext().setBrightness(state.brightness);
     }
   }
 
@@ -255,7 +249,7 @@ void enterScene(Scene scene, unsigned long now) {
   resetDrops();
   resetFlakes();
   resetBolts();
-  matrix()->control(MD_MAX72XX::INTENSITY, state.brightness);
+  programRuntimeContext().setBrightness(state.brightness);
 }
 
 void nextScene(unsigned long now) {
@@ -357,8 +351,8 @@ void renderFrame() {
 
 void weatherWatchStart(const ProgramConfig &cfg) {
   state.brightness = sanitizedBrightness(cfg.brightness);
-  Display.setIntensity(state.brightness);
-  Display.displayClear();
+  programRuntimeContext().setBrightness(state.brightness);
+  programRuntimeContext().clearText();
   enterScene(Scene::Sunny, millis());
   renderFrame();
 }

@@ -330,17 +330,19 @@ bool fetchForecast(float latitude, float longitude, String &body) {
 }
 
 void setScrollText(const char *text) {
-  strncpy(gProgramScrollBuffer, text, PROGRAM_SCROLL_BUFFER_SIZE - 1);
-  gProgramScrollBuffer[PROGRAM_SCROLL_BUFFER_SIZE - 1] = '\0';
+  programRuntimeContext().copyText(text);
 }
 
 void startScroll(const ProgramConfig &cfg) {
-  Display.displayClear();
-  Display.setIntensity(cfg.brightness > 15 ? 15 : cfg.brightness);
-  Display.setTextAlignment(PA_LEFT);
+  tinker::RuntimeContext &runtime = programRuntimeContext();
+  runtime.clearText();
+  runtime.setBrightness(cfg.brightness > 15 ? 15 : cfg.brightness);
   unsigned int speed =
       cfg.scrollSpeedMs > 0 ? cfg.scrollSpeedMs : 75U;
-  Display.displayScroll(gProgramScrollBuffer, PA_LEFT, PA_SCROLL_LEFT, speed);
+  const char *text = runtime.textBuffer();
+  if (text) {
+    runtime.startTextScroll(text, tinker::TextAlignment::Left, speed);
+  }
 }
 
 bool buildWeatherScroll(const String &locationLabel, const String &forecastJson,
@@ -472,8 +474,12 @@ bool refreshWeather(const ProgramConfig &cfg) {
   }
 
   String locationLabel = buildLocationLabel(town, admin1, postalCode);
-  if (!buildWeatherScroll(locationLabel, forecastJson, gProgramScrollBuffer,
-                          PROGRAM_SCROLL_BUFFER_SIZE)) {
+  tinker::RuntimeContext &runtime = programRuntimeContext();
+  char *scrollBuffer = runtime.textBuffer();
+  size_t scrollBufferSize = runtime.textBufferSize();
+  if (!scrollBuffer || scrollBufferSize == 0 ||
+      !buildWeatherScroll(locationLabel, forecastJson, scrollBuffer,
+                          scrollBufferSize)) {
     setScrollText("Weather unavailable");
     fetchSucceeded = false;
     return false;
@@ -516,7 +522,8 @@ void realWeatherTick(const ProgramConfig &cfg) {
     }
   }
 
-  if (Display.displayAnimate()) {
-    Display.displayReset();
+  tinker::RuntimeContext &runtime = programRuntimeContext();
+  if (runtime.animateText()) {
+    runtime.resetTextAnimation();
   }
 }

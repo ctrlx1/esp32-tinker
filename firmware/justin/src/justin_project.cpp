@@ -136,6 +136,10 @@ const tinker::ProgramDescriptor JustinProject::kPrograms[8] = {
     {"flight_watch", &JustinProject::startProgram, &JustinProject::tickProgram},
 };
 
+JustinProject::JustinProject(tinker::RuntimeContext &runtime) {
+  setProgramRuntimeContext(runtime);
+}
+
 tinker::ProjectDefinition JustinProject::definition() const {
   // A null version key preserves the legacy unversioned NVS layout exactly.
   return {"justin",

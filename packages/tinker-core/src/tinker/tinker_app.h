@@ -12,20 +12,23 @@
 
 #include "portal_request.h"
 #include "project_definition.h"
+#include "runtime_context.h"
 
 namespace tinker {
 
 template <typename DisplayAdapter, typename Project> class TinkerApp {
 public:
-  TinkerApp() : server_(80) {}
+  explicit TinkerApp(const typename DisplayAdapter::Config &displayConfig)
+      : display_(displayConfig), runtime_(display_.runtimeContext()),
+        project_(runtime_), server_(80) {}
 
   void setup() {
     Serial.begin(9600);
 
     display_.begin();
-    display_.showVersion(project_.definition().version);
+    runtime_.showBootVersion(project_.definition().version);
     loadSettings();
-    display_.setBrightness(project_.displayBrightness());
+    runtime_.setBrightness(project_.displayBrightness());
 
 #ifdef WOKWI_SIM
     if (!startWokwiStation()) {
@@ -50,7 +53,7 @@ public:
     if (configMode_) {
       dnsServer_.processNextRequest();
       server_.handleClient();
-      display_.tickSetup();
+      runtime_.tickSetup();
       return;
     }
 
@@ -175,7 +178,7 @@ private:
     HTTPUpload &upload = server_.upload();
     if (upload.status == UPLOAD_FILE_START) {
       Serial.printf("OTA start: %s\n", upload.filename.c_str());
-      display_.showMessage("OTA...");
+      runtime_.showMessage("OTA...");
       if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
         Update.printError(Serial);
       }
@@ -186,10 +189,10 @@ private:
     } else if (upload.status == UPLOAD_FILE_END) {
       if (Update.end(true)) {
         Serial.printf("OTA success: %u bytes\n", upload.totalSize);
-        display_.showMessage("Rebooting");
+        runtime_.showMessage("Rebooting");
       } else {
         Update.printError(Serial);
-        display_.showMessage("OTA fail");
+        runtime_.showMessage("OTA fail");
       }
     }
   }
@@ -241,7 +244,7 @@ private:
   bool startWokwiStation() {
     esp_phy_erase_cal_data_in_nvs();
 
-    display_.showMessage(" Wokwi...");
+    runtime_.showMessage(" Wokwi...");
     Serial.println("Connecting to Wokwi-GUEST...");
 
     WiFi.mode(WIFI_STA);
@@ -289,7 +292,7 @@ private:
     Serial.print("AP IP: ");
     Serial.println(WiFi.softAPIP());
 
-    display_.beginSetup(apSsid.c_str());
+    runtime_.beginSetup(apSsid.c_str());
   }
 
   bool connectToSavedWiFi() {
@@ -321,12 +324,13 @@ private:
     Serial.println("");
     Serial.print("Connected! IP: ");
     Serial.println(WiFi.localIP());
-    display_.showIp(WiFi.localIP());
+    runtime_.showBootIp(WiFi.localIP());
     project_.startPrograms();
     return true;
   }
 
   DisplayAdapter display_;
+  RuntimeContext runtime_;
   Project project_;
   WebServer server_;
   DNSServer dnsServer_;

@@ -9,6 +9,8 @@
 
 class JustinProject {
 public:
+  explicit JustinProject(tinker::RuntimeContext &runtime);
+
   tinker::ProjectDefinition definition() const;
   bool migrateSettings(Preferences &preferences, uint16_t storedVersion);
 

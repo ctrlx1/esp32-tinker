@@ -1,9 +1,7 @@
 #pragma once
 
-#include <MD_Parola.h>
+#include <tinker/runtime_context.h>
 #include <WString.h>
-
-extern MD_Parola Display;
 
 enum class ProgramId : uint8_t {
   Scroller,
@@ -77,8 +75,6 @@ void programStart(const ProgramConfig &cfg);
 void programTick(const ProgramConfig &cfg);
 void programStart(ProgramId id, const ProgramConfig &cfg);
 void programTick(ProgramId id, const ProgramConfig &cfg);
-
-// Shared by text-scroll programs (only one runs at a time).
-constexpr size_t PROGRAM_SCROLL_BUFFER_SIZE = 128;
-extern char gProgramScrollBuffer[PROGRAM_SCROLL_BUFFER_SIZE];
+void setProgramRuntimeContext(tinker::RuntimeContext &runtime);
+tinker::RuntimeContext &programRuntimeContext();
 

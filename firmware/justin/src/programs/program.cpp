@@ -9,7 +9,21 @@
 #include "scroller.h"
 #include "weather_watch.h"
 
-char gProgramScrollBuffer[PROGRAM_SCROLL_BUFFER_SIZE];
+#include <cassert>
+
+namespace {
+tinker::RuntimeContext *runtimeContext = nullptr;
+}
+
+void setProgramRuntimeContext(tinker::RuntimeContext &runtime) {
+  assert(runtimeContext == nullptr || runtimeContext == &runtime);
+  runtimeContext = &runtime;
+}
+
+tinker::RuntimeContext &programRuntimeContext() {
+  assert(runtimeContext != nullptr);
+  return *runtimeContext;
+}
 
 ProgramId parseProgramId(const String &value) {
   if (value == "fireworks") {

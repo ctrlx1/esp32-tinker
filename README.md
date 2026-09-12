@@ -106,7 +106,9 @@ Leave the Wi-Fi fields blank when saving and the device keeps the previously sto
 
 ## Development
 
-Firmware projects are registered in `projects.json`. The current firmware source lives in `firmware/justin/`; open that folder as your Cursor/VS Code workspace when simulating.
+Firmware projects are registered in `projects.json`. Keep the repository root
+open as your Cursor/VS Code workspace; project-specific build and simulator
+commands work from there.
 
 ### Shared firmware runtime
 
@@ -116,9 +118,9 @@ sessions and schema hooks, OTA uploads, program descriptors/scheduling, and
 display-transition algorithms.
 
 Each project supplies its own project definition, settings validation, portal
-fields, programs, and hardware adapter. The `justin` project still owns its
-MAX7219/MD_Parola implementation; that driver will move to the dedicated
-display package in the next migration stage.
+fields, programs, and hardware profile. `packages/tinker-display-max7219`
+provides the shared MD_Parola/MD_MAX72XX adapter; `justin` configures it for
+four FC16 modules with chip select on GPIO 5.
 
 ### Check dependencies
 

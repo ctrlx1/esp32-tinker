@@ -1,17 +1,19 @@
-#include <MD_MAX72xx.h>
-#include <MD_Parola.h>
+#include <tinker/max7219_display.h>
 #include <tinker/tinker_app.h>
 
-#include "justin_display.h"
 #include "justin_project.h"
 
-#define HARDWARE_TYPE MD_MAX72XX::FC16_HW
-#define MAX_DEVICES 4
-#define CS_PIN 5
+namespace {
 
-MD_Parola Display(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
-tinker::TinkerApp<JustinDisplay, JustinProject> app;
+constexpr tinker::Max7219DisplayConfig kDisplayConfig = {
+    tinker::Max7219ModuleType::Fc16,
+    5,
+    4,
+};
+
+tinker::TinkerApp<tinker::Max7219Display, JustinProject> app(kDisplayConfig);
+
+} // namespace
 
 void setup() { app.setup(); }
-
 void loop() { app.loop(); }
