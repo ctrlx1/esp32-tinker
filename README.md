@@ -158,14 +158,33 @@ Simulate the ESP32 + 4-module MAX7219 matrix without hardware.
 
 **Requirements:** [PlatformIO](https://platformio.org/) and the [Wokwi for VS Code](https://marketplace.visualstudio.com/items?itemName=wokwi.wokwi-vscode) extension.
 
-1. Keep the repository root open as your Cursor workspace.
-2. Build the simulator environment: `./scripts/build.sh justin --env wokwi`
-3. Run `Cmd+Shift+P` → **Wokwi: Select Config File**, then choose
-   `firmware/justin/wokwi.toml`.
-4. Run `Cmd+Shift+P` → **Wokwi: Start Simulator**.
-5. Keep the **simulator tab visible** — Wokwi pauses when you switch away.
-6. Open **`http://localhost:8180`** (not `https://`) in your browser to access the simulated setup portal.
-7. On first boot the firmware auto-connects to **`Wokwi-GUEST`** for simulator setup.
+Keep the repository root open as your Cursor workspace. To choose a firmware
+project, build its Wokwi environment and select that project's Wokwi config:
+
+```bash
+./scripts/build.sh <project> --env wokwi
+```
+
+Then:
+
+1. Run `Cmd+Shift+P` → **Wokwi: Select Config File**.
+2. Choose `firmware/<project>/wokwi.toml`.
+3. Run `Cmd+Shift+P` → **Wokwi: Start Simulator**.
+4. Keep the **simulator tab visible** — Wokwi pauses when you switch away.
+5. Open the forwarded URL configured in that project's `wokwi.toml`.
+
+For the current `justin` project:
+
+```bash
+./scripts/build.sh justin --env wokwi
+```
+
+Select `firmware/justin/wokwi.toml`, start the simulator, and open
+**`http://localhost:8180`** (not `https://`). On first boot, the firmware
+auto-connects to **`Wokwi-GUEST`** for simulator setup.
+
+Wokwi remembers the selected config for the workspace. Run **Wokwi: Select
+Config File** again whenever you switch projects.
 
 The `wokwi` PlatformIO environment defines `WOKWI_SIM=1`, so the firmware tries `Wokwi-GUEST` before starting the normal setup hotspot. Hardware builds use the default `esp32dev` environment.
 
