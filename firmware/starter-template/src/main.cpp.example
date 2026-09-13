@@ -1,0 +1,15 @@
+#include "template_project.h"
+#include "TODO_hardware_profile.h"
+
+#include <tinker/tinker_app.h>
+
+// TODO: Include and select a concrete display adapter.
+using DisplayAdapter = TODO_DisplayAdapter;
+
+namespace {
+tinker::TinkerApp<DisplayAdapter, TemplateProject> app(
+    template_hardware::kDisplayConfig);
+}
+
+void setup() { app.setup(); }
+void loop() { app.loop(); }

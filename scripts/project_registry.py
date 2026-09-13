@@ -100,11 +100,14 @@ class Project:
 
     @property
     def manifest_path(self) -> Path:
-        return self.root / self.docs["manifest"]
+        manifest = self.docs.get("manifest")
+        if not manifest:
+            raise RegistryError(f"{self.id}: project has no publish manifest")
+        return self.root / manifest
 
     @property
     def artifacts(self) -> Mapping[str, Mapping[str, Any]]:
-        return self.data["artifacts"]  # type: ignore[return-value]
+        return self.data.get("artifacts", {})  # type: ignore[return-value]
 
     def environment(self, mode: str) -> Optional[str]:
         return self.environments.get(mode)
@@ -183,6 +186,14 @@ def _validate_project(root: Path, raw: Any, index: int) -> Project:
         )
     if buildable and status != "configured":
         raise RegistryError(f"{label} cannot be buildable with unassigned hardware")
+    if not buildable and status != "unassigned":
+        raise RegistryError(
+            f"{label} must use unassigned hardware when buildable is false"
+        )
+    if not buildable and environments:
+        raise RegistryError(
+            f"{label}.environments must be empty when buildable is false"
+        )
     if status == "configured":
         _string(hardware.get("profile"), f"{label}.hardware.profile")
         _string(hardware.get("chipFamily"), f"{label}.hardware.chipFamily")

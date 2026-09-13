@@ -110,6 +110,13 @@ Firmware projects are registered in `projects.json`. Keep the repository root
 open as your Cursor/VS Code workspace; project-specific build and simulator
 commands work from there.
 
+Registered projects currently include:
+
+- `justin`: the original multi-program MAX7219 firmware;
+- `starter-max7219`: a minimal configurable “Hello World” MAX7219 firmware;
+- `starter-template`: a hardware-neutral scaffold that is intentionally not
+  buildable until copied and assigned a hardware profile.
+
 ### Shared firmware runtime
 
 `packages/tinker-core` is a local PlatformIO library shared by firmware
@@ -135,13 +142,15 @@ Verify Python, PlatformIO, project-specific tools, and supported simulator envir
 ```bash
 ./scripts/check-deps.sh                        # every project and environment
 ./scripts/check-deps.sh justin                 # one project
+./scripts/check-deps.sh starter-max7219
+./scripts/check-deps.sh starter-template       # intentional template skip
 ./scripts/check-deps.sh justin --env production
 ./scripts/check-deps.sh all --env wokwi
 ```
 
 The checker reads `projects.json`, exits non-zero if the requested scope is not ready, and prints install hints.
 
-The project version lives in `firmware/justin/VERSION`. Increment it with:
+Each project version lives in `firmware/<project>/VERSION`. Increment one with:
 
 ```bash
 ./scripts/bump-version.sh justin           # patch bump
@@ -157,6 +166,9 @@ The project version lives in `firmware/justin/VERSION`. Increment it with:
 ./scripts/build.sh all                             # compile all production projects
 cd firmware/justin && pio device monitor   # serial log at 9600 baud
 ```
+
+Device targets such as `upload` require one project; the build tool rejects
+`all --target upload` so one firmware cannot silently overwrite another.
 
 `scripts/build-firmware.sh` remains temporarily as a migration wrapper for the documented `-e`, `-t`, and `-v` options; it does not forward arbitrary PlatformIO options.
 
@@ -190,6 +202,15 @@ For the current `justin` project:
 Select `firmware/justin/wokwi.toml`, start the simulator, and open
 **`http://localhost:8180`** (not `https://`). On first boot, the firmware
 auto-connects to **`Wokwi-GUEST`** for simulator setup.
+
+For the starter:
+
+```bash
+./scripts/build.sh starter-max7219 --env wokwi
+```
+
+Select `firmware/starter-max7219/wokwi.toml`. It uses the same
+**`http://localhost:8180`** forwarding while it is the active simulation.
 
 Wokwi remembers the selected config for the workspace. Run **Wokwi: Select
 Config File** again whenever you switch projects.

@@ -86,7 +86,10 @@ class RegistryFixture:
 class ProjectRegistryTests(unittest.TestCase):
     def test_repository_registry_is_valid(self) -> None:
         registry = load_registry()
-        self.assertEqual(["justin"], [project.id for project in registry.projects])
+        self.assertEqual(
+            ["justin", "starter-max7219", "starter-template"],
+            [project.id for project in registry.projects],
+        )
 
     def test_loads_valid_registry(self) -> None:
         fixture = RegistryFixture()
@@ -285,6 +288,31 @@ class ProjectRegistryTests(unittest.TestCase):
 
         self.assertFalse(project.buildable)
         self.assertEqual({}, project.environments)
+        self.assertEqual({}, project.artifacts)
+        with self.assertRaisesRegex(RegistryError, "no publish manifest"):
+            _ = project.manifest_path
+
+    def test_rejects_nonbuildable_project_with_configured_hardware(self) -> None:
+        fixture = RegistryFixture()
+        self.addCleanup(fixture.close)
+        template = project_entry("starter-template", "/starter-template/")
+        template["buildable"] = False
+        template["environments"] = {}
+        path = fixture.write([template])
+
+        with self.assertRaisesRegex(RegistryError, "must use unassigned hardware"):
+            load_registry(path=path, root=fixture.root)
+
+    def test_rejects_nonbuildable_project_with_environments(self) -> None:
+        fixture = RegistryFixture()
+        self.addCleanup(fixture.close)
+        template = project_entry("starter-template", "/starter-template/")
+        template["buildable"] = False
+        template["hardware"] = {"status": "unassigned"}
+        path = fixture.write([template])
+
+        with self.assertRaisesRegex(RegistryError, "environments must be empty"):
+            load_registry(path=path, root=fixture.root)
 
     def test_bumps_only_selected_project_version(self) -> None:
         fixture = RegistryFixture()
@@ -356,6 +384,17 @@ class ProjectRegistryTests(unittest.TestCase):
         self.assertEqual("wokwi", args.env)
         self.assertEqual(["clean", "compiledb"], args.build_targets)
         self.assertTrue(args.verbose)
+
+    def test_build_all_rejects_device_upload(self) -> None:
+        result = subprocess.run(
+            [str(REPO_ROOT / "scripts" / "build.sh"), "all", "--target", "upload"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertEqual(2, result.returncode)
+        self.assertIn("select one project", result.stderr)
 
     def test_legacy_build_wrapper_help(self) -> None:
         result = subprocess.run(

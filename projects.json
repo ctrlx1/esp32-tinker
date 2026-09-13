@@ -55,6 +55,68 @@
           "publishedName": "firmware_{version}.bin"
         }
       }
+    },
+    {
+      "id": "starter-max7219",
+      "name": "Starter MAX7219",
+      "description": "Minimal Hello World firmware for the four-module MAX7219 reference setup.",
+      "path": "firmware/starter-max7219",
+      "versionFile": "firmware/starter-max7219/VERSION",
+      "buildable": true,
+      "environments": {
+        "production": "esp32dev",
+        "wokwi": "wokwi"
+      },
+      "hardware": {
+        "status": "configured",
+        "profile": "max7219-4-fc16",
+        "chipFamily": "ESP32"
+      },
+      "preBuild": [],
+      "dependencies": {
+        "commands": [],
+        "pythonModules": []
+      },
+      "docs": {
+        "route": "/starter-max7219/",
+        "path": "docs/starter-max7219",
+        "manifest": "docs/starter-max7219/manifest.json"
+      },
+      "artifacts": {
+        "bootloader": {
+          "source": "bootloader.bin",
+          "offset": 4096
+        },
+        "partitions": {
+          "source": "partitions.bin",
+          "offset": 32768
+        },
+        "app": {
+          "source": "firmware.bin",
+          "offset": 65536,
+          "publishedName": "starter-max7219_{version}.bin"
+        }
+      }
+    },
+    {
+      "id": "starter-template",
+      "name": "Starter Template",
+      "description": "Hardware-neutral scaffold for creating new firmware projects.",
+      "path": "firmware/starter-template",
+      "versionFile": "firmware/starter-template/VERSION",
+      "buildable": false,
+      "environments": {},
+      "hardware": {
+        "status": "unassigned"
+      },
+      "dependencies": {
+        "commands": [],
+        "pythonModules": []
+      },
+      "docs": {
+        "route": "/starter-template/",
+        "path": "docs/starter-template"
+      }
     }
   ]
 }

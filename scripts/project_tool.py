@@ -79,6 +79,17 @@ def run_pre_build(project: Project) -> int:
 def build_projects(
     target: str, mode: str, build_targets: Sequence[str], verbose: bool = False
 ) -> int:
+    unsafe_aggregate_targets = {"erase", "upload", "uploadfs", "uploadfsota"}
+    requested_unsafe_targets = unsafe_aggregate_targets.intersection(build_targets)
+    if target == "all" and requested_unsafe_targets:
+        names = ", ".join(sorted(requested_unsafe_targets))
+        print(
+            f"Cannot run device target(s) {names} for all projects; "
+            "select one project.",
+            file=sys.stderr,
+        )
+        return 2
+
     pio = find_platformio()
     if not pio:
         print(
