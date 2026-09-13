@@ -53,7 +53,7 @@ An ESP32 tinkering platform built around a 4-module MAX7219 LED matrix. Flash fr
 [![Printables](https://img.shields.io/badge/Printables-FA6831?style=for-the-badge&logoColor=white)](https://www.printables.com/model/1756251-youtube-subscriber-v20)
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-000000?style=for-the-badge&logoColor=white)](https://makerworld.com/en/models/2941691-youtube-subscriber-v2-0#profileId-3294669)
 
-Circuit wiring is defined in `firmware/justin/diagram.json` (DIN→GPIO23, CLK→GPIO18, CS→GPIO5, power via `V+` / `GND.2`).
+Circuit wiring for the MAX7219 projects is defined in each project's `diagram.json` (DIN→GPIO23, CLK→GPIO18, CS→GPIO5, power via `V+` / `GND.2`).
 
 ---
 
@@ -71,7 +71,7 @@ Requires Chrome or Edge on desktop.
 
 **Option B — PlatformIO**
 
-1. Open the `firmware/justin` folder in VS Code or Cursor (PlatformIO extension required)
+1. Open a firmware project folder under `firmware/` in VS Code or Cursor (PlatformIO extension required)
 2. Build and upload to your ESP32 board
 
 ### 2. Configure via the portal
@@ -97,7 +97,7 @@ Leave the Wi-Fi fields blank when saving and the device keeps the previously sto
 
 ## OTA firmware updates
 
-1. Build with PlatformIO — the OTA `.bin` is at `firmware/justin/.pio/build/esp32dev/firmware.bin`
+1. Build with PlatformIO — the OTA `.bin` is at `firmware/<project>/.pio/build/esp32dev/firmware.bin`
 2. Open the device IP in your browser
 3. Scroll to **Firmware update**, pick the main firmware `.bin`, click **Upload firmware**
 4. The matrix shows `OTA...` then `Rebooting` — done
@@ -112,7 +112,7 @@ commands work from there.
 
 Registered projects currently include:
 
-- `justin`: the original multi-program MAX7219 firmware;
+- `justin`: multi-program MAX7219 firmware (scroller, fireworks, maze hero, pixel art);
 - `moon_phase`: lunar phase animation with nonblocking NTP synchronization;
 - `weather_watch`: animated weather scenes;
 - `real_weather`: live Open-Meteo conditions and forecast;
@@ -130,8 +130,8 @@ display-transition algorithms.
 
 Each project supplies its own project definition, settings validation, portal
 fields, programs, and hardware profile. `packages/tinker-display-max7219`
-provides the shared MD_Parola/MD_MAX72XX adapter; `justin` configures it for
-four FC16 modules with chip select on GPIO 5.
+provides the shared MD_Parola/MD_MAX72XX adapter. The current MAX7219 projects
+use four FC16 modules with chip select on GPIO 5.
 
 The retained Justin programs live in project-local folders under
 `firmware/justin/src/programs/`. Pixel-art source images, when available, belong
@@ -197,24 +197,15 @@ Then:
 4. Keep the **simulator tab visible** — Wokwi pauses when you switch away.
 5. Open the forwarded URL configured in that project's `wokwi.toml`.
 
-For the current `justin` project:
+Example:
 
 ```bash
-./scripts/build.sh justin --env wokwi
+./scripts/build.sh moon_phase --env wokwi
 ```
 
-Select `firmware/justin/wokwi.toml`, start the simulator, and open
+Select that project's `wokwi.toml`, start the simulator, and open
 **`http://localhost:8180`** (not `https://`). On first boot, the firmware
 auto-connects to **`Wokwi-GUEST`** for simulator setup.
-
-For the starter:
-
-```bash
-./scripts/build.sh starter-max7219 --env wokwi
-```
-
-Select `firmware/starter-max7219/wokwi.toml`. It uses the same
-**`http://localhost:8180`** forwarding while it is the active simulation.
 
 Wokwi remembers the selected config for the workspace. Run **Wokwi: Select
 Config File** again whenever you switch projects.
@@ -227,8 +218,8 @@ The `wokwi` PlatformIO environment defines `WOKWI_SIM=1`, so the firmware tries 
 
 If `localhost:8180` does not load:
 
-- Run **Wokwi: Select Config File** again and confirm
-  `firmware/justin/wokwi.toml` is selected.
+- Run **Wokwi: Select Config File** again and confirm the intended
+  `firmware/<project>/wokwi.toml` is selected.
 - Stop and restart the simulator after changing `wokwi.toml`.
 - Check the serial log for `Wokwi setup portal ready.` and `Open http://localhost:8180`.
 - If you see `Setup AP` instead, the sim did not join `Wokwi-GUEST`; reset the ESP32 in the simulator and try again.
@@ -247,8 +238,8 @@ manifest, not the filename.
 ./scripts/preview-site.sh
 ```
 
-Open `http://localhost:4321/esp32-tinker/`. The original installer is now
-`/esp32-tinker/justin/`. `docs/` remains the current GitHub Pages tree until
+Open `http://localhost:4321/esp32-tinker/`. Each project has its own page
+under that catalog. `docs/` remains the current GitHub Pages tree until
 site deployment is switched in a later stage.
 
 `scripts/preview-installer.sh` now wraps `preview-site.sh`. Artifact names,

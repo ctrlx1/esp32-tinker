@@ -81,8 +81,10 @@ Build or preview the Astro catalog in `site/`.
 
 ## Deploy / Dev
 
-If users says to prepare to deploy, do the following:
-- Run `./scripts/build.sh justin`
+If the user names a project to prepare for deploy:
+- Run `./scripts/build.sh <project>`
 
-If users says to go back to development mode, do the following:
-- Run `./scripts/build.sh justin --env wokwi`
+If they say go back to development mode for a named project:
+- Run `./scripts/build.sh <project> --env wokwi`
+
+If they do not name a project, ask which one.

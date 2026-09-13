@@ -10,7 +10,7 @@ GitHub Releases (Stage 11) replace the current `docs/` installer.
 | Project IDs | `justin`, `moon_phase`, `weather_watch`, `real_weather`, `flight_watch`, `starter-max7219`, `starter-template` |
 | Initial versions | `justin` remains `2.0.4`; extracted and starter projects start at `1.0.0` |
 | App filenames | Every buildable project publishes a stable `firmware.bin` in its own folder |
-| Docs routes | `/` for `justin`; hyphenated routes such as `/moon-phase/` for the others |
+| Docs routes | One route per project (`/justin/`, `/moon-phase/`, and so on). The catalog root is `/`. |
 | Release tags | `<project>/v<version>` (for example `justin/v2.0.5`) |
 
 `starter-template` is not stageable, publishable, or deployable.

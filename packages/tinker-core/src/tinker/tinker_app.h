@@ -259,7 +259,7 @@ private:
 
     const ProjectDefinition definition = project_.definition();
     if (prefix == "firmware") {
-      return strcmp(definition.id, "justin") == 0;
+      return true;
     }
     return prefix == definition.id;
   }

@@ -2,17 +2,14 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ProjectCard from "../components/ProjectCard.astro";
 import { loadProjects } from "../lib/registry";
-import { withBase } from "../lib/paths";
 
 const projects = loadProjects();
-const justin = projects.find((project) => project.id === "justin");
 ---
 <BaseLayout title="ESP32 Tinker">
   <section class="hero">
     <h1>Firmware catalog</h1>
     <p>
-      Flash from the browser, then configure over Wi-Fi. The original installer
-      now lives on the <a href={withBase(justin?.href ?? "/justin/")}>Justin</a> page.
+      Flash a project from the browser, then configure it over Wi-Fi.
     </p>
   </section>
   <section class="grid">

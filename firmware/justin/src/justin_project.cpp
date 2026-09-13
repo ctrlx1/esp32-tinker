@@ -143,7 +143,7 @@ JustinProject::JustinProject(tinker::RuntimeContext &runtime) {
 tinker::ProjectDefinition JustinProject::definition() const {
   // A null version key preserves the legacy unversioned NVS layout exactly.
   return {"justin",
-          "ESP32 Tinker",
+          "Justin",
           APP_VERSION,
           "ESP32-Tinker-Setup-",
           {"esp32tinker", nullptr, 0}};

@@ -37,9 +37,13 @@ class Stage10SiteTests(unittest.TestCase):
                     project.docs["manifest"],
                 )
 
-    def test_justin_route_is_no_longer_the_catalog_root(self) -> None:
-        justin = load_registry().project("justin")
-        self.assertEqual("/justin/", justin.docs["route"])
+    def test_every_project_has_its_own_docs_route(self) -> None:
+        routes = [project.docs["route"] for project in load_registry().projects]
+        self.assertEqual(len(routes), len(set(routes)))
+        for route in routes:
+            self.assertTrue(route.startswith("/"))
+            self.assertTrue(route.endswith("/"))
+            self.assertNotEqual("/", route)
 
     def test_site_sources_cover_registry_routes(self) -> None:
         catalog = (SITE / "src" / "pages" / "index.astro").read_text()
@@ -48,7 +52,8 @@ class Stage10SiteTests(unittest.TestCase):
         preview = (REPO_ROOT / "scripts" / "preview-installer.sh").read_text()
 
         self.assertIn("loadProjects()", catalog)
-        self.assertIn("Justin", catalog)
+        self.assertNotIn("original installer", catalog)
+        self.assertNotIn('project.id === "justin"', catalog)
         self.assertIn("getStaticPaths", project_page)
         self.assertIn("InstallButton", project_page)
         self.assertIn('base: "/esp32-tinker/"', config)

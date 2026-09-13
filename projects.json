@@ -3,8 +3,8 @@
   "projects": [
     {
       "id": "justin",
-      "name": "ESP32 Tinker",
-      "description": "The original ESP32 Tinker multi-program firmware.",
+      "name": "Justin",
+      "description": "Multi-program MAX7219 firmware with scroller, fireworks, maze hero, and pixel art.",
       "path": "firmware/justin",
       "versionFile": "firmware/justin/VERSION",
       "buildable": true,

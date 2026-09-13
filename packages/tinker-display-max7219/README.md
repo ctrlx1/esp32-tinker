@@ -6,7 +6,7 @@ Each project supplies a module type, chip-select pin, and module count. The
 adapter owns one `MD_Parola` instance and exposes text animation, brightness,
 boot status, and framebuffer drawing through `tinker::RuntimeContext`.
 
-The current `justin` profile uses FC16 modules, GPIO 5 chip select, and four
+The current MAX7219 projects use FC16 modules, GPIO 5 chip select, and four
 chained 8×8 modules. Hardware SPI continues to use the ESP32 board defaults
 (MOSI GPIO 23 and clock GPIO 18).
 
