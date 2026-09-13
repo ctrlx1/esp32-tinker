@@ -9,15 +9,14 @@
 namespace {
 constexpr uint8_t DISPLAY_HEIGHT = 8;
 constexpr uint8_t DISPLAY_WIDTH = 32;
-// Full-width disc; canvas tall enough to pan.
 constexpr uint8_t MOON_DIAMETER = 32;
 constexpr uint8_t MOON_CANVAS_HEIGHT = MOON_DIAMETER;
 constexpr unsigned long FRAME_MS = 80UL;
 constexpr unsigned long PAN_STEP_MS = 100UL;
 constexpr unsigned long PAN_HOLD_MS = 900UL;
 constexpr unsigned long NTP_RETRY_MS = 30000UL;
+constexpr time_t MIN_VALID_TIME = 1609459200;
 constexpr double SYNODIC_MONTH_DAYS = 29.530588853;
-// Known new moon near 2000-01-06 18:14 UTC
 constexpr double KNOWN_NEW_MOON_JD = 2451550.1;
 
 enum class View : uint8_t { Moon, Name };
@@ -31,23 +30,23 @@ enum class PanPhase : uint8_t {
 struct State {
   View view = View::Moon;
   PanPhase panPhase = PanPhase::HoldingTop;
-  unsigned long viewStartMs = 0;
   unsigned long lastFrameMs = 0;
   unsigned long lastPanStepMs = 0;
   unsigned long lastNtpAttemptMs = 0;
+  bool ntpAttempted = false;
   bool timeSynced = false;
-  float phase = 0.0f; // 0=new .. 0.5=full .. 1=new
+  float phase = 0.0f;
   uint8_t illuminationPercent = 0;
   uint8_t topRow = 0;
 };
+
+State state;
 
 uint8_t maxTopRow() {
   return MOON_CANVAS_HEIGHT > DISPLAY_HEIGHT
              ? static_cast<uint8_t>(MOON_CANVAS_HEIGHT - DISPLAY_HEIGHT)
              : 0;
 }
-
-State state;
 
 uint8_t sanitizedBrightness(uint8_t brightness) {
   return brightness > 15 ? 15 : brightness;
@@ -60,11 +59,10 @@ void beginFrame() {
 
 void endFrame() { programRuntimeContext().endFrame(); }
 
-void setPixel(int16_t row, int16_t col, bool on = true) {
-  if (row < 0 || row >= DISPLAY_HEIGHT || col < 0 || col >= DISPLAY_WIDTH) {
-    return;
+void setPixel(int16_t row, int16_t col) {
+  if (row >= 0 && row < DISPLAY_HEIGHT && col >= 0 && col < DISPLAY_WIDTH) {
+    programRuntimeContext().setPoint(row, col, true);
   }
-  programRuntimeContext().setPoint(row, col, on);
 }
 
 double julianDay(int year, int month, int day, int hour, int minute,
@@ -72,15 +70,20 @@ double julianDay(int year, int month, int day, int hour, int minute,
   int y = year;
   int m = month;
   if (m <= 2) {
-    y -= 1;
+    y--;
     m += 12;
   }
-  int a = y / 100;
-  int b = 2 - a + a / 4;
-  double dayFraction =
+  const int a = y / 100;
+  const int b = 2 - a + a / 4;
+  const double dayFraction =
       (hour + minute / 60.0 + second / 3600.0) / 24.0;
-  return std::floor(365.25 * (y + 4716)) + std::floor(30.6001 * (m + 1)) + day +
-         b - 1524.5 + dayFraction;
+  return std::floor(365.25 * (y + 4716)) +
+         std::floor(30.6001 * (m + 1)) + day + b - 1524.5 + dayFraction;
+}
+
+float normalizePhase(float phase) {
+  float normalized = phase - std::floor(phase);
+  return normalized < 0.0f ? normalized + 1.0f : normalized;
 }
 
 float moonPhaseFromJulianDay(double jd) {
@@ -91,18 +94,9 @@ float moonPhaseFromJulianDay(double jd) {
   return static_cast<float>(days / SYNODIC_MONTH_DAYS);
 }
 
-float normalizePhase(float phase) {
-  float p = phase - std::floor(phase);
-  if (p < 0.0f) {
-    p += 1.0f;
-  }
-  return p;
-}
-
 const char *phaseName(float phase) {
-  // Eight named phases centered on their peaks.
-  float p = normalizePhase(phase);
-  int index = static_cast<int>(std::floor(p * 8.0f + 0.5f)) % 8;
+  const int index =
+      static_cast<int>(std::floor(normalizePhase(phase) * 8.0f + 0.5f)) % 8;
   static const char *names[] = {
       "New Moon",         "Waxing Crescent", "First Quarter", "Waxing Gibbous",
       "Full Moon",        "Waning Gibbous",  "Last Quarter",  "Waning Crescent"};
@@ -111,23 +105,19 @@ const char *phaseName(float phase) {
 
 uint8_t illuminationPercent(float phase) {
   constexpr float kPi = 3.14159265f;
-  float p = normalizePhase(phase);
-  float fraction = 0.5f * (1.0f - std::cos(2.0f * kPi * p));
+  const float fraction =
+      0.5f * (1.0f - std::cos(2.0f * kPi * normalizePhase(phase)));
   int percent = static_cast<int>(std::lround(fraction * 100.0f));
   if (percent < 0) {
     percent = 0;
-  }
-  if (percent > 100) {
+  } else if (percent > 100) {
     percent = 100;
   }
   return static_cast<uint8_t>(percent);
 }
 
-// Days until the next occurrence of targetPhase in [0,1).
 double daysUntilPhase(float currentPhase, float targetPhase) {
-  float current = normalizePhase(currentPhase);
-  float target = normalizePhase(targetPhase);
-  float delta = target - current;
+  float delta = normalizePhase(targetPhase) - normalizePhase(currentPhase);
   if (delta <= 0.0001f) {
     delta += 1.0f;
   }
@@ -135,18 +125,14 @@ double daysUntilPhase(float currentPhase, float targetPhase) {
 }
 
 void appendDuration(char *out, size_t outSize, double days) {
-  if (days < 0.0) {
-    days = 0.0;
-  }
-  long totalMinutes = static_cast<long>(std::lround(days * 24.0 * 60.0));
+  long totalMinutes = static_cast<long>(
+      std::lround((days < 0.0 ? 0.0 : days) * 24.0 * 60.0));
   if (totalMinutes < 1) {
     totalMinutes = 1;
   }
-
-  long wholeDays = totalMinutes / (24L * 60L);
-  long hours = (totalMinutes % (24L * 60L)) / 60L;
-  long minutes = totalMinutes % 60L;
-
+  const long wholeDays = totalMinutes / (24L * 60L);
+  const long hours = (totalMinutes % (24L * 60L)) / 60L;
+  const long minutes = totalMinutes % 60L;
   char piece[24];
   if (wholeDays > 0) {
     snprintf(piece, sizeof(piece), "%ldd %ldh", wholeDays, hours);
@@ -155,12 +141,10 @@ void appendDuration(char *out, size_t outSize, double days) {
   } else {
     snprintf(piece, sizeof(piece), "%ldm", minutes);
   }
-
-  size_t used = strlen(out);
-  if (used + 1 >= outSize) {
-    return;
+  const size_t used = strlen(out);
+  if (used + 1 < outSize) {
+    strncat(out, piece, outSize - used - 1);
   }
-  strncat(out, piece, outSize - used - 1);
 }
 
 void appendUpcoming(char *out, size_t outSize, const char *label,
@@ -178,57 +162,55 @@ void appendUpcoming(char *out, size_t outSize, const char *label,
 }
 
 void buildScrollText() {
-  tinker::RuntimeContext &runtime = programRuntimeContext();
-  char *scrollBuffer = runtime.textBuffer();
-  size_t scrollBufferSize = runtime.textBufferSize();
-  if (!scrollBuffer || scrollBufferSize == 0) {
+  char *buffer = programRuntimeContext().textBuffer();
+  const size_t size = programRuntimeContext().textBufferSize();
+  if (!buffer || size == 0) {
     return;
   }
-  // Example:
-  // Full Moon 87% | New 3d 14h | 1st Qtr 11d 2h | Full 18d 8h | Last Qtr 25d 20h
-  snprintf(scrollBuffer, scrollBufferSize, "%s %u%%",
-           phaseName(state.phase),
+  snprintf(buffer, size, "%s %u%%", phaseName(state.phase),
            static_cast<unsigned>(state.illuminationPercent));
-  appendUpcoming(scrollBuffer, scrollBufferSize, "New", state.phase, 0.0f);
-  appendUpcoming(scrollBuffer, scrollBufferSize, "1st Qtr", state.phase,
-                 0.25f);
-  appendUpcoming(scrollBuffer, scrollBufferSize, "Full", state.phase, 0.5f);
-  appendUpcoming(scrollBuffer, scrollBufferSize, "Last Qtr", state.phase,
-                 0.75f);
+  appendUpcoming(buffer, size, "New", state.phase, 0.0f);
+  appendUpcoming(buffer, size, "1st Qtr", state.phase, 0.25f);
+  appendUpcoming(buffer, size, "Full", state.phase, 0.5f);
+  appendUpcoming(buffer, size, "Last Qtr", state.phase, 0.75f);
 }
 
 bool syncTimeIfNeeded(unsigned long now) {
   if (state.timeSynced) {
     return true;
   }
+
+  if (time(nullptr) >= MIN_VALID_TIME) {
+    state.timeSynced = true;
+    return true;
+  }
+
   if (WiFi.status() != WL_CONNECTED) {
     return false;
   }
-  if (state.lastNtpAttemptMs != 0 &&
-      now - state.lastNtpAttemptMs < NTP_RETRY_MS) {
-    return false;
-  }
-  state.lastNtpAttemptMs = now;
 
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo, 4000)) {
-    return false;
+  if (!state.ntpAttempted ||
+      now - state.lastNtpAttemptMs >= NTP_RETRY_MS) {
+    configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+    state.lastNtpAttemptMs = now;
+    state.ntpAttempted = true;
   }
-  state.timeSynced = true;
-  return true;
+
+  if (time(nullptr) >= MIN_VALID_TIME) {
+    state.timeSynced = true;
+  }
+  return state.timeSynced;
 }
 
 void updatePhaseFromClockOrDemo(unsigned long now) {
   if (syncTimeIfNeeded(now)) {
-    time_t nowSecs = time(nullptr);
+    const time_t nowSecs = time(nullptr);
     struct tm utc;
     gmtime_r(&nowSecs, &utc);
-    double jd = julianDay(utc.tm_year + 1900, utc.tm_mon + 1, utc.tm_mday,
-                          utc.tm_hour, utc.tm_min, utc.tm_sec);
-    state.phase = moonPhaseFromJulianDay(jd);
+    state.phase = moonPhaseFromJulianDay(
+        julianDay(utc.tm_year + 1900, utc.tm_mon + 1, utc.tm_mday, utc.tm_hour,
+                  utc.tm_min, utc.tm_sec));
   } else {
-    // Slow demo cycle (~60s per synodic month visualization)
     state.phase = std::fmod((now / 1000.0f) / 60.0f, 1.0f);
   }
   state.phase = normalizePhase(state.phase);
@@ -236,50 +218,46 @@ void updatePhaseFromClockOrDemo(unsigned long now) {
 }
 
 void moonUv(int16_t canvasRow, int16_t col, float &u, float &v) {
-  constexpr float cx = (DISPLAY_WIDTH - 1) / 2.0f; // 15.5
+  constexpr float cx = (DISPLAY_WIDTH - 1) / 2.0f;
   constexpr float cy = (MOON_CANVAS_HEIGHT - 1) / 2.0f;
   constexpr float radius = (MOON_DIAMETER - 1) / 2.0f;
-  // Negate u so waxing lights the viewer's right (FC16 col 0 is physical right).
   u = (cx - static_cast<float>(col)) / radius;
   v = (static_cast<float>(canvasRow) - cy) / radius;
 }
 
 bool inMoonDisk(int16_t canvasRow, int16_t col) {
-  float u = 0.0f;
-  float v = 0.0f;
+  float u;
+  float v;
   moonUv(canvasRow, col, u, v);
-  return (u * u + v * v) <= 1.0f;
+  return u * u + v * v <= 1.0f;
 }
 
 bool moonIlluminated(int16_t canvasRow, int16_t col, float phase) {
-  float u = 0.0f;
-  float v = 0.0f;
+  float u;
+  float v;
   moonUv(canvasRow, col, u, v);
   if (u * u + v * v > 1.0f) {
     return false;
   }
-  float p = normalizePhase(phase);
   constexpr float kPi = 3.14159265f;
-  float limb = std::cos(2.0f * kPi * p);
-  bool waxing = p <= 0.5f;
-  return waxing ? (u >= limb) : (u <= -limb);
+  const float normalized = normalizePhase(phase);
+  const float limb = std::cos(2.0f * kPi * normalized);
+  return normalized <= 0.5f ? u >= limb : u <= -limb;
 }
 
 bool onMoonRim(int16_t canvasRow, int16_t col) {
-  if (!inMoonDisk(canvasRow, col)) {
-    return false;
-  }
-  // Edge pixel if any 4-neighbor falls outside the disc.
-  return !inMoonDisk(canvasRow - 1, col) || !inMoonDisk(canvasRow + 1, col) ||
-         !inMoonDisk(canvasRow, col - 1) || !inMoonDisk(canvasRow, col + 1);
+  return inMoonDisk(canvasRow, col) &&
+         (!inMoonDisk(canvasRow - 1, col) ||
+          !inMoonDisk(canvasRow + 1, col) ||
+          !inMoonDisk(canvasRow, col - 1) ||
+          !inMoonDisk(canvasRow, col + 1));
 }
 
 void renderMoonFrame() {
   beginFrame();
   for (uint8_t row = 0; row < DISPLAY_HEIGHT; row++) {
-    int16_t canvasRow = static_cast<int16_t>(state.topRow) + row;
+    const int16_t canvasRow = static_cast<int16_t>(state.topRow) + row;
     for (uint8_t col = 0; col < DISPLAY_WIDTH; col++) {
-      // Full disk outline + solid fill for the illuminated fraction.
       if (moonIlluminated(canvasRow, col, state.phase) ||
           onMoonRim(canvasRow, col)) {
         setPixel(row, col);
@@ -293,7 +271,6 @@ void resetMoonPan(unsigned long now) {
   state.panPhase = PanPhase::HoldingTop;
   state.topRow = 0;
   state.lastPanStepMs = now;
-  state.viewStartMs = now;
 }
 
 void startNameScroll(const ProgramConfig &cfg) {
@@ -301,17 +278,13 @@ void startNameScroll(const ProgramConfig &cfg) {
   buildScrollText();
   runtime.clearText();
   runtime.setBrightness(sanitizedBrightness(cfg.brightness));
-  unsigned int speed = cfg.scrollSpeedMs > 0 ? cfg.scrollSpeedMs : 75U;
-  char *scrollBuffer = runtime.textBuffer();
-  const char *text = scrollBuffer && scrollBuffer[0] != '\0'
-                         ? scrollBuffer
-                         : phaseName(state.phase);
-  runtime.startTextScroll(text, tinker::TextAlignment::Left, speed);
+  char *buffer = runtime.textBuffer();
+  runtime.startTextScroll(buffer && buffer[0] ? buffer : phaseName(state.phase),
+                          tinker::TextAlignment::Left, cfg.scrollSpeedMs);
 }
 
 void enterView(View view, const ProgramConfig &cfg, unsigned long now) {
   state.view = view;
-  state.viewStartMs = now;
   if (view == View::Moon) {
     resetMoonPan(now);
     renderMoonFrame();
@@ -320,10 +293,8 @@ void enterView(View view, const ProgramConfig &cfg, unsigned long now) {
   }
 }
 
-// Returns true when one full top->bottom->top pan cycle is complete.
 bool updateMoonPan(unsigned long now) {
   const uint8_t bottom = maxTopRow();
-
   switch (state.panPhase) {
   case PanPhase::HoldingTop:
     if (now - state.lastPanStepMs >= PAN_HOLD_MS) {
@@ -331,7 +302,6 @@ bool updateMoonPan(unsigned long now) {
       state.lastPanStepMs = now;
     }
     break;
-
   case PanPhase::ScrollingDown:
     if (now - state.lastPanStepMs < PAN_STEP_MS) {
       break;
@@ -342,17 +312,14 @@ bool updateMoonPan(unsigned long now) {
     }
     if (state.topRow >= bottom) {
       state.panPhase = PanPhase::HoldingBottom;
-      state.lastPanStepMs = now;
     }
     break;
-
   case PanPhase::HoldingBottom:
     if (now - state.lastPanStepMs >= PAN_HOLD_MS) {
       state.panPhase = PanPhase::ScrollingUp;
       state.lastPanStepMs = now;
     }
     break;
-
   case PanPhase::ScrollingUp:
     if (now - state.lastPanStepMs < PAN_STEP_MS) {
       break;
@@ -362,31 +329,25 @@ bool updateMoonPan(unsigned long now) {
       state.topRow--;
     }
     if (state.topRow == 0) {
-      return true; // completed one vertical cycle
+      return true;
     }
     break;
   }
-
   return false;
 }
 } // namespace
 
 void moonPhaseStart(const ProgramConfig &cfg) {
-  tinker::RuntimeContext &runtime = programRuntimeContext();
-  runtime.setBrightness(sanitizedBrightness(cfg.brightness));
-  runtime.clearText();
-  state.timeSynced = false;
-  state.lastNtpAttemptMs = 0;
-  state.lastFrameMs = 0;
-  unsigned long now = millis();
+  programRuntimeContext().setBrightness(sanitizedBrightness(cfg.brightness));
+  programRuntimeContext().clearText();
+  state = State{};
+  const unsigned long now = millis();
   updatePhaseFromClockOrDemo(now);
   enterView(View::Moon, cfg, now);
 }
 
 void moonPhaseTick(const ProgramConfig &cfg) {
-  unsigned long now = millis();
-
-  // Keep Parola scrolling smooth; switch back only after one full pass.
+  const unsigned long now = millis();
   if (state.view == View::Name) {
     updatePhaseFromClockOrDemo(now);
     if (programRuntimeContext().animateText()) {
@@ -394,12 +355,10 @@ void moonPhaseTick(const ProgramConfig &cfg) {
     }
     return;
   }
-
   if (now - state.lastFrameMs < FRAME_MS) {
     return;
   }
   state.lastFrameMs = now;
-
   updatePhaseFromClockOrDemo(now);
   const bool cycleDone = updateMoonPan(now);
   renderMoonFrame();

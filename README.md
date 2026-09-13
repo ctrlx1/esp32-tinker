@@ -113,6 +113,10 @@ commands work from there.
 Registered projects currently include:
 
 - `justin`: the original multi-program MAX7219 firmware;
+- `moon_phase`: lunar phase animation with nonblocking NTP synchronization;
+- `weather_watch`: animated weather scenes;
+- `real_weather`: live Open-Meteo conditions and forecast;
+- `flight_watch`: nearby aircraft from adsb.lol;
 - `starter-max7219`: a minimal configurable “Hello World” MAX7219 firmware;
 - `starter-template`: a hardware-neutral scaffold that is intentionally not
   buildable until copied and assigned a hardware profile.

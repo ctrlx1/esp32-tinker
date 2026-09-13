@@ -27,38 +27,6 @@
                 />
                 <span>Pixel Art</span>
               </label>
-              <label class="check">
-                <input
-                  type="checkbox"
-                  id="program-weather-watch"
-                  value="weather_watch"
-                />
-                <span>Weather Watch</span>
-              </label>
-              <label class="check">
-                <input
-                  type="checkbox"
-                  id="program-real-weather"
-                  value="real_weather"
-                />
-                <span>Real Weather</span>
-              </label>
-              <label class="check">
-                <input
-                  type="checkbox"
-                  id="program-moon-phase"
-                  value="moon_phase"
-                />
-                <span>Moon Phase</span>
-              </label>
-              <label class="check">
-                <input
-                  type="checkbox"
-                  id="program-flight-watch"
-                  value="flight_watch"
-                />
-                <span>Flight Watch</span>
-              </label>
             </div>
             <div class="hint">
               Checked programs cycle in this order and are remembered here.
@@ -230,82 +198,6 @@
             />
             <div class="hint">
               Each hero move picks a random delay between min and max.
-            </div>
-          </div>
-        </div>
-        <div id="real-weather-config" class="settings-card program-config" hidden>
-          <div class="settings-card-title">Real Weather Settings</div>
-          <div>
-            <label>ZIP / postal code</label>
-            <input
-              type="text"
-              id="weather-postal-code"
-              maxlength="16"
-              placeholder="14169"
-              value="WEATHER_ZIP_PLACEHOLDER"
-            />
-            <div class="hint">
-              Used to fetch current conditions and a 7-day forecast.
-            </div>
-          </div>
-        </div>
-        <div id="flight-watch-config" class="settings-card program-config" hidden>
-          <div class="settings-card-title">Flight Watch Settings</div>
-          <div>
-            <label>Latitude</label>
-            <input
-              type="number"
-              id="flight-lat"
-              min="-90"
-              max="90"
-              step="0.00001"
-              value="FLIGHT_LAT_PLACEHOLDER"
-            />
-          </div>
-          <div>
-            <label>Longitude</label>
-            <input
-              type="number"
-              id="flight-lon"
-              min="-180"
-              max="180"
-              step="0.00001"
-              value="FLIGHT_LON_PLACEHOLDER"
-            />
-          </div>
-          <div>
-            <label>Watch radius</label>
-            <div class="flight-radius-row">
-              <input
-                type="number"
-                id="flight-radius"
-                min="0.1"
-                max="287.5"
-                step="0.1"
-                value="FLIGHT_RADIUS_PLACEHOLDER"
-              />
-              <select id="flight-radius-unit" aria-label="Radius unit">
-                <option value="0">mi</option>
-                <option value="1">km</option>
-              </select>
-            </div>
-            <div class="hint">
-              Aircraft within this radius of the lat/lon are shown (max ~250
-              nautical miles). Cycles nearby airborne flights. Airline names
-              come from callsign prefix; airport origin/destination are not
-              available from the live feed.
-            </div>
-          </div>
-          <div>
-            <label>Air speed</label>
-            <select id="flight-speed-unit" aria-label="Air speed unit">
-              <option value="0">Kt</option>
-              <option value="1">Mph</option>
-              <option value="2">Kph</option>
-            </select>
-            <div class="hint">
-              Ground speed on the display uses this unit (ADS-B data is
-              always knots).
             </div>
           </div>
         </div>

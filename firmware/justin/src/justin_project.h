@@ -32,7 +32,7 @@ private:
 
   tinker::SchedulerBindings schedulerBindings();
 
-  static const tinker::ProgramDescriptor kPrograms[8];
+  static const tinker::ProgramDescriptor kPrograms[4];
   JustinSettings config_;
   tinker::DescriptorScheduler<uint8_t> scheduler_;
 };

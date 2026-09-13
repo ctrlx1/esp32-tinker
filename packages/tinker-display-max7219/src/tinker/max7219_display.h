@@ -58,7 +58,8 @@ private:
   static void setPoint(void *context, uint8_t row, uint16_t column, bool on);
 
   static const DisplayCapabilities kCapabilities;
-  static constexpr size_t kTextBufferSize = 128;
+  // Sized for complete multi-day weather messages as well as short scrollers.
+  static constexpr size_t kTextBufferSize = 384;
 
   MD_Parola display_;
   char textBuffer_[kTextBufferSize] = "";

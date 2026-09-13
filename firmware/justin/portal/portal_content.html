@@ -166,23 +166,6 @@
       input[type="number"]:focus {
         border-color: #3b82f6;
       }
-      .flight-radius-row {
-        display: flex;
-        gap: 0.5rem;
-        align-items: stretch;
-      }
-      .flight-radius-row input[type="number"] {
-        flex: 1 1 auto;
-        min-width: 0;
-        width: auto;
-      }
-      .flight-radius-row select {
-        flex: 0 0 4.25rem;
-        width: 4.25rem;
-        min-width: 4.25rem;
-        padding-left: 8px;
-        padding-right: 8px;
-      }
       .checks {
         display: flex;
         flex-direction: column;
@@ -521,20 +504,12 @@
         "fireworks",
         "maze_hero",
         "pixel_art",
-        "weather_watch",
-        "real_weather",
-        "moon_phase",
-        "flight_watch",
       ];
       var PROGRAM_CHECKBOX_IDS = {
         scroller: "program-scroller",
         fireworks: "program-fireworks",
         maze_hero: "program-maze-hero",
         pixel_art: "program-pixel-art",
-        weather_watch: "program-weather-watch",
-        real_weather: "program-real-weather",
-        moon_phase: "program-moon-phase",
-        flight_watch: "program-flight-watch",
       };
       var PROGRAM_DEFAULTS = {
         scroller: {
@@ -555,26 +530,12 @@
           mazeHeroMinSpeed: "120",
           mazeHeroMaxSpeed: "200",
         },
-        real_weather: {
-          weatherPostalCode: "",
-        },
-        flight_watch: {
-          flightLat: "40.6413",
-          flightLon: "-73.7781",
-          flightRadius: "25",
-          flightRadiusUnit: "0",
-          flightSpeedUnit: "0",
-        },
       };
       var PROGRAM_LABELS = {
         scroller: "Simple Scroller",
         fireworks: "Fireworks",
         maze_hero: "Maze Hero",
         pixel_art: "Pixel Art",
-        weather_watch: "Weather Watch",
-        real_weather: "Real Weather",
-        moon_phase: "Moon Phase",
-        flight_watch: "Flight Watch",
       };
       function isProgramSelected(program) {
         return document.getElementById(PROGRAM_CHECKBOX_IDS[program]).checked;
@@ -612,10 +573,6 @@
           !isProgramSelected("fireworks");
         document.getElementById("maze-hero-config").hidden =
           !isProgramSelected("maze_hero");
-        document.getElementById("real-weather-config").hidden =
-          !isProgramSelected("real_weather");
-        document.getElementById("flight-watch-config").hidden =
-          !isProgramSelected("flight_watch");
         document.getElementById("brightness-label").textContent =
           isProgramSelected("fireworks") ? "Min brightness" : "Brightness";
         document.getElementById("brightness-hint").textContent =
@@ -651,16 +608,6 @@
               mazeHeroMaxSpeed: document.getElementById(
                 "maze-hero-max-speed",
               ).value,
-              weatherPostalCode: document.getElementById(
-                "weather-postal-code",
-              ).value,
-              flightLat: document.getElementById("flight-lat").value,
-              flightLon: document.getElementById("flight-lon").value,
-              flightRadius: document.getElementById("flight-radius").value,
-              flightRadiusUnit: document.getElementById("flight-radius-unit")
-                .value,
-              flightSpeedUnit: document.getElementById("flight-speed-unit")
-                .value,
               brightness: document.getElementById("brightness").value,
               fireworksMaxBrightness: document.getElementById(
                 "fireworks-max-brightness",
@@ -723,21 +670,6 @@
           if (d.mazeHeroSpeed != null && d.mazeHeroMaxSpeed == null)
             document.getElementById("maze-hero-max-speed").value =
               d.mazeHeroSpeed;
-          if (d.weatherPostalCode != null)
-            document.getElementById("weather-postal-code").value =
-              d.weatherPostalCode;
-          if (d.flightLat != null)
-            document.getElementById("flight-lat").value = d.flightLat;
-          if (d.flightLon != null)
-            document.getElementById("flight-lon").value = d.flightLon;
-          if (d.flightRadius != null)
-            document.getElementById("flight-radius").value = d.flightRadius;
-          if (d.flightRadiusUnit != null)
-            document.getElementById("flight-radius-unit").value =
-              d.flightRadiusUnit;
-          if (d.flightSpeedUnit != null)
-            document.getElementById("flight-speed-unit").value =
-              d.flightSpeedUnit;
           if (d.brightness != null)
             document.getElementById("brightness").value = d.brightness;
           if (d.fireworksMaxBrightness != null)
@@ -752,10 +684,6 @@
           "program-fireworks",
           "program-maze-hero",
           "program-pixel-art",
-          "program-weather-watch",
-          "program-real-weather",
-          "program-moon-phase",
-          "program-flight-watch",
           "program-duration-minutes",
           "scroll-message",
           "scroll-speed",
@@ -768,12 +696,6 @@
           "maze-max-height",
           "maze-hero-min-speed",
           "maze-hero-max-speed",
-          "weather-postal-code",
-          "flight-lat",
-          "flight-lon",
-          "flight-radius",
-          "flight-radius-unit",
-          "flight-speed-unit",
           "brightness",
           "fireworks-max-brightness",
         ].forEach(function (id) {
@@ -833,26 +755,6 @@
             PROGRAM_DEFAULTS.maze_hero.mazeHeroMaxSpeed,
           );
         }
-        if (programs.indexOf("real_weather") !== -1) {
-          setValue(
-            "weather-postal-code",
-            PROGRAM_DEFAULTS.real_weather.weatherPostalCode,
-          );
-        }
-        if (programs.indexOf("flight_watch") !== -1) {
-          setValue("flight-lat", PROGRAM_DEFAULTS.flight_watch.flightLat);
-          setValue("flight-lon", PROGRAM_DEFAULTS.flight_watch.flightLon);
-          setValue("flight-radius", PROGRAM_DEFAULTS.flight_watch.flightRadius);
-          setValue(
-            "flight-radius-unit",
-            PROGRAM_DEFAULTS.flight_watch.flightRadiusUnit,
-          );
-          setValue(
-            "flight-speed-unit",
-            PROGRAM_DEFAULTS.flight_watch.flightSpeedUnit,
-          );
-        }
-
         persistSetupForm();
         var msg = document.getElementById("msg");
         msg.className = "msg info";
@@ -985,26 +887,6 @@
           document.getElementById("maze-hero-max-speed").value,
           10,
         );
-        var weatherPostalCode = document
-          .getElementById("weather-postal-code")
-          .value.trim();
-        var flightLat = parseFloat(
-          document.getElementById("flight-lat").value,
-        );
-        var flightLon = parseFloat(
-          document.getElementById("flight-lon").value,
-        );
-        var flightRadius = parseFloat(
-          document.getElementById("flight-radius").value,
-        );
-        var flightRadiusUnit = parseInt(
-          document.getElementById("flight-radius-unit").value,
-          10,
-        );
-        var flightSpeedUnit = parseInt(
-          document.getElementById("flight-speed-unit").value,
-          10,
-        );
         var brightness = parseInt(
           document.getElementById("brightness").value,
           10,
@@ -1110,49 +992,6 @@
             return;
           }
         }
-        if (isProgramSelected("real_weather")) {
-          if (weatherPostalCode.length > 16) {
-            msg.className = "msg err";
-            msg.textContent = "ZIP/postal code must be 16 characters or fewer.";
-            return;
-          }
-        }
-        if (isProgramSelected("flight_watch")) {
-          if (isNaN(flightLat) || flightLat < -90 || flightLat > 90) {
-            msg.className = "msg err";
-            msg.textContent = "Latitude must be between -90 and 90.";
-            return;
-          }
-          if (isNaN(flightLon) || flightLon < -180 || flightLon > 180) {
-            msg.className = "msg err";
-            msg.textContent = "Longitude must be between -180 and 180.";
-            return;
-          }
-          if (isNaN(flightRadius) || flightRadius <= 0) {
-            msg.className = "msg err";
-            msg.textContent = "Flight radius must be greater than 0.";
-            return;
-          }
-          var radiusNm =
-            flightRadiusUnit === 1
-              ? flightRadius * 0.539957
-              : flightRadius * 0.868976;
-          if (radiusNm > 250) {
-            msg.className = "msg err";
-            msg.textContent =
-              "Flight radius must be at most 250 nautical miles.";
-            return;
-          }
-          if (
-            isNaN(flightSpeedUnit) ||
-            flightSpeedUnit < 0 ||
-            flightSpeedUnit > 2
-          ) {
-            msg.className = "msg err";
-            msg.textContent = "Select a valid air speed unit.";
-            return;
-          }
-        }
         persistSetupForm();
         msg.className = "msg ok";
         msg.textContent = "Saving\u2026 device will reboot and connect.";
@@ -1173,14 +1012,6 @@
           (isProgramSelected("maze_hero") ? "1" : "0") +
           "&programPixelArt=" +
           (isProgramSelected("pixel_art") ? "1" : "0") +
-          "&programWeatherWatch=" +
-          (isProgramSelected("weather_watch") ? "1" : "0") +
-          "&programRealWeather=" +
-          (isProgramSelected("real_weather") ? "1" : "0") +
-          "&programMoonPhase=" +
-          (isProgramSelected("moon_phase") ? "1" : "0") +
-          "&programFlightWatch=" +
-          (isProgramSelected("flight_watch") ? "1" : "0") +
           "&programDurationMinutes=" +
           encodeURIComponent(programDurationMinutes) +
           "&scrollMessage=" +
@@ -1205,18 +1036,6 @@
           mazeHeroMinSpeed +
           "&mazeHeroMaxSpeed=" +
           mazeHeroMaxSpeed +
-          "&weatherPostalCode=" +
-          encodeURIComponent(weatherPostalCode) +
-          "&flightLat=" +
-          encodeURIComponent(flightLat) +
-          "&flightLon=" +
-          encodeURIComponent(flightLon) +
-          "&flightRadius=" +
-          encodeURIComponent(flightRadius) +
-          "&flightRadiusUnit=" +
-          encodeURIComponent(flightRadiusUnit) +
-          "&flightSpeedUnit=" +
-          encodeURIComponent(flightSpeedUnit) +
           "&brightness=" +
           brightness +
           "&fireworksMaxBrightness=" +
@@ -1275,10 +1094,6 @@
         fd.append("firmware", file, file.name);
         xhr.send(fd);
       }
-      document.getElementById("flight-radius-unit").value =
-        "FLIGHT_RADIUS_UNIT_PLACEHOLDER";
-      document.getElementById("flight-speed-unit").value =
-        "FLIGHT_SPEED_UNIT_PLACEHOLDER";
       setSelectedPrograms(defaultSelectedPrograms());
       restoreSetupForm();
       if (!selectedPrograms().length) {

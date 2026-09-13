@@ -145,12 +145,11 @@ void drawDrops(const Drop *pool, uint8_t count) {
 }
 
 void drawBoltShape(int16_t originX, int8_t variant) {
-  // Zigzag trunk + short branch. Coordinates are (dx, dy).
   static const int8_t shapeA[][2] = {
-      {0, 0},  {0, 1},  {1, 1},  {1, 2},  {0, 3},  {0, 4},
-      {-1, 4}, {-1, 5}, {0, 6},  {0, 7},  {2, 3},  {3, 4}};
+      {0, 0},   {0, 1},  {1, 1}, {1, 2}, {0, 3}, {0, 4},
+      {-1, 4}, {-1, 5}, {0, 6}, {0, 7}, {2, 3}, {3, 4}};
   static const int8_t shapeB[][2] = {
-      {0, 0},  {-1, 1}, {-1, 2}, {0, 2},  {0, 3},  {1, 4},
+      {0, 0},  {-1, 1}, {-1, 2}, {0, 2},  {0, 3}, {1, 4},
       {1, 5},  {0, 6},  {0, 7},  {-2, 3}, {-3, 4}, {2, 5}};
   static const int8_t shapeC[][2] = {
       {0, 0}, {1, 1}, {1, 2}, {0, 3}, {-1, 3}, {-1, 4},
@@ -170,7 +169,6 @@ void drawBoltShape(int16_t originX, int8_t variant) {
     int16_t dx = cells[i][0];
     int16_t dy = cells[i][1];
     setPixel(dy, originX + dx);
-    // Thicken the bolt by one neighbor for readability on the matrix.
     setPixel(dy, originX + dx + 1);
   }
 }
@@ -192,7 +190,8 @@ void triggerLightning() {
   }
   for (uint8_t i = 0; i < boltCount; i++) {
     state.bolts[i].active = true;
-    state.bolts[i].originX = static_cast<int8_t>(random(3, DISPLAY_WIDTH - 4));
+    state.bolts[i].originX =
+        static_cast<int8_t>(random(3, DISPLAY_WIDTH - 4));
     state.bolts[i].variant = static_cast<int8_t>(random(0, 3));
     state.bolts[i].life = BOLT_HOLD_FRAMES;
   }
@@ -254,7 +253,8 @@ void enterScene(Scene scene, unsigned long now) {
 
 void nextScene(unsigned long now) {
   uint8_t next =
-      (static_cast<uint8_t>(state.scene) + 1) % static_cast<uint8_t>(Scene::Count);
+      (static_cast<uint8_t>(state.scene) + 1) %
+      static_cast<uint8_t>(Scene::Count);
   enterScene(static_cast<Scene>(next), now);
 }
 
@@ -281,7 +281,8 @@ void renderRainy(bool stormy) {
   drawCloud(24 + ((drift + 1) % 5), 1);
 
   if ((state.frame % 2) == 0) {
-    spawnDrop(state.drops, MAX_DROPS, 0, DISPLAY_WIDTH - 1, 1, stormy ? 2 : 1);
+    spawnDrop(state.drops, MAX_DROPS, 0, DISPLAY_WIDTH - 1, 1,
+              stormy ? 2 : 1);
   }
   advanceDrops(state.drops, MAX_DROPS, true);
   drawDrops(state.drops, MAX_DROPS);
@@ -308,7 +309,8 @@ void renderSnowy() {
         static_cast<int8_t>(state.flakes[i].y + state.flakes[i].speed);
     if ((state.frame + i) % 4 == 0) {
       state.flakes[i].x =
-          static_cast<int8_t>(state.flakes[i].x + (((i % 2) == 0) ? 1 : -1));
+          static_cast<int8_t>(state.flakes[i].x +
+                              (((i % 2) == 0) ? 1 : -1));
     }
     if (state.flakes[i].y >= DISPLAY_HEIGHT) {
       state.flakes[i].active = false;

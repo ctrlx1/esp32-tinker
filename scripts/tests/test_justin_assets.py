@@ -60,7 +60,7 @@ class JustinAssetTests(unittest.TestCase):
         self.assertIn("keeping existing generated catalog", result.stdout)
         self.assertEqual(tree_digest(CATALOG_DIR), before)
 
-    def test_composed_portal_matches_presplit_page(self):
+    def test_composed_portal_matches_retained_program_page(self):
         shell = PORTAL_SHELL.read_text(encoding="utf-8")
         self.assertEqual(shell.count("{{PROJECT_PORTAL_CONTENT}}"), 1)
         content = PORTAL_CONTENT.read_text(encoding="utf-8").rstrip("\n")
@@ -68,10 +68,10 @@ class JustinAssetTests(unittest.TestCase):
         self.assertEqual(content.count("{{JUSTIN_PROGRAM_SETTINGS}}"), 1)
         content = content.replace("{{JUSTIN_PROGRAM_SETTINGS}}", settings)
         composed = shell.replace("{{PROJECT_PORTAL_CONTENT}}", content)
-        self.assertEqual(len(composed.encode()), 52358)
+        self.assertEqual(len(composed.encode()), 41747)
         self.assertEqual(
             hashlib.sha256(composed.encode()).hexdigest(),
-            "837ab484645b28aca486e9ecc1d7abea92805838259f0c94c12e0b2b8f825492",
+            "a7ac2f11af5c04fc2df3ee14c2c5a4dc6027d0e50b231f2c827270427d0ced48",
         )
 
 

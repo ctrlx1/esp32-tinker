@@ -87,7 +87,15 @@ class ProjectRegistryTests(unittest.TestCase):
     def test_repository_registry_is_valid(self) -> None:
         registry = load_registry()
         self.assertEqual(
-            ["justin", "starter-max7219", "starter-template"],
+            [
+                "justin",
+                "moon_phase",
+                "weather_watch",
+                "real_weather",
+                "flight_watch",
+                "starter-max7219",
+                "starter-template",
+            ],
             [project.id for project in registry.projects],
         )
 

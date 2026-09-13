@@ -2,14 +2,10 @@
 
 #include "app_version.h"
 #include "programs/fireworks/fireworks.h"
-#include "programs/flight_watch.h"
 #include "programs/maze_hero/maze_hero.h"
-#include "programs/moon_phase.h"
 #include "programs/pixel_art/pixel_art.h"
-#include "programs/real_weather.h"
 #include "programs/scroller/scroller.h"
 #include "programs/transitions.h"
-#include "programs/weather_watch.h"
 #include "setup_html.h"
 
 namespace {
@@ -30,7 +26,7 @@ constexpr unsigned int DEFAULT_MAZE_HERO_MAX_SPEED_MS = 200;
 constexpr uint8_t DEFAULT_DISPLAY_BRIGHTNESS = 0;
 constexpr uint8_t DEFAULT_FIREWORKS_MAX_BRIGHTNESS = 15;
 
-constexpr uint8_t PROGRAM_COUNT = 8;
+constexpr uint8_t PROGRAM_COUNT = 4;
 
 template <void (*Callback)(const ProgramConfig &)>
 void dispatchProgram(void *context, uint8_t) {
@@ -64,14 +60,6 @@ uint8_t parseSelectedProgramsArg(const String &value) {
       selectedPrograms |= PROGRAM_MAZE_HERO_FLAG;
     } else if (token == "pixel_art") {
       selectedPrograms |= PROGRAM_PIXEL_ART_FLAG;
-    } else if (token == "weather_watch") {
-      selectedPrograms |= PROGRAM_WEATHER_WATCH_FLAG;
-    } else if (token == "real_weather") {
-      selectedPrograms |= PROGRAM_REAL_WEATHER_FLAG;
-    } else if (token == "moon_phase") {
-      selectedPrograms |= PROGRAM_MOON_PHASE_FLAG;
-    } else if (token == "flight_watch") {
-      selectedPrograms |= PROGRAM_FLIGHT_WATCH_FLAG;
     }
     start = comma + 1;
   }
@@ -134,10 +122,10 @@ String htmlEscape(String value) {
 
 static_assert(static_cast<uint8_t>(ProgramId::Scroller) == 0,
               "Program order must remain persistence-compatible");
-static_assert(static_cast<uint8_t>(ProgramId::FlightWatch) == 7,
+static_assert(static_cast<uint8_t>(ProgramId::PixelArt) == 3,
               "Program order must remain persistence-compatible");
 
-const tinker::ProgramDescriptor JustinProject::kPrograms[8] = {
+const tinker::ProgramDescriptor JustinProject::kPrograms[4] = {
     {"scroller", &dispatchProgram<scrollerStart>,
      &dispatchProgram<scrollerTick>},
     {"fireworks", &dispatchProgram<fireworksStart>,
@@ -146,14 +134,6 @@ const tinker::ProgramDescriptor JustinProject::kPrograms[8] = {
      &dispatchProgram<mazeHeroTick>},
     {"pixel_art", &dispatchProgram<pixelArtStart>,
      &dispatchProgram<pixelArtTick>},
-    {"weather_watch", &dispatchProgram<weatherWatchStart>,
-     &dispatchProgram<weatherWatchTick>},
-    {"real_weather", &dispatchProgram<realWeatherStart>,
-     &dispatchProgram<realWeatherTick>},
-    {"moon_phase", &dispatchProgram<moonPhaseStart>,
-     &dispatchProgram<moonPhaseTick>},
-    {"flight_watch", &dispatchProgram<flightWatchStart>,
-     &dispatchProgram<flightWatchTick>},
 };
 
 JustinProject::JustinProject(tinker::RuntimeContext &runtime) {
@@ -178,11 +158,10 @@ bool JustinProject::migrateSettings(Preferences &, uint16_t) {
 void JustinProject::loadSettings(Preferences &preferences) {
   config_.program =
       parseProgramId(preferences.getString("program", "scroller"));
-  uint8_t savedPrograms = preferences.getUChar("programs", 0);
+  uint8_t savedPrograms =
+      preferences.getUChar("programs", 0) & PROGRAM_ALL_FLAGS;
   config_.selectedPrograms =
-      savedPrograms == 0
-          ? DEFAULT_SELECTED_PROGRAMS
-          : sanitizeSelectedPrograms(savedPrograms, config_.program);
+      savedPrograms == 0 ? DEFAULT_SELECTED_PROGRAMS : savedPrograms;
   config_.program =
       firstSelectedProgram(config_.selectedPrograms, config_.program);
   config_.programDurationMinutes =
@@ -258,30 +237,6 @@ void JustinProject::loadSettings(Preferences &preferences) {
       preferences.getUChar("brightness", DEFAULT_DISPLAY_BRIGHTNESS);
   config_.fireworksMaxBrightness = preferences.getUChar(
       "fwMaxBright", DEFAULT_FIREWORKS_MAX_BRIGHTNESS);
-  config_.weatherPostalCode = preferences.getString("wxZip", "");
-  if (config_.weatherPostalCode.length() >
-      MAX_WEATHER_POSTAL_CODE_LENGTH) {
-    config_.weatherPostalCode =
-        config_.weatherPostalCode.substring(0,
-                                            MAX_WEATHER_POSTAL_CODE_LENGTH);
-  }
-  config_.flightLat = preferences.getFloat("fltLat", DEFAULT_FLIGHT_LAT);
-  config_.flightLon = preferences.getFloat("fltLon", DEFAULT_FLIGHT_LON);
-  config_.flightRadius =
-      preferences.getFloat("fltRad", DEFAULT_FLIGHT_RADIUS);
-  if (config_.flightRadius <= 0.0f) {
-    config_.flightRadius = DEFAULT_FLIGHT_RADIUS;
-  }
-  config_.flightRadiusUnit =
-      preferences.getUChar("fltRadUnit", FLIGHT_RADIUS_UNIT_MI);
-  if (config_.flightRadiusUnit > FLIGHT_RADIUS_UNIT_KM) {
-    config_.flightRadiusUnit = FLIGHT_RADIUS_UNIT_MI;
-  }
-  config_.flightSpeedUnit =
-      preferences.getUChar("fltSpdUnit", FLIGHT_SPEED_UNIT_KT);
-  if (config_.flightSpeedUnit > FLIGHT_SPEED_UNIT_KPH) {
-    config_.flightSpeedUnit = FLIGHT_SPEED_UNIT_KT;
-  }
 
   if (config_.brightness > 15) {
     config_.brightness = 15;
@@ -325,24 +280,7 @@ void JustinProject::loadSettings(Preferences &preferences) {
   Serial.print(", brightness=");
   Serial.print(config_.brightness);
   Serial.print(", fwMaxBright=");
-  Serial.print(config_.fireworksMaxBrightness);
-  Serial.print(", wxZip=");
-  Serial.print(config_.weatherPostalCode.length() ? config_.weatherPostalCode
-                                                   : "(empty)");
-  Serial.print(", flight=");
-  Serial.print(config_.flightLat, 4);
-  Serial.print(",");
-  Serial.print(config_.flightLon, 4);
-  Serial.print(" r=");
-  Serial.print(config_.flightRadius, 1);
-  Serial.print(config_.flightRadiusUnit == FLIGHT_RADIUS_UNIT_KM ? "km"
-                                                                 : "mi");
-  Serial.print(" spd=");
-  Serial.println(config_.flightSpeedUnit == FLIGHT_SPEED_UNIT_MPH
-                     ? "mph"
-                     : (config_.flightSpeedUnit == FLIGHT_SPEED_UNIT_KPH
-                            ? "kph"
-                            : "kt"));
+  Serial.println(config_.fireworksMaxBrightness);
 }
 
 void JustinProject::saveSettings(Preferences &preferences) const {
@@ -364,12 +302,6 @@ void JustinProject::saveSettings(Preferences &preferences) const {
   preferences.putUInt("mzHeroMaxMs", config_.mazeHeroMaxSpeedMs);
   preferences.putUChar("brightness", config_.brightness);
   preferences.putUChar("fwMaxBright", config_.fireworksMaxBrightness);
-  preferences.putString("wxZip", config_.weatherPostalCode);
-  preferences.putFloat("fltLat", config_.flightLat);
-  preferences.putFloat("fltLon", config_.flightLon);
-  preferences.putFloat("fltRad", config_.flightRadius);
-  preferences.putUChar("fltRadUnit", config_.flightRadiusUnit);
-  preferences.putUChar("fltSpdUnit", config_.flightSpeedUnit);
 }
 
 uint8_t JustinProject::displayBrightness() const {
@@ -408,15 +340,6 @@ String JustinProject::buildPortalPage(const String &ip,
   page.replace("MIN_BRIGHTNESS_PLACEHOLDER", String(config_.brightness));
   page.replace("MAX_BRIGHTNESS_PLACEHOLDER",
                String(config_.fireworksMaxBrightness));
-  page.replace("WEATHER_ZIP_PLACEHOLDER",
-               htmlEscape(config_.weatherPostalCode));
-  page.replace("FLIGHT_LAT_PLACEHOLDER", String(config_.flightLat, 5));
-  page.replace("FLIGHT_LON_PLACEHOLDER", String(config_.flightLon, 5));
-  page.replace("FLIGHT_RADIUS_PLACEHOLDER", String(config_.flightRadius, 1));
-  page.replace("FLIGHT_RADIUS_UNIT_PLACEHOLDER",
-               String(config_.flightRadiusUnit));
-  page.replace("FLIGHT_SPEED_UNIT_PLACEHOLDER",
-               String(config_.flightSpeedUnit));
   return page;
 }
 
@@ -437,18 +360,6 @@ bool JustinProject::applyPortalRequest(const tinker::PortalRequest &request,
   }
   if (request.arg("programPixelArt") == "1") {
     selectedPrograms |= PROGRAM_PIXEL_ART_FLAG;
-  }
-  if (request.arg("programWeatherWatch") == "1") {
-    selectedPrograms |= PROGRAM_WEATHER_WATCH_FLAG;
-  }
-  if (request.arg("programRealWeather") == "1") {
-    selectedPrograms |= PROGRAM_REAL_WEATHER_FLAG;
-  }
-  if (request.arg("programMoonPhase") == "1") {
-    selectedPrograms |= PROGRAM_MOON_PHASE_FLAG;
-  }
-  if (request.arg("programFlightWatch") == "1") {
-    selectedPrograms |= PROGRAM_FLIGHT_WATCH_FLAG;
   }
   selectedPrograms &= PROGRAM_ALL_FLAGS;
   if (selectedPrograms == 0) {
@@ -570,56 +481,6 @@ bool JustinProject::applyPortalRequest(const tinker::PortalRequest &request,
     newConfig.mazeMaxHeight = mazeMaxHeight;
     newConfig.mazeHeroMinSpeedMs = mazeHeroMinSpeedMs;
     newConfig.mazeHeroMaxSpeedMs = mazeHeroMaxSpeedMs;
-  }
-
-  if (newConfig.selectedPrograms & PROGRAM_REAL_WEATHER_FLAG) {
-    String weatherPostalCode = request.arg("weatherPostalCode");
-    weatherPostalCode.trim();
-    if (weatherPostalCode.length() > MAX_WEATHER_POSTAL_CODE_LENGTH) {
-      error = "ZIP/postal code is too long.";
-      return false;
-    }
-    newConfig.weatherPostalCode = weatherPostalCode;
-  }
-
-  if (newConfig.selectedPrograms & PROGRAM_FLIGHT_WATCH_FLAG) {
-    float flightLat = request.arg("flightLat").toFloat();
-    float flightLon = request.arg("flightLon").toFloat();
-    float flightRadius = request.arg("flightRadius").toFloat();
-    uint8_t flightRadiusUnit =
-        static_cast<uint8_t>(request.arg("flightRadiusUnit").toInt());
-    uint8_t flightSpeedUnit =
-        static_cast<uint8_t>(request.arg("flightSpeedUnit").toInt());
-    if (flightLat < -90.0f || flightLat > 90.0f) {
-      error = "Latitude must be between -90 and 90.";
-      return false;
-    }
-    if (flightLon < -180.0f || flightLon > 180.0f) {
-      error = "Longitude must be between -180 and 180.";
-      return false;
-    }
-    if (flightRadius <= 0.0f) {
-      error = "Flight radius must be greater than 0.";
-      return false;
-    }
-    if (flightRadiusUnit > FLIGHT_RADIUS_UNIT_KM) {
-      flightRadiusUnit = FLIGHT_RADIUS_UNIT_MI;
-    }
-    if (flightSpeedUnit > FLIGHT_SPEED_UNIT_KPH) {
-      flightSpeedUnit = FLIGHT_SPEED_UNIT_KT;
-    }
-    float radiusNm = flightRadiusUnit == FLIGHT_RADIUS_UNIT_KM
-                         ? flightRadius * 0.539957f
-                         : flightRadius * 0.868976f;
-    if (radiusNm > MAX_FLIGHT_RADIUS_NM) {
-      error = "Flight radius must be at most 250 nautical miles.";
-      return false;
-    }
-    newConfig.flightLat = flightLat;
-    newConfig.flightLon = flightLon;
-    newConfig.flightRadius = flightRadius;
-    newConfig.flightRadiusUnit = flightRadiusUnit;
-    newConfig.flightSpeedUnit = flightSpeedUnit;
   }
 
   config_ = newConfig;
