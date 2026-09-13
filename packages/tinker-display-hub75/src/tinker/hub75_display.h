@@ -80,7 +80,6 @@ private:
   void drawCenteredMessage(const char *message);
   void drawScrolledMessage();
 #ifdef WOKWI_SIM
-  static uint8_t simChannelBit(uint8_t scaled, uint8_t bit, uint8_t shift);
   void configureSimPins();
   void writePin(int8_t pin, bool high) const;
   void pulsePin(int8_t pin) const;
@@ -92,7 +91,7 @@ private:
   static constexpr uint8_t kGlyphWidth = 6;
   static constexpr uint8_t kGlyphHeight = 8;
 #ifdef WOKWI_SIM
-  static constexpr uint8_t kWokwiColorBits = 1;
+  static constexpr uint8_t kWokwiColorBits = 4;
 #endif
 
 #ifdef WOKWI_SIM

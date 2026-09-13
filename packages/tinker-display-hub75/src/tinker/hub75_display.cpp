@@ -124,16 +124,6 @@ void Hub75Display::applyTextColor() {
 }
 
 #ifdef WOKWI_SIM
-uint8_t Hub75Display::simChannelBit(uint8_t scaled, uint8_t bit,
-                                    uint8_t shift) {
-  if (kWokwiColorBits == 1) {
-    // Portal brightness 4 scales 255 → 68, so the MSB is always 0. Treat any
-    // 4-bit-visible channel as on so the 1-bit sim still shows the scene.
-    return scaled >= 16 ? 1 : 0;
-  }
-  return static_cast<uint8_t>((scaled >> (bit + shift)) & 1);
-}
-
 void Hub75Display::configureSimPins() {
   const int8_t pins[] = {pins_.r1,  pins_.g1, pins_.b1, pins_.r2, pins_.g2,
                          pins_.b2,  pins_.a,  pins_.b,  pins_.c,  pins_.d,
@@ -205,12 +195,12 @@ void Hub75Display::flushSim() {
 
       for (uint8_t bit = 0; bit < kWokwiColorBits; ++bit) {
         const uint8_t colors = static_cast<uint8_t>(
-            (simChannelBit(topR, bit, shift) << 5) |
-            (simChannelBit(topG, bit, shift) << 4) |
-            (simChannelBit(topB, bit, shift) << 3) |
-            (simChannelBit(botR, bit, shift) << 2) |
-            (simChannelBit(botG, bit, shift) << 1) |
-            simChannelBit(botB, bit, shift));
+            (((topR >> (bit + shift)) & 1) << 5) |
+            (((topG >> (bit + shift)) & 1) << 4) |
+            (((topB >> (bit + shift)) & 1) << 3) |
+            (((botR >> (bit + shift)) & 1) << 2) |
+            (((botG >> (bit + shift)) & 1) << 1) |
+            ((botB >> (bit + shift)) & 1));
         if (colors != lastColors) {
           writePin(pins_.r1, (colors >> 5) & 1);
           writePin(pins_.g1, (colors >> 4) & 1);

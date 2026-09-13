@@ -1,8 +1,8 @@
 #include "wokwi-api.h"
 
-/* Wokwi HUB75-lite: 1 color bit per channel, LSB first. Must match
- * Hub75Display::kWokwiColorBits. One clock per pixel keeps the sim fluid. */
-#define HUB75_WOKWI_COLOR_BITS 1
+/* Wokwi HUB75-lite: 4 color bits per channel, LSB first. Must match
+ * Hub75Display::kWokwiColorBits. */
+#define HUB75_WOKWI_COLOR_BITS 4
 #define HUB75_WOKWI_WIDTH 64
 #define HUB75_WOKWI_HEIGHT 32
 

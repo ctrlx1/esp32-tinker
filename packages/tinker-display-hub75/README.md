@@ -11,8 +11,8 @@ in `beginColorFrame` / `endColorFrame`, which batch draws and flush once.
 `blitRgb565` copies a full RGB565 bitmap in one call; use it for offscreen
 compose so the live DMA panel does not show mid-frame rasterization.
 
-The Wokwi backend is a GPIO stand-in, not the hardware I2S DMA driver. It uses
-one color bit per channel, skips unchanged scan rows, and does not flush again
+The Wokwi backend is a GPIO stand-in, not the hardware I2S DMA driver. It sends
+4 color bits per channel, skips unchanged scan rows, and does not flush again
 on brightness-only updates. Rebuild `wokwi/hub75-matrix.chip.wasm` after
 changing `HUB75_WOKWI_COLOR_BITS`. Production firmware still draws full RGB565
 through `MatrixPanel_I2S_DMA`.
