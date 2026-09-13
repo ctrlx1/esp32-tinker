@@ -232,6 +232,18 @@ simulator session therefore starts with the firmware defaults.
 
 The `wokwi` PlatformIO environment defines `WOKWI_SIM=1`, so the firmware tries `Wokwi-GUEST` before starting the normal setup hotspot. Hardware builds use the default `esp32dev` environment.
 
+### Hard reset
+
+Discard all local tracked edits and untracked files, then rebuild a project from a clean tree. This cannot be undone.
+
+```bash
+git reset --hard HEAD
+git clean -fd
+./scripts/build.sh <project> --env wokwi
+```
+
+Replace `<project>` with a registered project id (`justin`, `flight_tracker`, …). Use `./scripts/build.sh <project>` instead if you want a production rebuild.
+
 If `localhost:8180` does not load:
 
 - Run **Wokwi: Select Config File** again and confirm the intended
