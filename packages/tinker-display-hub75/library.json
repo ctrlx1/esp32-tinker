@@ -1,0 +1,15 @@
+{
+  "name": "tinker-display-hub75",
+  "version": "0.1.0",
+  "description": "HUB75 RGB matrix adapter for ESP32 Tinker.",
+  "frameworks": [
+    "arduino"
+  ],
+  "platforms": [
+    "espressif32"
+  ],
+  "dependencies": {
+    "mrfaptastic/ESP32 HUB75 LED MATRIX PANEL DMA Display": "3.0.15",
+    "adafruit/Adafruit GFX Library": "1.11.11"
+  }
+}

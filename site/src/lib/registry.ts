@@ -41,6 +41,27 @@ const MAX7219_PROFILE = {
   ],
 };
 
+const HUB75_P4_PROFILE = {
+  id: "hub75-p4-64x32",
+  board: "ESP32 Dev Module",
+  display: "P4-256x128-2121-A5 HUB75, 64×32 RGB, 1/16 scan",
+  pins: [
+    { signal: "R1", gpio: "25" },
+    { signal: "G1", gpio: "26" },
+    { signal: "B1", gpio: "27" },
+    { signal: "R2", gpio: "14" },
+    { signal: "G2", gpio: "12" },
+    { signal: "B2", gpio: "13" },
+    { signal: "A", gpio: "23" },
+    { signal: "B", gpio: "19" },
+    { signal: "C", gpio: "5" },
+    { signal: "D", gpio: "17" },
+    { signal: "LAT", gpio: "4" },
+    { signal: "OE", gpio: "15" },
+    { signal: "CLK", gpio: "16" },
+  ],
+};
+
 function repoRoot(): string {
   return resolve(process.cwd(), "..");
 }
@@ -74,6 +95,9 @@ export function loadProjects(): SiteProject[] {
 export function hardwareProfile(project: SiteProject) {
   if (project.hardware.profile === MAX7219_PROFILE.id) {
     return MAX7219_PROFILE;
+  }
+  if (project.hardware.profile === HUB75_P4_PROFILE.id) {
+    return HUB75_P4_PROFILE;
   }
   return null;
 }

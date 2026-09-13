@@ -9,18 +9,18 @@ documents the boundary a new ESP32 Tinker project must implement before setting
 1. Copy this directory to `firmware/<project-id>`.
 2. Set `VERSION` to the new project's initial semantic version.
 3. Rename the `.example` source and portal files and replace every `TODO`.
-4. Add `platformio.ini` with the board, framework, pinned dependencies, and
-   production environment.
+4. Add `platformio.ini` with the board, framework, pinned dependencies,
+   production environment, and a Wokwi environment (see [Wokwi](#wokwi)).
 5. Add `hardware/<profile>.h` containing the board, pins, geometry, power notes,
    and concrete display adapter configuration.
-6. Add `wokwi.toml` and `diagram.json` only when the hardware is supported by
-   Wokwi.
+6. Add Wokwi files in the same change as the hardware profile. Do not leave a
+   new buildable project without a simulator target.
 7. Choose a unique NVS namespace no longer than 15 characters and define a
    settings version/migration.
 8. Add a unique entry to `projects.json`, including:
    - `id`, `name`, `description`, `path`, and `versionFile`;
    - `buildable: true`;
-   - production and optional Wokwi environments;
+   - production **and** Wokwi environments (`"wokwi": "wokwi"`);
    - configured hardware profile and chip family;
    - dependency and pre-build metadata;
    - unique docs route/path;
@@ -32,9 +32,37 @@ documents the boundary a new ESP32 Tinker project must implement before setting
 ```bash
 ./scripts/check-deps.sh <project-id>
 ./scripts/build.sh <project-id>
+./scripts/build.sh <project-id> --env wokwi
 ```
 
-Use `firmware/starter-max7219` as the complete runnable reference.
+Use `firmware/starter-max7219` as the complete runnable MAX7219 reference, or
+`firmware/flight_tracker` for HUB75.
+
+## Wokwi
+
+Every project copied from this template must ship a simulator target. Wokwi is
+how the repo develops without hardware; `./scripts/build.sh <project> --env wokwi`
+is the development-mode command.
+
+Required files (rename the `.example` copies and replace every `TODO`):
+
+- `platformio.ini` `[env:wokwi]` with `build_flags = -D WOKWI_SIM=1`
+- `wokwi.toml` pointing at `.pio/build/wokwi/firmware.bin` and forwarding
+  `localhost:8180` to the device HTTP port
+- `diagram.json` with `board-esp32-devkit-c-v4`, the display part, and wires
+  that match `hardware/<profile>.h` (do not copy another project's pin map)
+
+Register `"wokwi": "wokwi"` under `environments` in `projects.json`. CI builds
+every registered environment, so a missing Wokwi env is an incomplete project.
+
+If Wokwi has no official part for the panel, still add the diagram using the
+closest unofficial or custom-chip part and note that in the project README.
+`starter-max7219` uses `wokwi-max7219-matrix`; `flight_tracker` uses a custom
+`chip-hub75-matrix` because Wokwi does not emulate HUB75 I2S DMA.
+
+After building the Wokwi firmware, select `firmware/<project-id>/wokwi.toml`,
+start the simulator, and open `http://localhost:8180`. The firmware joins
+`Wokwi-GUEST` when `WOKWI_SIM=1` is set.
 
 ## Runtime contract
 
@@ -63,6 +91,7 @@ directory.
 
 ## Intentional status
 
-`starter-template` has no `platformio.ini`, concrete adapter, simulator, or
-publishable artifacts. Dependency checks report it as an intentionally skipped
-hardware-unassigned template, and direct build/publish commands fail clearly.
+`starter-template` has no `platformio.ini`, concrete adapter, or publishable
+artifacts. Wokwi files are `.example` scaffolds only. Dependency checks report
+it as an intentionally skipped hardware-unassigned template, and direct
+build/publish commands fail clearly.

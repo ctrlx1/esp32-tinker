@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "author": "ESP32 Tinker",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "chip-hub75-matrix",
+      "id": "matrix",
+      "top": -50,
+      "left": -220,
+      "attrs": {}
+    },
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 280,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    ["esp:TX", "$serialMonitor:RX", "", []],
+    ["esp:RX", "$serialMonitor:TX", "", []],
+    ["matrix:R1", "esp:25", "green", ["h20", "*", "h-36"]],
+    ["matrix:G1", "esp:26", "green", ["h28", "*", "h-36"]],
+    ["matrix:B1", "esp:27", "blue", ["h36", "*", "h-36"]],
+    ["matrix:R2", "esp:14", "orange", ["h44", "*", "h-36"]],
+    ["matrix:G2", "esp:12", "green", ["h52", "*", "h-36"]],
+    ["matrix:B2", "esp:13", "blue", ["h60", "*", "h-36"]],
+    ["matrix:A", "esp:23", "yellow", ["h68", "*", "h-36"]],
+    ["matrix:B", "esp:19", "yellow", ["h76", "*", "h-36"]],
+    ["matrix:C", "esp:5", "magenta", ["h84", "*", "h-36"]],
+    ["matrix:D", "esp:17", "magenta", ["h92", "*", "h-36"]],
+    ["matrix:E", "esp:GND.2", "black", ["h100", "*", "h-36"]],
+    ["matrix:LAT", "esp:4", "cyan", ["h108", "*", "h-36"]],
+    ["matrix:OE", "esp:15", "white", ["h116", "*", "h-36"]],
+    ["matrix:CLK", "esp:16", "red", ["h124", "*", "h-36"]],
+    ["matrix:GND", "esp:GND.1", "black", ["h12", "*", "h-36"]],
+    ["matrix:VCC", "esp:5V", "red", ["h8", "*", "h-36"]]
+  ],
+  "dependencies": {},
+  "serialMonitor": {
+    "display": "terminal",
+    "convertEol": true
+  }
+}

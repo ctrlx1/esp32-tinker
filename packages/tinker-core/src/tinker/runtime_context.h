@@ -47,6 +47,12 @@ public:
            displayCapabilities_->framebuffer.setPoint;
   }
 
+  bool hasColor() const {
+    return displayCapabilities_ && displayCapabilities_->color.setTextColor &&
+           displayCapabilities_->color.fill &&
+           displayCapabilities_->color.setPixel;
+  }
+
   void clearText() const {
     if (displayCapabilities_ && displayCapabilities_->text.clear) {
       displayCapabilities_->text.clear(displayContext_);
@@ -173,6 +179,26 @@ public:
     if (displayCapabilities_ && displayCapabilities_->framebuffer.setPoint) {
       displayCapabilities_->framebuffer.setPoint(displayContext_, row, column,
                                                  on);
+    }
+  }
+
+  void setTextColor(uint8_t r, uint8_t g, uint8_t b) const {
+    if (displayCapabilities_ && displayCapabilities_->color.setTextColor) {
+      displayCapabilities_->color.setTextColor(displayContext_, r, g, b);
+    }
+  }
+
+  void fillColor(uint8_t r, uint8_t g, uint8_t b) const {
+    if (displayCapabilities_ && displayCapabilities_->color.fill) {
+      displayCapabilities_->color.fill(displayContext_, r, g, b);
+    }
+  }
+
+  void setPixelColor(uint8_t row, uint16_t column, uint8_t r, uint8_t g,
+                     uint8_t b) const {
+    if (displayCapabilities_ && displayCapabilities_->color.setPixel) {
+      displayCapabilities_->color.setPixel(displayContext_, row, column, r, g,
+                                           b);
     }
   }
 

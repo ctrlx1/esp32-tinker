@@ -1,0 +1,26 @@
+{
+  "name": "HUB75 64x32",
+  "author": "ESP32 Tinker",
+  "pins": [
+    "R1",
+    "G1",
+    "B1",
+    "R2",
+    "G2",
+    "B2",
+    "A",
+    "B",
+    "VCC",
+    "GND",
+    "CLK",
+    "OE",
+    "LAT",
+    "E",
+    "D",
+    "C"
+  ],
+  "display": {
+    "width": 256,
+    "height": 128
+  }
+}

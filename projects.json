@@ -225,6 +225,48 @@
       }
     },
     {
+      "id": "flight_tracker",
+      "name": "Flight Tracker",
+      "description": "HUB75 Hello World color cycle for the P4-256x128-2121-A5 panel.",
+      "path": "firmware/flight_tracker",
+      "versionFile": "firmware/flight_tracker/VERSION",
+      "buildable": true,
+      "environments": {
+        "production": "esp32dev",
+        "wokwi": "wokwi"
+      },
+      "hardware": {
+        "status": "configured",
+        "profile": "hub75-p4-64x32",
+        "chipFamily": "ESP32"
+      },
+      "preBuild": [],
+      "dependencies": {
+        "commands": [],
+        "pythonModules": []
+      },
+      "docs": {
+        "route": "/flight-tracker/",
+        "path": "site/public/firmware/flight_tracker",
+        "manifest": "site/public/firmware/flight_tracker/manifest.json"
+      },
+      "artifacts": {
+        "bootloader": {
+          "source": "bootloader.bin",
+          "offset": 4096
+        },
+        "partitions": {
+          "source": "partitions.bin",
+          "offset": 32768
+        },
+        "app": {
+          "source": "firmware.bin",
+          "offset": 65536,
+          "publishedName": "firmware.bin"
+        }
+      }
+    },
+    {
       "id": "starter-max7219",
       "name": "Starter MAX7219",
       "description": "Minimal Hello World firmware for the four-module MAX7219 reference setup.",

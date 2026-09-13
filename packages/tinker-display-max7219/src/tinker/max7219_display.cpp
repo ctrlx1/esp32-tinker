@@ -46,6 +46,7 @@ const DisplayCapabilities Max7219Display::kCapabilities = {
     {&Max7219Display::width, &Max7219Display::height,
      &Max7219Display::beginFrame, &Max7219Display::endFrame,
      &Max7219Display::clearFrame, &Max7219Display::setPoint},
+    {},
 };
 
 Max7219Display::Max7219Display(const Config &config)

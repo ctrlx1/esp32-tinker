@@ -65,6 +65,8 @@ class Stage11CiTests(unittest.TestCase):
                 ("real_weather", "wokwi"),
                 ("flight_watch", "production"),
                 ("flight_watch", "wokwi"),
+                ("flight_tracker", "production"),
+                ("flight_tracker", "wokwi"),
                 ("starter-max7219", "production"),
                 ("starter-max7219", "wokwi"),
             },
@@ -82,7 +84,7 @@ class Stage11CiTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         data = json.loads(result.stdout)
         self.assertIn("include", data)
-        self.assertEqual(12, len(data["include"]))
+        self.assertEqual(14, len(data["include"]))
 
     def test_validate_site_rejects_version_mismatch(self) -> None:
         fixture = RegistryFixture()

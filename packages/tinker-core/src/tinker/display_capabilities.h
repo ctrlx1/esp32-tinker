@@ -43,11 +43,19 @@ struct FramebufferDisplayCapabilities {
   void (*setPoint)(void *context, uint8_t row, uint16_t column, bool on);
 };
 
+struct ColorDisplayCapabilities {
+  void (*setTextColor)(void *context, uint8_t r, uint8_t g, uint8_t b);
+  void (*fill)(void *context, uint8_t r, uint8_t g, uint8_t b);
+  void (*setPixel)(void *context, uint8_t row, uint16_t column, uint8_t r,
+                   uint8_t g, uint8_t b);
+};
+
 struct DisplayCapabilities {
   TextDisplayCapabilities text;
   BrightnessDisplayCapabilities brightness;
   BootDisplayCapabilities boot;
   FramebufferDisplayCapabilities framebuffer;
+  ColorDisplayCapabilities color;
 };
 
 } // namespace tinker

@@ -1,0 +1,190 @@
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Flight Tracker Setup</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 1rem;
+        display: grid;
+        place-items: center;
+        background: #101010;
+        color: #eee;
+        font-family: system-ui, sans-serif;
+      }
+      main {
+        width: min(100%, 380px);
+        padding: 1.25rem;
+        border: 1px solid #303030;
+        border-radius: 14px;
+        background: #1a1a1a;
+      }
+      h1 { margin: 0; font-size: 1.35rem; }
+      .sub, .hint { color: #999; font-size: 0.82rem; }
+      .status { margin: 0.5rem 0 1rem; color: #74b9ff; }
+      section {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #303030;
+      }
+      label { display: block; margin: 0.7rem 0 0.3rem; font-weight: 600; }
+      input, button {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid #3a3a3a;
+        border-radius: 8px;
+        padding: 0.65rem;
+        background: #121212;
+        color: #eee;
+      }
+      button {
+        margin-top: 0.8rem;
+        cursor: pointer;
+        border-color: #d35400;
+        background: #e67e22;
+        color: #111;
+        font-weight: 700;
+      }
+      button.secondary {
+        background: #242424;
+        border-color: #444;
+        color: #ddd;
+      }
+      .network {
+        text-align: left;
+        margin-top: 0.4rem;
+        background: #242424;
+        border-color: #444;
+        color: #eee;
+      }
+      .message { min-height: 1.2rem; margin-top: 0.7rem; font-size: 0.88rem; }
+      .error { color: #ff7675; }
+      .success { color: #55efc4; }
+      progress { width: 100%; margin-top: 0.7rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Flight Tracker</h1>
+      <div class="sub">Version APP_VERSION_PLACEHOLDER</div>
+      <div class="status">Connected &mdash; IP_PLACEHOLDER</div>
+
+      <section>
+        <strong>Wi-Fi</strong>
+        <button class="secondary" type="button" onclick="scanNetworks()">
+          Scan for networks
+        </button>
+        <div id="networks"></div>
+        <label for="ssid">Network name</label>
+        <input id="ssid" value="SSID_PLACEHOLDER" placeholder="Keep saved network" />
+        <label for="pass">Password</label>
+        <input id="pass" type="password" placeholder="Keep saved password" />
+      </section>
+
+      <section>
+        <strong>Display</strong>
+        <label for="brightness">Brightness (0&ndash;15)</label>
+        <input id="brightness" type="number" min="0" max="15"
+               value="BRIGHTNESS_PLACEHOLDER" />
+        <button type="button" onclick="saveSettings()">Save &amp; restart</button>
+        <div id="save-message" class="message"></div>
+      </section>
+
+      <section>
+        <strong>Firmware update</strong>
+        <div class="hint">
+          Expected file: APP_FIRMWARE_FILENAME_PLACEHOLDER
+        </div>
+        <input id="firmware" type="file" accept=".bin" />
+        <button class="secondary" type="button" onclick="uploadFirmware()">
+          Upload firmware
+        </button>
+        <progress id="progress" value="0" max="100" hidden></progress>
+        <div id="ota-message" class="message"></div>
+      </section>
+    </main>
+
+    <script>
+      function setMessage(id, text, isError) {
+        const element = document.getElementById(id);
+        element.textContent = text;
+        element.className = "message " + (isError ? "error" : "success");
+      }
+
+      async function scanNetworks() {
+        const container = document.getElementById("networks");
+        container.textContent = "Scanning...";
+        try {
+          const response = await fetch("/scan");
+          const networks = await response.json();
+          container.replaceChildren();
+          networks.forEach(function (network) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "network";
+            button.textContent =
+              network.ssid + " (" + network.rssi + " dBm)" +
+              (network.secure ? " \uD83D\uDD12" : "");
+            button.onclick = function () {
+              document.getElementById("ssid").value = network.ssid;
+            };
+            container.appendChild(button);
+          });
+          if (!networks.length) container.textContent = "No networks found.";
+        } catch (error) {
+          container.textContent = "Network scan failed.";
+        }
+      }
+
+      async function saveSettings() {
+        const params = new URLSearchParams({
+          ssid: document.getElementById("ssid").value,
+          pass: document.getElementById("pass").value,
+          brightness: document.getElementById("brightness").value
+        });
+        try {
+          const response = await fetch("/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: params.toString()
+          });
+          const text = await response.text();
+          setMessage("save-message", text, !response.ok);
+        } catch (error) {
+          setMessage("save-message", "Save failed.", true);
+        }
+      }
+
+      function uploadFirmware() {
+        const file = document.getElementById("firmware").files[0];
+        if (!file) {
+          setMessage("ota-message", "Choose a .bin file first.", true);
+          return;
+        }
+        const progress = document.getElementById("progress");
+        const request = new XMLHttpRequest();
+        request.open("POST", "/update");
+        request.upload.onprogress = function (event) {
+          if (event.lengthComputable) {
+            progress.hidden = false;
+            progress.value = Math.round(event.loaded * 100 / event.total);
+          }
+        };
+        request.onload = function () {
+          setMessage(
+            "ota-message",
+            request.status === 200 ? "Upload complete. Restarting..." : request.responseText,
+            request.status !== 200
+          );
+        };
+        request.onerror = function () {
+          setMessage("ota-message", "Upload failed.", true);
+        };
+        const data = new FormData();
+        data.append("firmware", file, file.name);
+        request.send(data);
+      }
+    </script>
+  </body>
