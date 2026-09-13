@@ -279,13 +279,24 @@ def superseded_app_glob(project: Project) -> str:
 
 def retain_docs_app_binaries(project: Project) -> None:
     current = project.published_app_name
-    for path in project.docs_path.glob(superseded_app_glob(project)):
-        if not path.is_file() or path.name == current:
-            continue
-        if path.parent != project.docs_path:
-            continue
-        path.unlink()
-        print(f"{project.id}: removed superseded {path.name}")
+    leftover_globs = {
+        superseded_app_glob(project),
+        "firmware_*.bin",
+        f"{project.id}_*.bin",
+    }
+    seen = set()
+    for pattern in leftover_globs:
+        for path in project.docs_path.glob(pattern):
+            resolved = path.resolve()
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            if not path.is_file() or path.name == current:
+                continue
+            if path.parent != project.docs_path:
+                continue
+            path.unlink()
+            print(f"{project.id}: removed superseded {path.name}")
 
 
 def publish_staged_project(project: Project) -> int:

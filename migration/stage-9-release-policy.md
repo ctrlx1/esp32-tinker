@@ -9,7 +9,7 @@ GitHub Releases (Stage 11) replace the current `docs/` installer.
 | --- | --- |
 | Project IDs | `justin`, `moon_phase`, `weather_watch`, `real_weather`, `flight_watch`, `starter-max7219`, `starter-template` |
 | Initial versions | `justin` remains `2.0.4`; extracted and starter projects start at `1.0.0` |
-| App filenames | `justin` keeps `firmware_<version>.bin`; every other buildable project uses `<project>_<version>.bin` |
+| App filenames | Every buildable project publishes a stable `firmware.bin` in its own folder |
 | Docs routes | `/` for `justin`; hyphenated routes such as `/moon-phase/` for the others |
 | Release tags | `<project>/v<version>` (for example `justin/v2.0.5`) |
 
@@ -31,9 +31,8 @@ filename is rejected.
 ## Retention
 
 - `dist/` is local and ephemeral. Do not commit it.
-- Each project keeps only its current app binary on its docs path
-  (`firmware_<version>.bin` for `justin`, `<project>_<version>.bin` otherwise).
-  Publishing a newer version removes that project's previous app binaries.
+- Each project keeps only the current `firmware.bin` on its site path.
+  Publishing overwrites that file and removes leftover versioned app binaries.
 - Older builds are not uploaded to GitHub Releases in this stage. Revisit that
   when Stage 11 adds release automation.
 

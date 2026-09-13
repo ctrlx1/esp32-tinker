@@ -15,7 +15,7 @@ with open(version_path, "r", encoding="utf-8") as version_file:
 if not SEMVER_RE.match(app_version):
     raise RuntimeError(f"VERSION must contain strict semver, got: {app_version!r}")
 
-firmware_filename = f"starter-max7219_{app_version}.bin"
+firmware_filename = "firmware.bin"
 
 with open(out_path, "w", encoding="utf-8") as out_file:
     out_file.write("// Auto-generated from VERSION - do not edit\n")

@@ -34,7 +34,7 @@ Use this instead of calling `pio` directly.
 Stages a verified production package under `dist/<project>/<version>/`.
 
 - Usage: `./scripts/stage.sh <project|all>`
-- Copies bootloader, partitions, and the project-qualified app binary
+- Copies bootloader, partitions, and a stable `firmware.bin`
 - Writes `metadata.json` with project, version, environment, chip, offsets, and hashes
 - Production builds also stage automatically after a successful compile
 
@@ -71,15 +71,13 @@ user has asked to publish the tag. See `migration/stage-9-release-policy.md`.
 
 The [browser installer](https://justinmahar.github.io/esp32-tinker/) (esp-web-tools) serves these files from GitHub Pages. OTA updates on a flashed device use the app partition binary only; the browser installer flashes the full image.
 
-## `scripts/preview-installer.sh`
+## `scripts/build-site.sh` / `scripts/preview-site.sh`
 
-Serves `docs/` locally to preview the browser installer before publishing.
+Build or preview the Astro catalog in `site/`.
 
-- Default URL: `http://localhost:8765/`
-- Optional port: `./scripts/preview-installer.sh 9000`
-- Uses `python3 -m http.server`
-
-Use this to verify `docs/index.html`, `docs/manifest.json`, and the `.bin` files without pushing to GitHub Pages.
+- Requires Node.js and npm
+- Preview URL: `http://localhost:4321/esp32-tinker/`
+- `scripts/preview-installer.sh` is a compatibility wrapper around `preview-site.sh`
 
 ## Deploy / Dev
 

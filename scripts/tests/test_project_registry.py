@@ -51,7 +51,7 @@ def project_entry(project_id: str, route: str = "/") -> dict:
             "app": {
                 "source": "firmware.bin",
                 "offset": 65536,
-                "publishedName": f"{project_id}_{{version}}.bin",
+                "publishedName": "firmware.bin",
             },
         },
     }
@@ -263,7 +263,7 @@ class ProjectRegistryTests(unittest.TestCase):
         fixture = RegistryFixture()
         self.addCleanup(fixture.close)
         project = project_entry("alpha")
-        project["docs"]["manifest"] = "docs/alpha/alpha_1.0.0.bin"
+        project["docs"]["manifest"] = "docs/alpha/firmware.bin"
         path = fixture.write([project])
 
         with self.assertRaisesRegex(RegistryError, "collide"):
@@ -347,10 +347,10 @@ class ProjectRegistryTests(unittest.TestCase):
 
         self.assertEqual(0, result)
         manifest = json.loads(project.manifest_path.read_text(encoding="utf-8"))
-        self.assertEqual("alpha_1.0.0.bin", manifest["builds"][0]["parts"][2]["path"])
+        self.assertEqual("firmware.bin", manifest["builds"][0]["parts"][2]["path"])
         self.assertEqual(
             b"firmware.bin",
-            (project.docs_path / "alpha_1.0.0.bin").read_bytes(),
+            (project.docs_path / "firmware.bin").read_bytes(),
         )
 
     def test_deploy_rejects_template_without_bumping_version(self) -> None:

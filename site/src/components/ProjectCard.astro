@@ -1,0 +1,20 @@
+---
+import VersionBadge from "./VersionBadge.astro";
+import HardwareBadge from "./HardwareBadge.astro";
+import { withBase } from "../lib/paths";
+import type { SiteProject } from "../lib/registry";
+
+interface Props {
+  project: SiteProject;
+}
+
+const { project } = Astro.props;
+---
+<a class="card card-link" href={withBase(project.href)}>
+  <h2>{project.name}</h2>
+  <p>{project.description}</p>
+  <div class="badges">
+    <VersionBadge version={project.version} />
+    <HardwareBadge project={project} />
+  </div>
+</a>

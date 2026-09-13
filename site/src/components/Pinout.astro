@@ -1,0 +1,27 @@
+---
+import { hardwareProfile, type SiteProject } from "../lib/registry";
+
+interface Props {
+  project: SiteProject;
+}
+const { project } = Astro.props;
+const profile = hardwareProfile(project);
+---
+<section class="panel">
+  <h2>Hardware</h2>
+  {profile ? (
+    <>
+      <p>{profile.board}. {profile.display}.</p>
+      <ul class="pinout">
+        {profile.pins.map((pin) => (
+          <li>
+            <code>{pin.signal}</code>
+            <span>GPIO {pin.gpio}</span>
+          </li>
+        ))}
+      </ul>
+    </>
+  ) : (
+    <p>This template has no assigned board, display, or pin map yet. Copy it and fill in a hardware profile before building.</p>
+  )}
+</section>

@@ -65,9 +65,9 @@ class Stage9PackagingTests(unittest.TestCase):
         justin = registry.project("justin")
         moon = registry.project("moon_phase")
 
-        self.assertEqual("firmware_2.0.4.bin", justin.published_app_name)
+        self.assertEqual("firmware.bin", justin.published_app_name)
         self.assertEqual("justin/v2.0.4", justin.release_tag())
-        self.assertEqual("moon_phase_1.0.0.bin", moon.published_app_name)
+        self.assertEqual("firmware.bin", moon.published_app_name)
         self.assertEqual("moon_phase/v1.0.0", moon.release_tag())
         self.assertEqual(
             justin.root / "dist" / "justin" / "2.0.4", justin.dist_dir
@@ -87,8 +87,8 @@ class Stage9PackagingTests(unittest.TestCase):
         self.assertEqual("1.0.0", metadata["version"])
         self.assertEqual("esp32dev", metadata["environment"])
         self.assertEqual("ESP32", metadata["chipFamily"])
-        self.assertEqual("alpha_1.0.0.bin", metadata["artifacts"]["app"]["filename"])
-        self.assertTrue((project.dist_dir / "alpha_1.0.0.bin").is_file())
+        self.assertEqual("firmware.bin", metadata["artifacts"]["app"]["filename"])
+        self.assertTrue((project.dist_dir / "firmware.bin").is_file())
         self.assertFalse((fixture.root / "dist" / "firmware.bin").exists())
 
     def test_publish_copies_only_the_selected_project_docs(self) -> None:
@@ -108,10 +108,10 @@ class Stage9PackagingTests(unittest.TestCase):
 
         self.assertEqual(
             b"alpha-firmware.bin",
-            (alpha.docs_path / "alpha_1.0.0.bin").read_bytes(),
+            (alpha.docs_path / "firmware.bin").read_bytes(),
         )
         self.assertFalse((beta.docs_path / "beta_1.0.0.bin").exists())
-        self.assertTrue((beta.dist_dir / "beta_1.0.0.bin").is_file())
+        self.assertTrue((beta.dist_dir / "firmware.bin").is_file())
 
     def test_publish_rejects_package_from_another_project(self) -> None:
         fixture = RegistryFixture()
@@ -161,13 +161,13 @@ class Stage9PackagingTests(unittest.TestCase):
         project = load_registry(path=path, root=fixture.root).project("alpha")
         write_build_artifacts(project)
         self.assertEqual(0, stage_project(project))
-        (project.dist_dir / "alpha_1.0.0.bin").write_bytes(b"tampered")
+        (project.dist_dir / "firmware.bin").write_bytes(b"tampered")
 
         with self.assertRaisesRegex(RegistryError, "hash mismatch"):
             validate_staged_package(project)
 
         metadata = json.loads(project.package_metadata_path.read_text(encoding="utf-8"))
-        metadata["artifacts"]["app"]["filename"] = "beta_1.0.0.bin"
+        metadata["artifacts"]["app"]["filename"] = "other.bin"
         project.package_metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
         with self.assertRaisesRegex(RegistryError, "filename"):
             validate_staged_package(project)
@@ -180,6 +180,8 @@ class Stage9PackagingTests(unittest.TestCase):
         write_build_artifacts(project)
         self.assertEqual(0, publish_project(project))
         old_app = project.docs_path / "alpha_1.0.0.bin"
+        old_app.write_bytes(b"old")
+        current_app = project.docs_path / "firmware.bin"
         self.assertTrue(old_app.is_file())
 
         bump_project(project, "patch")
@@ -187,7 +189,7 @@ class Stage9PackagingTests(unittest.TestCase):
         self.assertEqual(0, publish_project(project))
 
         self.assertFalse(old_app.exists())
-        self.assertTrue((project.docs_path / "alpha_1.0.1.bin").is_file())
+        self.assertTrue(current_app.is_file())
 
     def test_justin_drops_superseded_firmware_bins_only(self) -> None:
         fixture = RegistryFixture()
@@ -198,7 +200,6 @@ class Stage9PackagingTests(unittest.TestCase):
             "path": "docs",
             "manifest": "docs/manifest.json",
         }
-        justin["artifacts"]["app"]["publishedName"] = "firmware_{version}.bin"
         path = fixture.write([justin, project_entry("alpha", "/alpha/")])
         project = load_registry(path=path, root=fixture.root).project("justin")
         sibling = load_registry(path=path, root=fixture.root).project("alpha")
@@ -214,7 +215,7 @@ class Stage9PackagingTests(unittest.TestCase):
 
         self.assertFalse(historical.exists())
         self.assertTrue(leftover.is_file())
-        self.assertTrue((project.docs_path / "firmware_1.0.0.bin").is_file())
+        self.assertTrue((project.docs_path / "firmware.bin").is_file())
 
     def test_release_paths_stay_inside_one_project(self) -> None:
         fixture = RegistryFixture()
@@ -225,13 +226,12 @@ class Stage9PackagingTests(unittest.TestCase):
             "path": "docs",
             "manifest": "docs/manifest.json",
         }
-        justin["artifacts"]["app"]["publishedName"] = "firmware_{version}.bin"
         path = fixture.write([justin, project_entry("alpha", "/alpha/")])
         project = load_registry(path=path, root=fixture.root).project("justin")
 
         names = {path.name for path in scoped_release_paths(project)}
         self.assertEqual(
-            {"VERSION", "bootloader.bin", "partitions.bin", "firmware_1.0.0.bin",
+            {"VERSION", "bootloader.bin", "partitions.bin", "firmware.bin",
              "manifest.json"},
             names,
         )

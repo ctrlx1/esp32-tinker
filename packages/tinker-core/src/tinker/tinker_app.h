@@ -238,11 +238,7 @@ private:
   }
 
   String expectedFirmwareFilename() const {
-    const ProjectDefinition definition = project_.definition();
-    if (strcmp(definition.id, "justin") == 0) {
-      return String("firmware_") + definition.version + ".bin";
-    }
-    return String(definition.id) + "_" + definition.version + ".bin";
+    return String("firmware.bin");
   }
 
   bool otaFilenameAllowed(const String &filename) const {

@@ -36,9 +36,9 @@
         ]
       },
       "docs": {
-        "route": "/",
-        "path": "docs",
-        "manifest": "docs/manifest.json"
+        "route": "/justin/",
+        "path": "site/public/firmware/justin",
+        "manifest": "site/public/firmware/justin/manifest.json"
       },
       "artifacts": {
         "bootloader": {
@@ -52,7 +52,7 @@
         "app": {
           "source": "firmware.bin",
           "offset": 65536,
-          "publishedName": "firmware_{version}.bin"
+          "publishedName": "firmware.bin"
         }
       }
     },
@@ -79,8 +79,8 @@
       },
       "docs": {
         "route": "/moon-phase/",
-        "path": "docs/moon-phase",
-        "manifest": "docs/moon-phase/manifest.json"
+        "path": "site/public/firmware/moon_phase",
+        "manifest": "site/public/firmware/moon_phase/manifest.json"
       },
       "artifacts": {
         "bootloader": {
@@ -94,7 +94,7 @@
         "app": {
           "source": "firmware.bin",
           "offset": 65536,
-          "publishedName": "moon_phase_{version}.bin"
+          "publishedName": "firmware.bin"
         }
       }
     },
@@ -121,8 +121,8 @@
       },
       "docs": {
         "route": "/weather-watch/",
-        "path": "docs/weather-watch",
-        "manifest": "docs/weather-watch/manifest.json"
+        "path": "site/public/firmware/weather_watch",
+        "manifest": "site/public/firmware/weather_watch/manifest.json"
       },
       "artifacts": {
         "bootloader": {
@@ -136,7 +136,7 @@
         "app": {
           "source": "firmware.bin",
           "offset": 65536,
-          "publishedName": "weather_watch_{version}.bin"
+          "publishedName": "firmware.bin"
         }
       }
     },
@@ -163,8 +163,8 @@
       },
       "docs": {
         "route": "/real-weather/",
-        "path": "docs/real-weather",
-        "manifest": "docs/real-weather/manifest.json"
+        "path": "site/public/firmware/real_weather",
+        "manifest": "site/public/firmware/real_weather/manifest.json"
       },
       "artifacts": {
         "bootloader": {
@@ -178,7 +178,7 @@
         "app": {
           "source": "firmware.bin",
           "offset": 65536,
-          "publishedName": "real_weather_{version}.bin"
+          "publishedName": "firmware.bin"
         }
       }
     },
@@ -205,8 +205,8 @@
       },
       "docs": {
         "route": "/flight-watch/",
-        "path": "docs/flight-watch",
-        "manifest": "docs/flight-watch/manifest.json"
+        "path": "site/public/firmware/flight_watch",
+        "manifest": "site/public/firmware/flight_watch/manifest.json"
       },
       "artifacts": {
         "bootloader": {
@@ -220,7 +220,7 @@
         "app": {
           "source": "firmware.bin",
           "offset": 65536,
-          "publishedName": "flight_watch_{version}.bin"
+          "publishedName": "firmware.bin"
         }
       }
     },
@@ -247,8 +247,8 @@
       },
       "docs": {
         "route": "/starter-max7219/",
-        "path": "docs/starter-max7219",
-        "manifest": "docs/starter-max7219/manifest.json"
+        "path": "site/public/firmware/starter-max7219",
+        "manifest": "site/public/firmware/starter-max7219/manifest.json"
       },
       "artifacts": {
         "bootloader": {
@@ -262,7 +262,7 @@
         "app": {
           "source": "firmware.bin",
           "offset": 65536,
-          "publishedName": "starter-max7219_{version}.bin"
+          "publishedName": "firmware.bin"
         }
       }
     },
@@ -283,7 +283,7 @@
       },
       "docs": {
         "route": "/starter-template/",
-        "path": "docs/starter-template"
+        "path": "site/public/firmware/starter-template"
       }
     }
   ]

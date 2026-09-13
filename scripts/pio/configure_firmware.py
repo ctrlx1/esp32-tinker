@@ -31,7 +31,7 @@ with open(version_path, "r", encoding="utf-8") as version_file:
 if not SEMVER_RE.fullmatch(app_version):
     raise RuntimeError(f"VERSION must contain strict semver, got: {app_version!r}")
 
-firmware_filename = f"{project_id}_{app_version}.bin"
+firmware_filename = "firmware.bin"
 
 with open(version_header_path, "w", encoding="utf-8") as out_file:
     out_file.write("// Auto-generated from VERSION - do not edit\n")

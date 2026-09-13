@@ -258,6 +258,13 @@ def check_dependencies(target: str, mode: Optional[str]) -> int:
             failed = True
             print("\n  miss  Wokwi extension  install wokwi.wokwi-vscode")
 
+    node = shutil.which("node")
+    npm = shutil.which("npm")
+    if node and npm:
+        print(f"\n  ok    Site tooling      node + npm ({node})")
+    else:
+        print("\n  warn  Site tooling      node/npm not found (needed only for ./scripts/build-site.sh)")
+
     print()
     if failed:
         print("Missing required dependencies or invalid project configuration.")

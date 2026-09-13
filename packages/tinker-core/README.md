@@ -41,7 +41,6 @@ compose them into one generated PROGMEM page during their PlatformIO pre-build
 step. This keeps routes and the outer document contract shared without adding
 runtime string-fragment assembly on the ESP32.
 
-OTA uploads that use a project-qualified filename
-(`<project>_<version>.bin`, or `firmware_<version>.bin` for `justin`) are
-rejected when they belong to a different project. Generic names such as
-PlatformIO's `firmware.bin` are still accepted.
+OTA uploads expect `firmware.bin`. Names that look like another project's
+versioned binary (`<project>_<version>.bin`) are rejected. Generic
+PlatformIO `firmware.bin` uploads are accepted.

@@ -301,10 +301,6 @@ def _validate_project(root: Path, raw: Any, index: int) -> Project:
         artifacts["app"].get("publishedName"),
         f"{label}.artifacts.app.publishedName",
     )
-    if "{version}" not in published_name:
-        raise RegistryError(
-            f"{label}.artifacts.app.publishedName must contain '{{version}}'"
-        )
     try:
         fields = list(Formatter().parse(published_name))
     except ValueError as exc:

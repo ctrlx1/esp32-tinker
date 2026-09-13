@@ -152,7 +152,7 @@ Verify Python, PlatformIO, project-specific tools, and supported simulator envir
 ./scripts/check-deps.sh all --env wokwi
 ```
 
-The checker reads `projects.json`, exits non-zero if the requested scope is not ready, and prints install hints.
+The checker reads `projects.json`, exits non-zero if the requested scope is not ready, and prints install hints. Node and npm are optional here; they are required only for the Astro site.
 
 Each project version lives in `firmware/<project>/VERSION`. Increment one with:
 
@@ -235,30 +235,24 @@ If `localhost:8180` does not load:
 
 ### Web installer binaries
 
-The [browser installer](https://justinmahar.github.io/esp32-tinker/) uses pre-built flash images in `docs/`, referenced by `docs/manifest.json`:
-
-| File                         | Source (after `pio run`)                          |
-| ---------------------------- | ------------------------------------------------- |
-| `docs/bootloader.bin`        | `firmware/justin/.pio/build/esp32dev/bootloader.bin` |
-| `docs/partitions.bin`        | `firmware/justin/.pio/build/esp32dev/partitions.bin` |
-| `docs/firmware_VERSION.bin`  | `firmware/justin/.pio/build/esp32dev/firmware.bin`   |
-
-To refresh the web installer after firmware changes:
+The Astro installer catalog lives in `site/`. Each buildable project publishes
+only the current `firmware.bin` plus bootloader, partitions, and `manifest.json`
+under `site/public/firmware/<project>/`. Version is stored in `VERSION` and the
+manifest, not the filename.
 
 ```bash
-./scripts/bump-version.sh justin
 ./scripts/build.sh justin
 ./scripts/publish.sh justin
+./scripts/build-site.sh
+./scripts/preview-site.sh
 ```
 
-A production build stages a verified package under `dist/<project>/<version>/`
-with project, chip, environment, partition, and hash metadata.
-`scripts/publish.sh` copies from that package only after the metadata matches
-the registry, so one project's binaries cannot be published as another.
+Open `http://localhost:4321/esp32-tinker/`. The original installer is now
+`/esp32-tinker/justin/`. `docs/` remains the current GitHub Pages tree until
+site deployment is switched in a later stage.
 
-`scripts/update-web-installer.sh` remains as a temporary compatibility wrapper
-for `justin`. Artifact names, tags, and retention are recorded in
-`migration/stage-9-release-policy.md`.
+`scripts/preview-installer.sh` now wraps `preview-site.sh`. Artifact names,
+tags, and retention are recorded in `migration/stage-9-release-policy.md`.
 
 **Note:** OTA updates on a flashed device use the app partition binary only. The browser installer flashes the full image (bootloader + partition table + app).
 

@@ -1,0 +1,24 @@
+---
+interface Props {
+  installable: boolean;
+}
+const { installable } = Astro.props;
+---
+<section class="panel">
+  <h2>Setup</h2>
+  <ol class="steps">
+    {installable ? (
+      <>
+        <li><strong>1</strong><span>Connect the ESP32 over USB and use Chrome or Edge.</span></li>
+        <li><strong>2</strong><span>Install from this page, then join the setup hotspot shown on the matrix.</span></li>
+        <li><strong>3</strong><span>Open the captive portal, save Wi-Fi, and visit the device IP to reconfigure or upload <code>firmware.bin</code>.</span></li>
+      </>
+    ) : (
+      <>
+        <li><strong>1</strong><span>Copy <code>firmware/starter-template</code> to a new project folder.</span></li>
+        <li><strong>2</strong><span>Choose an ID, version, settings, and hardware profile. Use <code>starter-max7219</code> as the MAX7219 reference.</span></li>
+        <li><strong>3</strong><span>Add one <code>projects.json</code> entry, then run <code>./scripts/build.sh &lt;id&gt;</code>.</span></li>
+      </>
+    )}
+  </ol>
+</section>
