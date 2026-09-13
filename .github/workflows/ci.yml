@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate registry and tests
+        run: ./scripts/validate.sh
+      - id: matrix
+        name: Firmware matrix
+        run: |
+          {
+            echo "matrix<<EOF"
+            ./scripts/ci-matrix.sh
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  firmware:
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.validate.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: ${{ runner.os }}-pio-${{ matrix.project }}-${{ matrix.env }}-${{ hashFiles(format('firmware/{0}/platformio.ini', matrix.project), 'packages/**/library.json') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-${{ matrix.project }}-${{ matrix.env }}-
+            ${{ runner.os }}-pio-${{ matrix.project }}-
+      - name: Install PlatformIO
+        run: python3 -m pip install --upgrade platformio
+      - name: Build ${{ matrix.project }} (${{ matrix.env }})
+        run: ./scripts/build.sh ${{ matrix.project }} --env ${{ matrix.env }}
+
+  site:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Build site
+        run: ./scripts/build-site.sh
+      - name: Validate site
+        run: ./scripts/validate-site.sh

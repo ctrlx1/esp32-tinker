@@ -1,0 +1,45 @@
+#include "template_project.h"
+
+#include "app_version.h"
+#include "setup_html.h"
+
+TemplateProject::TemplateProject(tinker::RuntimeContext &runtime)
+    : runtime_(runtime) {}
+
+tinker::ProjectDefinition TemplateProject::definition() const {
+  return {
+      "TODO-project-id",
+      "TODO Project Name",
+      APP_VERSION,
+      "TODO-Setup-",
+      {"TODO_namespace", "cfgVer", 1},
+  };
+}
+
+bool TemplateProject::migrateSettings(Preferences &, uint16_t) {
+  // TODO: Make every migration idempotent.
+  return true;
+}
+
+void TemplateProject::loadSettings(Preferences &) {}
+void TemplateProject::saveSettings(Preferences &) const {}
+uint8_t TemplateProject::displayBrightness() const { return 0; }
+
+String TemplateProject::buildPortalPage(const String &, const String &) const {
+  // TODO: Replace project placeholders in SETUP_PORTAL_HTML.
+  return FPSTR(SETUP_PORTAL_HTML);
+}
+
+bool TemplateProject::applyPortalRequest(const tinker::PortalRequest &,
+                                         String &) {
+  // TODO: Validate project fields before updating settings.
+  return true;
+}
+
+void TemplateProject::startPrograms() {
+  // TODO: Start project programs with the capabilities they require.
+}
+
+void TemplateProject::tickPrograms() {
+  // TODO: Tick active programs without blocking the core runtime.
+}

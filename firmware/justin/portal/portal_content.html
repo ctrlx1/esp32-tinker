@@ -1,0 +1,1105 @@
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ESP32 Tinker Setup</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #111;
+        color: #e8e8e8;
+        font-family: system-ui, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 1rem;
+      }
+      .card {
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 14px;
+        width: 100%;
+        max-width: 360px;
+        overflow: hidden;
+      }
+      .header {
+        background: #0d0d0d;
+        padding: 18px 22px;
+        border-bottom: 1px solid #222;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .dot {
+        width: 28px;
+        height: 28px;
+        background: #3b82f6;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 700;
+        color: #061a3a;
+      }
+      h1 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #f0f0f0;
+      }
+      .sub {
+        font-size: 12px;
+        color: #555;
+        margin-top: 3px;
+      }
+      .version {
+        display: inline-flex;
+        margin-top: 8px;
+        padding: 4px 8px;
+        border: 1px solid #1d4a7a;
+        border-radius: 999px;
+        background: #081426;
+        color: #60a5fa;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .body {
+        padding: 20px 22px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+      }
+      .status {
+        background: #081426;
+        border: 1px solid #1d4a7a;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 12px;
+        color: #60a5fa;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .dot-blue {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #3b82f6;
+        flex-shrink: 0;
+      }
+      .section {
+        font-size: 11px;
+        font-weight: 600;
+        color: #555;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #777;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        display: block;
+        margin-bottom: 4px;
+      }
+      select {
+        width: 100%;
+        background: #1c1c1c;
+        border: 1px solid #2e2e2e;
+        border-radius: 8px;
+        padding: 9px 12px;
+        font-size: 13px;
+        color: #e8e8e8;
+        outline: none;
+      }
+      select:focus {
+        border-color: #3b82f6;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .program-config {
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+      }
+      .program-config .hint {
+        margin-top: 6px;
+      }
+      .settings-card {
+        background: #141414;
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        padding: 14px 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+      }
+      .settings-card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #f0f0f0;
+      }
+      input[type="text"],
+      input[type="password"],
+      input[type="url"],
+      input[type="number"] {
+        width: 100%;
+        background: #1c1c1c;
+        border: 1px solid #2e2e2e;
+        border-radius: 8px;
+        padding: 9px 12px;
+        font-size: 13px;
+        color: #e8e8e8;
+        outline: none;
+      }
+      input[type="text"]:focus,
+      input[type="password"]:focus,
+      input[type="url"]:focus,
+      input[type="number"]:focus {
+        border-color: #3b82f6;
+      }
+      .checks {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+      .check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #1c1c1c;
+        border: 1px solid #2e2e2e;
+        border-radius: 8px;
+        padding: 9px 12px;
+        font-size: 13px;
+        color: #e8e8e8;
+      }
+      .check input {
+        accent-color: #3b82f6;
+      }
+      .check span {
+        font-size: 13px;
+        color: #e8e8e8;
+        text-transform: none;
+        letter-spacing: 0;
+      }
+      input::placeholder {
+        color: #444;
+      }
+      .hint {
+        font-size: 11px;
+        color: #555;
+        margin-top: 3px;
+      }
+      .divider {
+        height: 1px;
+        background: #222;
+      }
+      .btn {
+        width: 100%;
+        background: #3b82f6;
+        color: #061a3a;
+        border: none;
+        border-radius: 8px;
+        padding: 11px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 4px;
+      }
+      .btn:hover {
+        background: #2563eb;
+      }
+      .btn-ota {
+        width: 100%;
+        background: #1c1c1c;
+        color: #e8e8e8;
+        border: 1px solid #2e2e2e;
+        border-radius: 8px;
+        padding: 11px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 4px;
+      }
+      .btn-ota:hover {
+        background: #252525;
+      }
+      .btn-reset {
+        width: 100%;
+        background: #1c1c1c;
+        color: #e8e8e8;
+        border: 1px solid #2e2e2e;
+        border-radius: 8px;
+        padding: 9px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 4px;
+      }
+      .btn-reset:hover {
+        background: #252525;
+      }
+      .msg {
+        font-size: 13px;
+        text-align: center;
+        padding: 8px;
+        border-radius: 8px;
+        display: none;
+      }
+      .msg.ok {
+        background: #081426;
+        color: #60a5fa;
+        border: 1px solid #1d4a7a;
+        display: block;
+      }
+      .msg.err {
+        background: #1a0a0a;
+        color: #f87171;
+        border: 1px solid #3a1a1a;
+        display: block;
+      }
+      .msg.info {
+        background: #0a0e1a;
+        color: #60a5fa;
+        border: 1px solid #1a2a3a;
+        display: block;
+      }
+      .progress-wrap {
+        background: #1c1c1c;
+        border-radius: 8px;
+        height: 8px;
+        overflow: hidden;
+        display: none;
+      }
+      .progress-wrap.show {
+        display: block;
+      }
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: #3b82f6;
+        border-radius: 8px;
+        transition: width 0.2s;
+      }
+      input[type="file"] {
+        width: 100%;
+        background: #1c1c1c;
+        border: 1px solid #2e2e2e;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 13px;
+        color: #888;
+        outline: none;
+        cursor: pointer;
+      }
+      input[type="file"]::file-selector-button {
+        background: #3b82f6;
+        color: #061a3a;
+        border: none;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      .btn-scan {
+        width: 100%;
+        background: #1c1c1c;
+        color: #e8e8e8;
+        border: 1px solid #2e2e2e;
+        border-radius: 8px;
+        padding: 9px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .btn-scan:hover {
+        background: #252525;
+      }
+      .btn-scan.spinning span {
+        display: inline-block;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .net-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        display: none;
+      }
+      .net-list.show {
+        display: flex;
+      }
+      .net-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #1c1c1c;
+        border: 1px solid #2e2e2e;
+        border-radius: 8px;
+        padding: 9px 12px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: border-color 0.15s;
+      }
+      .net-item:hover {
+        border-color: #3b82f6;
+      }
+      .net-item.active {
+        border-color: #3b82f6;
+        background: #081426;
+      }
+      .net-name {
+        color: #e8e8e8;
+        font-weight: 500;
+      }
+      .net-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .net-lock {
+        font-size: 11px;
+        color: #555;
+      }
+      .net-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 14px;
+      }
+      .net-bars span {
+        width: 3px;
+        background: #555;
+        border-radius: 1px;
+      }
+      .net-bars span.lit {
+        background: #3b82f6;
+      }
+      .pw-wrap {
+        position: relative;
+      }
+      .pw-wrap input {
+        padding-right: 38px;
+      }
+      .eye-btn {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #555;
+        font-size: 16px;
+        line-height: 1;
+        padding: 0;
+      }
+      .eye-btn:hover {
+        color: #aaa;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="header">
+        <div class="logo">
+          <div class="dot">&#9654;</div>
+          <div>
+            <h1>ESP32 Tinker</h1>
+            <div class="sub">Device setup</div>
+            <div class="version">Version APP_VERSION_PLACEHOLDER</div>
+          </div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="status">
+          <div class="dot-blue"></div>
+          Connected &mdash; IP_PLACEHOLDER
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">Wi-Fi Settings</div>
+          <button class="btn-scan" id="scan-btn" onclick="scanNetworks()">
+            <span>&#8635;</span> Scan for networks
+          </button>
+          <div class="net-list" id="net-list"></div>
+          <div>
+            <label>Network name (SSID)</label
+            ><input
+              type="text"
+              id="ssid"
+              placeholder="Leave blank to keep saved"
+              value="SSID_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label
+              >Password
+              <span style="color: #555; font-weight: 400; text-transform: none"
+                >(leave blank to keep saved)</span
+              ></label
+            >
+            <div class="pw-wrap">
+              <input
+                type="password"
+                id="pw"
+                placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+              /><button
+                class="eye-btn"
+                type="button"
+                onclick="toggleEye('pw', 'eye-pw')"
+              >
+                <span id="eye-pw">&#128065;</span>
+              </button>
+            </div>
+          </div>
+        </div>
+{{JUSTIN_PROGRAM_SETTINGS}}
+        <div id="msg" class="msg"></div>
+        <button class="btn" onclick="save()">Save &amp; connect</button>
+        <div class="settings-card">
+          <div class="settings-card-title">Firmware Update</div>
+          <div>
+            <label>Firmware .bin file</label>
+            <input type="file" id="binfile" accept=".bin" />
+            <div class="hint">
+              Published firmware file: APP_FIRMWARE_FILENAME_PLACEHOLDER
+            </div>
+          </div>
+          <div class="progress-wrap" id="prog-wrap">
+            <div class="progress-bar" id="prog-bar"></div>
+          </div>
+          <div id="ota-msg" class="msg"></div>
+          <button class="btn-ota" onclick="uploadFirmware()">
+            Upload firmware
+          </button>
+        </div>
+      </div>
+    </div>
+    <script>
+      var SETUP_STORAGE_KEY = "esp32TinkerSetup";
+      var SERVER_PROGRAM = "PROGRAM_PLACEHOLDER";
+      var SERVER_SELECTED_PROGRAMS = "SELECTED_PROGRAMS_PLACEHOLDER";
+      var SERVER_PROGRAM_DURATION_MINUTES = "PROGRAM_DURATION_PLACEHOLDER";
+      var PROGRAM_IDS = [
+        "scroller",
+        "fireworks",
+        "maze_hero",
+        "pixel_art",
+      ];
+      var PROGRAM_CHECKBOX_IDS = {
+        scroller: "program-scroller",
+        fireworks: "program-fireworks",
+        maze_hero: "program-maze-hero",
+        pixel_art: "program-pixel-art",
+      };
+      var PROGRAM_DEFAULTS = {
+        scroller: {
+          scrollMessage: "",
+          scrollSpeed: "75",
+        },
+        fireworks: {
+          fireworksMinDelay: "60",
+          fireworksMaxDelay: "2000",
+          fireworksAnimMs: "60",
+          fireworksMaxBrightness: "15",
+        },
+        maze_hero: {
+          mazeMinWidth: "8",
+          mazeMaxWidth: "40",
+          mazeMinHeight: "4",
+          mazeMaxHeight: "24",
+          mazeHeroMinSpeed: "120",
+          mazeHeroMaxSpeed: "200",
+        },
+      };
+      var PROGRAM_LABELS = {
+        scroller: "Simple Scroller",
+        fireworks: "Fireworks",
+        maze_hero: "Maze Hero",
+        pixel_art: "Pixel Art",
+      };
+      function isProgramSelected(program) {
+        return document.getElementById(PROGRAM_CHECKBOX_IDS[program]).checked;
+      }
+      function selectedPrograms() {
+        return PROGRAM_IDS.filter(isProgramSelected);
+      }
+      function setSelectedPrograms(programs) {
+        PROGRAM_IDS.forEach(function (program) {
+          document.getElementById(PROGRAM_CHECKBOX_IDS[program]).checked =
+            programs.indexOf(program) !== -1;
+        });
+      }
+      function parsedProgramList(value) {
+        if (!value) return [];
+        return value
+          .split(",")
+          .map(function (program) {
+            return program.trim();
+          })
+          .filter(function (program) {
+            return PROGRAM_IDS.indexOf(program) !== -1;
+          });
+      }
+      function defaultSelectedPrograms() {
+        var programs = parsedProgramList(SERVER_SELECTED_PROGRAMS);
+        if (programs.length) return programs;
+        if (PROGRAM_IDS.indexOf(SERVER_PROGRAM) !== -1) return [SERVER_PROGRAM];
+        return ["fireworks", "maze_hero"];
+      }
+      function updateProgramConfigVisibility() {
+        document.getElementById("scroller-config").hidden =
+          !isProgramSelected("scroller");
+        document.getElementById("fireworks-config").hidden =
+          !isProgramSelected("fireworks");
+        document.getElementById("maze-hero-config").hidden =
+          !isProgramSelected("maze_hero");
+        document.getElementById("brightness-label").textContent =
+          isProgramSelected("fireworks") ? "Min brightness" : "Brightness";
+        document.getElementById("brightness-hint").textContent =
+          isProgramSelected("fireworks")
+            ? "Baseline brightness for text and the dimmest Fireworks frames."
+            : "Baseline brightness for text and animations.";
+      }
+      function persistSetupForm() {
+        try {
+          localStorage.setItem(
+            SETUP_STORAGE_KEY,
+            JSON.stringify({
+              ssid: document.getElementById("ssid").value,
+              selectedPrograms: selectedPrograms(),
+              programDurationMinutes: document.getElementById(
+                "program-duration-minutes",
+              ).value,
+              scrollMessage: document.getElementById("scroll-message").value,
+              scrollSpeed: document.getElementById("scroll-speed").value,
+              fireworksMinDelay: document.getElementById("fireworks-min-delay")
+                .value,
+              fireworksMaxDelay: document.getElementById("fireworks-max-delay")
+                .value,
+              fireworksAnimMs:
+                document.getElementById("fireworks-anim-ms").value,
+              mazeMinWidth: document.getElementById("maze-min-width").value,
+              mazeMaxWidth: document.getElementById("maze-max-width").value,
+              mazeMinHeight: document.getElementById("maze-min-height").value,
+              mazeMaxHeight: document.getElementById("maze-max-height").value,
+              mazeHeroMinSpeed: document.getElementById(
+                "maze-hero-min-speed",
+              ).value,
+              mazeHeroMaxSpeed: document.getElementById(
+                "maze-hero-max-speed",
+              ).value,
+              brightness: document.getElementById("brightness").value,
+              fireworksMaxBrightness: document.getElementById(
+                "fireworks-max-brightness",
+              ).value,
+            }),
+          );
+        } catch (e) {}
+      }
+      function restoreSetupForm() {
+        try {
+          var raw = localStorage.getItem(SETUP_STORAGE_KEY);
+          if (!raw) return;
+          var d = JSON.parse(raw);
+          if (d.ssid != null) document.getElementById("ssid").value = d.ssid;
+          if (Array.isArray(d.selectedPrograms)) {
+            setSelectedPrograms(
+              d.selectedPrograms.filter(function (program) {
+                return PROGRAM_IDS.indexOf(program) !== -1;
+              }),
+            );
+          } else if (d.program != null && PROGRAM_IDS.indexOf(d.program) !== -1) {
+            setSelectedPrograms([d.program]);
+          }
+          if (d.programDurationMinutes != null)
+            document.getElementById("program-duration-minutes").value =
+              d.programDurationMinutes;
+          if (d.scrollMessage != null)
+            document.getElementById("scroll-message").value = d.scrollMessage;
+          if (d.scrollSpeed != null)
+            document.getElementById("scroll-speed").value = d.scrollSpeed;
+          if (d.fireworksMinDelay != null)
+            document.getElementById("fireworks-min-delay").value =
+              d.fireworksMinDelay;
+          if (d.fireworksMaxDelay != null)
+            document.getElementById("fireworks-max-delay").value =
+              d.fireworksMaxDelay;
+          if (d.fireworksCount != null && d.fireworksMinDelay == null)
+            document.getElementById("fireworks-min-delay").value =
+              d.fireworksCount;
+          if (d.fireworksAnimMs != null)
+            document.getElementById("fireworks-anim-ms").value =
+              d.fireworksAnimMs;
+          if (d.mazeMinWidth != null)
+            document.getElementById("maze-min-width").value = d.mazeMinWidth;
+          if (d.mazeMaxWidth != null)
+            document.getElementById("maze-max-width").value = d.mazeMaxWidth;
+          if (d.mazeMinHeight != null)
+            document.getElementById("maze-min-height").value = d.mazeMinHeight;
+          if (d.mazeMaxHeight != null)
+            document.getElementById("maze-max-height").value = d.mazeMaxHeight;
+          if (d.mazeHeroMinSpeed != null)
+            document.getElementById("maze-hero-min-speed").value =
+              d.mazeHeroMinSpeed;
+          if (d.mazeHeroMaxSpeed != null)
+            document.getElementById("maze-hero-max-speed").value =
+              d.mazeHeroMaxSpeed;
+          if (d.mazeHeroSpeed != null && d.mazeHeroMinSpeed == null)
+            document.getElementById("maze-hero-min-speed").value =
+              d.mazeHeroSpeed;
+          if (d.mazeHeroSpeed != null && d.mazeHeroMaxSpeed == null)
+            document.getElementById("maze-hero-max-speed").value =
+              d.mazeHeroSpeed;
+          if (d.brightness != null)
+            document.getElementById("brightness").value = d.brightness;
+          if (d.fireworksMaxBrightness != null)
+            document.getElementById("fireworks-max-brightness").value =
+              d.fireworksMaxBrightness;
+        } catch (e) {}
+      }
+      function bindSetupPersist() {
+        [
+          "ssid",
+          "program-scroller",
+          "program-fireworks",
+          "program-maze-hero",
+          "program-pixel-art",
+          "program-duration-minutes",
+          "scroll-message",
+          "scroll-speed",
+          "fireworks-min-delay",
+          "fireworks-max-delay",
+          "fireworks-anim-ms",
+          "maze-min-width",
+          "maze-max-width",
+          "maze-min-height",
+          "maze-max-height",
+          "maze-hero-min-speed",
+          "maze-hero-max-speed",
+          "brightness",
+          "fireworks-max-brightness",
+        ].forEach(function (id) {
+          var el = document.getElementById(id);
+          el.addEventListener("input", persistSetupForm);
+          if (el.type === "checkbox") {
+            el.addEventListener("change", function () {
+              updateProgramConfigVisibility();
+              persistSetupForm();
+            });
+          }
+        });
+      }
+      function setValue(id, value) {
+        document.getElementById(id).value = value;
+      }
+      function resetProgramDefaults() {
+        var programs = selectedPrograms();
+        if (!programs.length) {
+          programs = defaultSelectedPrograms();
+          setSelectedPrograms(programs);
+          updateProgramConfigVisibility();
+        }
+        if (programs.indexOf("scroller") !== -1) {
+          setValue("scroll-message", PROGRAM_DEFAULTS.scroller.scrollMessage);
+          setValue("scroll-speed", PROGRAM_DEFAULTS.scroller.scrollSpeed);
+        }
+        if (programs.indexOf("fireworks") !== -1) {
+          setValue(
+            "fireworks-min-delay",
+            PROGRAM_DEFAULTS.fireworks.fireworksMinDelay,
+          );
+          setValue(
+            "fireworks-max-delay",
+            PROGRAM_DEFAULTS.fireworks.fireworksMaxDelay,
+          );
+          setValue(
+            "fireworks-anim-ms",
+            PROGRAM_DEFAULTS.fireworks.fireworksAnimMs,
+          );
+          setValue(
+            "fireworks-max-brightness",
+            PROGRAM_DEFAULTS.fireworks.fireworksMaxBrightness,
+          );
+        }
+        if (programs.indexOf("maze_hero") !== -1) {
+          setValue("maze-min-width", PROGRAM_DEFAULTS.maze_hero.mazeMinWidth);
+          setValue("maze-max-width", PROGRAM_DEFAULTS.maze_hero.mazeMaxWidth);
+          setValue("maze-min-height", PROGRAM_DEFAULTS.maze_hero.mazeMinHeight);
+          setValue("maze-max-height", PROGRAM_DEFAULTS.maze_hero.mazeMaxHeight);
+          setValue(
+            "maze-hero-min-speed",
+            PROGRAM_DEFAULTS.maze_hero.mazeHeroMinSpeed,
+          );
+          setValue(
+            "maze-hero-max-speed",
+            PROGRAM_DEFAULTS.maze_hero.mazeHeroMaxSpeed,
+          );
+        }
+        persistSetupForm();
+        var msg = document.getElementById("msg");
+        msg.className = "msg info";
+        msg.textContent = "Selected program settings reset in this browser.";
+      }
+      function barsHtml(rssi) {
+        var lvl = rssi > -55 ? 4 : rssi > -65 ? 3 : rssi > -75 ? 2 : 1;
+        var h = '<div class="net-bars">';
+        var heights = [4, 7, 10, 14];
+        for (var i = 0; i < 4; i++) {
+          h +=
+            '<span style="height:' +
+            heights[i] +
+            'px"' +
+            (i < lvl ? ' class="lit"' : "") +
+            " ></span>";
+        }
+        return h + "</div>";
+      }
+      function scanNetworks() {
+        var btn = document.getElementById("scan-btn");
+        var list = document.getElementById("net-list");
+        btn.classList.add("spinning");
+        btn.disabled = true;
+        list.className = "net-list";
+        list.innerHTML = "";
+        fetch("/scan")
+          .then((r) => r.json())
+          .then((nets) => {
+            btn.classList.remove("spinning");
+            btn.disabled = false;
+            if (!nets.length) {
+              list.innerHTML =
+                '<div style="font-size:12px;color:#555;text-align:center">No networks found</div>';
+              list.className = "net-list show";
+              return;
+            }
+            list.innerHTML = nets
+              .map(function (n) {
+                return (
+                  '<div class="net-item" onclick="pickNet(this,\'' +
+                  n.ssid.replace(/'/g, "\\'") +
+                  "')\">" +
+                  '<span class="net-name">' +
+                  n.ssid +
+                  "</span>" +
+                  '<span class="net-meta">' +
+                  barsHtml(n.rssi) +
+                  (n.secure ? '<span class="net-lock">&#128274;</span>' : "") +
+                  "</span>" +
+                  "</div>"
+                );
+              })
+              .join("");
+            list.className = "net-list show";
+          })
+          .catch(function () {
+            btn.classList.remove("spinning");
+            btn.disabled = false;
+          });
+      }
+      function pickNet(el, ssid) {
+        document.querySelectorAll(".net-item").forEach(function (x) {
+          x.classList.remove("active");
+        });
+        el.classList.add("active");
+        document.getElementById("ssid").value = ssid;
+        persistSetupForm();
+        document.getElementById("pw").focus();
+      }
+      function toggleEye(inputId, iconId) {
+        var inp = document.getElementById(inputId);
+        var ico = document.getElementById(iconId);
+        if (inp.type === "password") {
+          inp.type = "text";
+          ico.textContent = "\uD83D\uDE48";
+        } else {
+          inp.type = "password";
+          ico.textContent = "\uD83D\uDC41";
+        }
+      }
+      function save() {
+        var s = document.getElementById("ssid").value.trim();
+        var p = document.getElementById("pw").value;
+        var programs = selectedPrograms();
+        var program = programs.length ? programs[0] : "";
+        var programDurationMinutes = parseFloat(
+          document.getElementById("program-duration-minutes").value,
+        );
+        var scrollMessage = document
+          .getElementById("scroll-message")
+          .value.trim();
+        var scrollSpeed = parseInt(
+          document.getElementById("scroll-speed").value,
+          10,
+        );
+        var fireworksMinDelay = parseInt(
+          document.getElementById("fireworks-min-delay").value,
+          10,
+        );
+        var fireworksMaxDelay = parseInt(
+          document.getElementById("fireworks-max-delay").value,
+          10,
+        );
+        var fireworksAnimMs = parseInt(
+          document.getElementById("fireworks-anim-ms").value,
+          10,
+        );
+        var mazeMinWidth = parseInt(
+          document.getElementById("maze-min-width").value,
+          10,
+        );
+        var mazeMaxWidth = parseInt(
+          document.getElementById("maze-max-width").value,
+          10,
+        );
+        var mazeMinHeight = parseInt(
+          document.getElementById("maze-min-height").value,
+          10,
+        );
+        var mazeMaxHeight = parseInt(
+          document.getElementById("maze-max-height").value,
+          10,
+        );
+        var mazeHeroMinSpeed = parseInt(
+          document.getElementById("maze-hero-min-speed").value,
+          10,
+        );
+        var mazeHeroMaxSpeed = parseInt(
+          document.getElementById("maze-hero-max-speed").value,
+          10,
+        );
+        var brightness = parseInt(
+          document.getElementById("brightness").value,
+          10,
+        );
+        var fireworksMaxBrightness = parseInt(
+          document.getElementById("fireworks-max-brightness").value,
+          10,
+        );
+        var msg = document.getElementById("msg");
+        if (isNaN(brightness) || brightness < 0 || brightness > 15) {
+          msg.className = "msg err";
+          msg.textContent = "Min brightness must be 0-15.";
+          return;
+        }
+        if (!programs.length) {
+          msg.className = "msg err";
+          msg.textContent = "Select at least one program.";
+          return;
+        }
+        if (
+          isNaN(programDurationMinutes) ||
+          programDurationMinutes <= 0 ||
+          programDurationMinutes > 43200
+        ) {
+          msg.className = "msg err";
+          msg.textContent = "Program duration must be > 0 and <= 43200.";
+          return;
+        }
+        if (isProgramSelected("scroller")) {
+          if (scrollMessage.length > 64) {
+            msg.className = "msg err";
+            msg.textContent = "Scroll message must be 64 characters or fewer.";
+            return;
+          }
+          if (!scrollSpeed || scrollSpeed <= 0) {
+            msg.className = "msg err";
+            msg.textContent = "Scroll speed must be greater than 0.";
+            return;
+          }
+        }
+        if (isProgramSelected("fireworks")) {
+          if (!fireworksMinDelay || fireworksMinDelay <= 0) {
+            msg.className = "msg err";
+            msg.textContent = "Min launch delay must be greater than 0.";
+            return;
+          }
+          if (!fireworksMaxDelay || fireworksMaxDelay < fireworksMinDelay) {
+            msg.className = "msg err";
+            msg.textContent =
+              "Max launch delay must be greater than or equal to min.";
+            return;
+          }
+          if (!fireworksAnimMs || fireworksAnimMs <= 0) {
+            msg.className = "msg err";
+            msg.textContent = "Animation speed must be greater than 0.";
+            return;
+          }
+          if (
+            isNaN(fireworksMaxBrightness) ||
+            fireworksMaxBrightness < brightness ||
+            fireworksMaxBrightness > 15
+          ) {
+            msg.className = "msg err";
+            msg.textContent = "Max brightness must be min brightness to 15.";
+            return;
+          }
+        }
+        if (isProgramSelected("maze_hero")) {
+          if (
+            !mazeMinWidth ||
+            !mazeMinHeight ||
+            mazeMinWidth < 4 ||
+            mazeMinHeight < 4
+          ) {
+            msg.className = "msg err";
+            msg.textContent = "Maze minimum size must be at least 4x4.";
+            return;
+          }
+          if (
+            !mazeMaxWidth ||
+            !mazeMaxHeight ||
+            mazeMaxWidth < mazeMinWidth ||
+            mazeMaxHeight < mazeMinHeight
+          ) {
+            msg.className = "msg err";
+            msg.textContent = "Maze max size must be at least the min size.";
+            return;
+          }
+          if (mazeMaxWidth > 80 || mazeMaxHeight > 48) {
+            msg.className = "msg err";
+            msg.textContent = "Maze max size is 80x48.";
+            return;
+          }
+          if (!mazeHeroMinSpeed || mazeHeroMinSpeed <= 0) {
+            msg.className = "msg err";
+            msg.textContent = "Hero min speed must be greater than 0.";
+            return;
+          }
+          if (!mazeHeroMaxSpeed || mazeHeroMaxSpeed < mazeHeroMinSpeed) {
+            msg.className = "msg err";
+            msg.textContent =
+              "Hero max speed must be greater than or equal to min.";
+            return;
+          }
+        }
+        persistSetupForm();
+        msg.className = "msg ok";
+        msg.textContent = "Saving\u2026 device will reboot and connect.";
+        var body =
+          "ssid=" +
+          encodeURIComponent(s) +
+          "&pass=" +
+          encodeURIComponent(p) +
+          "&program=" +
+          encodeURIComponent(program) +
+          "&selectedPrograms=" +
+          encodeURIComponent(programs.join(",")) +
+          "&programScroller=" +
+          (isProgramSelected("scroller") ? "1" : "0") +
+          "&programFireworks=" +
+          (isProgramSelected("fireworks") ? "1" : "0") +
+          "&programMazeHero=" +
+          (isProgramSelected("maze_hero") ? "1" : "0") +
+          "&programPixelArt=" +
+          (isProgramSelected("pixel_art") ? "1" : "0") +
+          "&programDurationMinutes=" +
+          encodeURIComponent(programDurationMinutes) +
+          "&scrollMessage=" +
+          encodeURIComponent(scrollMessage) +
+          "&scrollSpeed=" +
+          scrollSpeed +
+          "&fireworksMinDelay=" +
+          fireworksMinDelay +
+          "&fireworksMaxDelay=" +
+          fireworksMaxDelay +
+          "&fireworksAnimMs=" +
+          fireworksAnimMs +
+          "&mazeMinWidth=" +
+          mazeMinWidth +
+          "&mazeMaxWidth=" +
+          mazeMaxWidth +
+          "&mazeMinHeight=" +
+          mazeMinHeight +
+          "&mazeMaxHeight=" +
+          mazeMaxHeight +
+          "&mazeHeroMinSpeed=" +
+          mazeHeroMinSpeed +
+          "&mazeHeroMaxSpeed=" +
+          mazeHeroMaxSpeed +
+          "&brightness=" +
+          brightness +
+          "&fireworksMaxBrightness=" +
+          fireworksMaxBrightness;
+        fetch("/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: body,
+        })
+          .then((r) => r.text())
+          .then((t) => {
+            msg.textContent = t;
+          });
+      }
+      function uploadFirmware() {
+        var file = document.getElementById("binfile").files[0];
+        var omsg = document.getElementById("ota-msg");
+        var bar = document.getElementById("prog-bar");
+        var wrap = document.getElementById("prog-wrap");
+        if (!file) {
+          omsg.className = "msg err";
+          omsg.textContent = "Select a .bin file first.";
+          return;
+        }
+        if (!file.name.endsWith(".bin")) {
+          omsg.className = "msg err";
+          omsg.textContent = "File must be a .bin";
+          return;
+        }
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/update", true);
+        xhr.upload.onprogress = function (e) {
+          if (e.lengthComputable) {
+            var pct = Math.round((e.loaded / e.total) * 100);
+            wrap.className = "progress-wrap show";
+            bar.style.width = pct + "%";
+            omsg.className = "msg info";
+            omsg.textContent = "Uploading\u2026 " + pct + "%";
+          }
+        };
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            omsg.className = "msg ok";
+            omsg.textContent = "Update complete! Rebooting\u2026";
+            bar.style.width = "100%";
+          } else {
+            omsg.className = "msg err";
+            omsg.textContent = "Update failed: " + xhr.responseText;
+          }
+        };
+        xhr.onerror = function () {
+          omsg.className = "msg err";
+          omsg.textContent = "Upload error. Check connection.";
+        };
+        var fd = new FormData();
+        fd.append("firmware", file, file.name);
+        xhr.send(fd);
+      }
+      setSelectedPrograms(defaultSelectedPrograms());
+      restoreSetupForm();
+      if (!selectedPrograms().length) {
+        setSelectedPrograms(defaultSelectedPrograms());
+      }
+      updateProgramConfigVisibility();
+      bindSetupPersist();
+    </script>
+  </body>

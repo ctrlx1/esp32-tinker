@@ -1,0 +1,18 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ProjectCard from "../components/ProjectCard.astro";
+import { loadProjects } from "../lib/registry";
+
+const projects = loadProjects();
+---
+<BaseLayout title="ESP32 Tinker">
+  <section class="hero">
+    <h1>Firmware catalog</h1>
+    <p>
+      Flash a project from the browser, then configure it over Wi-Fi.
+    </p>
+  </section>
+  <section class="grid">
+    {projects.map((project) => <ProjectCard project={project} />)}
+  </section>
+</BaseLayout>

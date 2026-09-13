@@ -53,7 +53,7 @@ An ESP32 tinkering platform built around a 4-module MAX7219 LED matrix. Flash fr
 [![Printables](https://img.shields.io/badge/Printables-FA6831?style=for-the-badge&logoColor=white)](https://www.printables.com/model/1756251-youtube-subscriber-v20)
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-000000?style=for-the-badge&logoColor=white)](https://makerworld.com/en/models/2941691-youtube-subscriber-v2-0#profileId-3294669)
 
-Circuit wiring is defined in `Firmware-PIO/diagram.json` (DIN→GPIO23, CLK→GPIO18, CS→GPIO5, power via `V+` / `GND.2`).
+Circuit wiring for the MAX7219 projects is defined in each project's `diagram.json` (DIN→GPIO23, CLK→GPIO18, CS→GPIO5, power via `V+` / `GND.2`).
 
 ---
 
@@ -71,7 +71,7 @@ Requires Chrome or Edge on desktop.
 
 **Option B — PlatformIO**
 
-1. Open the `Firmware-PIO` folder in VS Code or Cursor (PlatformIO extension required)
+1. Open a firmware project folder under `firmware/` in VS Code or Cursor (PlatformIO extension required)
 2. Build and upload to your ESP32 board
 
 ### 2. Configure via the portal
@@ -97,7 +97,7 @@ Leave the Wi-Fi fields blank when saving and the device keeps the previously sto
 
 ## OTA firmware updates
 
-1. Build with PlatformIO — the OTA `.bin` is at `Firmware-PIO/.pio/build/esp32dev/firmware.bin`
+1. Build with PlatformIO — the OTA `.bin` is at `firmware/<project>/.pio/build/esp32dev/firmware.bin`
 2. Open the device IP in your browser
 3. Scroll to **Firmware update**, pick the main firmware `.bin`, click **Upload firmware**
 4. The matrix shows `OTA...` then `Rebooting` — done
@@ -106,23 +106,84 @@ Leave the Wi-Fi fields blank when saving and the device keeps the previously sto
 
 ## Development
 
-All firmware source lives in `Firmware-PIO/`. Open that folder as your Cursor/VS Code workspace when building, flashing, or simulating.
+Firmware projects are registered in `projects.json`. Keep the repository root
+open as your Cursor/VS Code workspace; project-specific build and simulator
+commands work from there.
 
-The project version lives in `VERSION`. Increment it with:
+Registered projects currently include:
+
+- `justin`: multi-program MAX7219 firmware (scroller, fireworks, maze hero, pixel art);
+- `moon_phase`: lunar phase animation with nonblocking NTP synchronization;
+- `weather_watch`: animated weather scenes;
+- `real_weather`: live Open-Meteo conditions and forecast;
+- `flight_watch`: nearby aircraft from adsb.lol;
+- `starter-max7219`: a minimal configurable “Hello World” MAX7219 firmware;
+- `starter-template`: a hardware-neutral scaffold that is intentionally not
+  buildable until copied and assigned a hardware profile.
+
+### Shared firmware runtime
+
+`packages/tinker-core` is a local PlatformIO library shared by firmware
+projects. It owns the ESP32 Wi-Fi/AP lifecycle, captive-portal routes, NVS
+sessions and schema hooks, OTA uploads, program descriptors/scheduling, and
+display-transition algorithms.
+
+Each project supplies its own project definition, settings validation, portal
+fields, programs, and hardware profile. `packages/tinker-display-max7219`
+provides the shared MD_Parola/MD_MAX72XX adapter. The current MAX7219 projects
+use four FC16 modules with chip select on GPIO 5.
+
+The retained Justin programs live in project-local folders under
+`firmware/justin/src/programs/`. Pixel-art source images, when available, belong
+in `firmware/justin/src/programs/pixel_art/assets/`; the checked-in catalog is
+kept in `pixel_art/catalog/`. Pillow is required only when those source assets
+are present and need regeneration.
+
+### Check dependencies
+
+Verify Python, PlatformIO, project-specific tools, and supported simulator environments:
 
 ```bash
-./scripts/bump-version.sh           # patch bump
-./scripts/bump-version.sh --minor   # minor bump
-./scripts/bump-version.sh --major   # major bump
+./scripts/check-deps.sh                        # every project and environment
+./scripts/check-deps.sh justin                 # one project
+./scripts/check-deps.sh starter-max7219
+./scripts/check-deps.sh starter-template       # intentional template skip
+./scripts/check-deps.sh justin --env production
+./scripts/check-deps.sh all --env wokwi
+```
+
+The checker reads `projects.json`, exits non-zero if the requested scope is not ready, and prints install hints. Node and npm are optional here; they are required only for the Astro site.
+
+CI equivalents:
+
+```bash
+./scripts/validate.sh          # registry + unit tests
+./scripts/ci-matrix.sh         # firmware build matrix
+./scripts/build-site.sh
+./scripts/validate-site.sh     # published packages + built catalog
+```
+
+Each project version lives in `firmware/<project>/VERSION`. Increment one with:
+
+```bash
+./scripts/bump-version.sh justin           # patch bump
+./scripts/bump-version.sh justin --minor
+./scripts/bump-version.sh justin --major
 ```
 
 ### Build and flash (PlatformIO)
 
 ```bash
-./scripts/build-firmware.sh              # compile
-./scripts/build-firmware.sh -t upload    # flash via USB
-cd Firmware-PIO && pio device monitor      # serial log at 9600 baud
+./scripts/build.sh justin                         # compile production
+./scripts/build.sh justin --target upload         # flash via USB
+./scripts/build.sh all                             # compile all production projects
+cd firmware/justin && pio device monitor   # serial log at 9600 baud
 ```
+
+Device targets such as `upload` require one project; the build tool rejects
+`all --target upload` so one firmware cannot silently overwrite another.
+
+`scripts/build-firmware.sh` remains temporarily as a migration wrapper for the documented `-e`, `-t`, and `-v` options; it does not forward arbitrary PlatformIO options.
 
 ### Wokwi simulator
 
@@ -130,41 +191,72 @@ Simulate the ESP32 + 4-module MAX7219 matrix without hardware.
 
 **Requirements:** [PlatformIO](https://platformio.org/) and the [Wokwi for VS Code](https://marketplace.visualstudio.com/items?itemName=wokwi.wokwi-vscode) extension.
 
-1. Open **`Firmware-PIO`** as your workspace root (where `wokwi.toml` lives). If the workspace root is the repo folder instead, Wokwi will not load port forwarding.
-2. Build the simulator environment: `./scripts/build-firmware.sh -e wokwi` or `pio run -e wokwi`
-3. Start: `Cmd+Shift+P` → **Wokwi: Start Simulator**
+Keep the repository root open as your Cursor workspace. To choose a firmware
+project, build its Wokwi environment and select that project's Wokwi config:
+
+```bash
+./scripts/build.sh <project> --env wokwi
+```
+
+Then:
+
+1. Run `Cmd+Shift+P` → **Wokwi: Select Config File**.
+2. Choose `firmware/<project>/wokwi.toml`.
+3. Run `Cmd+Shift+P` → **Wokwi: Start Simulator**.
 4. Keep the **simulator tab visible** — Wokwi pauses when you switch away.
-5. Open **`http://localhost:8180`** (not `https://`) in your browser to access the simulated setup portal.
-6. On first boot the firmware auto-connects to **`Wokwi-GUEST`** for simulator setup.
+5. Open the forwarded URL configured in that project's `wokwi.toml`.
+
+Example:
+
+```bash
+./scripts/build.sh moon_phase --env wokwi
+```
+
+Select that project's `wokwi.toml`, start the simulator, and open
+**`http://localhost:8180`** (not `https://`). On first boot, the firmware
+auto-connects to **`Wokwi-GUEST`** for simulator setup.
+
+Wokwi remembers the selected config for the workspace. Run **Wokwi: Select
+Config File** again whenever you switch projects.
+
+Portal settings survive resets while one simulator session remains open, but
+Wokwi does not persist ESP32 NVS writes after the simulator is stopped. A new
+simulator session therefore starts with the firmware defaults.
 
 The `wokwi` PlatformIO environment defines `WOKWI_SIM=1`, so the firmware tries `Wokwi-GUEST` before starting the normal setup hotspot. Hardware builds use the default `esp32dev` environment.
 
 If `localhost:8180` does not load:
 
-- Confirm the workspace root is **`Firmware-PIO`**, not the parent repo folder.
+- Run **Wokwi: Select Config File** again and confirm the intended
+  `firmware/<project>/wokwi.toml` is selected.
 - Stop and restart the simulator after changing `wokwi.toml`.
 - Check the serial log for `Wokwi setup portal ready.` and `Open http://localhost:8180`.
 - If you see `Setup AP` instead, the sim did not join `Wokwi-GUEST`; reset the ESP32 in the simulator and try again.
 
 ### Web installer binaries
 
-The [browser installer](https://justinmahar.github.io/esp32-tinker/) uses pre-built flash images in `docs/`, referenced by `docs/manifest.json`:
-
-| File                         | Source (after `pio run`)                          |
-| ---------------------------- | ------------------------------------------------- |
-| `docs/bootloader.bin`        | `Firmware-PIO/.pio/build/esp32dev/bootloader.bin` |
-| `docs/partitions.bin`        | `Firmware-PIO/.pio/build/esp32dev/partitions.bin` |
-| `docs/firmware_VERSION.bin`  | `Firmware-PIO/.pio/build/esp32dev/firmware.bin`   |
-
-To refresh the web installer after firmware changes:
+The Astro installer catalog lives in `site/`. Each buildable project publishes
+only the current `firmware.bin` plus bootloader, partitions, and `manifest.json`
+under `site/public/firmware/<project>/`. Version is stored in `VERSION` and the
+manifest, not the filename.
 
 ```bash
-./scripts/bump-version.sh
-./scripts/build-firmware.sh
-./scripts/update-web-installer.sh
+./scripts/build.sh justin
+./scripts/publish.sh justin
+./scripts/build-site.sh
+./scripts/preview-site.sh
 ```
 
-`scripts/update-web-installer.sh` reads `VERSION`, copies the app binary to `docs/firmware_VERSION.bin`, and rewrites `docs/manifest.json` to reference that versioned firmware file. Commit `VERSION`, `docs/manifest.json`, and the updated `docs/*.bin` files, then push so GitHub Pages serves the new build.
+Open `http://localhost:4321/esp32-tinker/`. Each project has its own page
+under that catalog.
+
+GitHub Actions builds every concrete production and Wokwi target, then deploys
+`site/dist/` with the official Pages actions. The Pages source must be **GitHub
+Actions**. `docs/` is the previous branch-based tree and is no longer the
+deployed site once that setting is switched.
+
+`scripts/preview-installer.sh` now wraps `preview-site.sh`. Artifact names,
+tags, and retention are recorded in `migration/stage-9-release-policy.md`.
 
 **Note:** OTA updates on a flashed device use the app partition binary only. The browser installer flashes the full image (bootloader + partition table + app).
 

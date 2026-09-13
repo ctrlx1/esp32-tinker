@@ -1,0 +1,7 @@
+#pragma once
+
+#include <tinker/runtime_context.h>
+
+// Request only the runtime capabilities this program needs.
+void exampleProgramStart(tinker::RuntimeContext &runtime);
+void exampleProgramTick(tinker::RuntimeContext &runtime);

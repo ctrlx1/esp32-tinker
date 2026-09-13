@@ -1,0 +1,141 @@
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Flight Watch Setup</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 1rem; background: #101010; color: #eee;
+             font-family: system-ui, sans-serif; }
+      main { width: min(100%, 420px); margin: auto; padding: 1.25rem;
+             border: 1px solid #303030; border-radius: 14px; background: #1a1a1a; }
+      h1 { margin: 0; font-size: 1.35rem; }
+      section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #303030; }
+      label { display: block; margin: .7rem 0 .3rem; font-weight: 600; }
+      input, select, button { width: 100%; min-height: 42px; padding: .65rem;
+                             border: 1px solid #444; border-radius: 8px;
+                             background: #121212; color: #eee; }
+      button { margin-top: .8rem; background: #e67e22; color: #111;
+               font-weight: 700; cursor: pointer; }
+      button.secondary, .network { background: #242424; color: #eee; }
+      .sub, .hint { color: #999; font-size: .82rem; }
+      .status { margin: .5rem 0; color: #74b9ff; }
+      .message { min-height: 1.2rem; margin-top: .7rem; font-size: .88rem; }
+      .error { color: #ff7675; } .success { color: #55efc4; }
+      progress { width: 100%; margin-top: .7rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Flight Watch</h1>
+      <div class="sub">Version APP_VERSION_PLACEHOLDER</div>
+      <div class="status">Connected &mdash; IP_PLACEHOLDER</div>
+
+      <section>
+        <strong>Wi-Fi</strong>
+        <button class="secondary" type="button" onclick="scanNetworks()">Scan networks</button>
+        <div id="networks"></div>
+        <label for="ssid">Network name</label>
+        <input id="ssid" value="SSID_PLACEHOLDER" placeholder="Keep saved network" />
+        <label for="pass">Password</label>
+        <input id="pass" type="password" placeholder="Keep saved password" />
+      </section>
+
+      <section>
+        <strong>Aircraft search</strong>
+        <label for="lat">Latitude</label>
+        <input id="lat" type="number" min="-90" max="90" step="any" value="LAT_PLACEHOLDER" />
+        <label for="lon">Longitude</label>
+        <input id="lon" type="number" min="-180" max="180" step="any" value="LON_PLACEHOLDER" />
+        <label for="radius">Radius</label>
+        <input id="radius" type="number" min="0.000001" step="any" value="RADIUS_PLACEHOLDER" />
+        <label for="radiusUnit">Radius unit</label>
+        <select id="radiusUnit">
+          <option value="0">Miles</option>
+          <option value="1">Kilometres</option>
+        </select>
+        <label for="speedUnit">Speed unit</label>
+        <select id="speedUnit">
+          <option value="0">Knots</option>
+          <option value="1">Miles/hour</option>
+          <option value="2">Kilometres/hour</option>
+        </select>
+        <label for="brightness">Brightness (0&ndash;15)</label>
+        <input id="brightness" type="number" min="0" max="15" value="BRIGHTNESS_PLACEHOLDER" />
+        <label for="scrollSpeed">Scroll speed (ms)</label>
+        <input id="scrollSpeed" type="number" min="1" max="10000"
+               value="SCROLL_SPEED_PLACEHOLDER" />
+        <button type="button" onclick="saveSettings()">Save &amp; restart</button>
+        <div id="save-message" class="message"></div>
+      </section>
+
+      <section>
+        <strong>Firmware update</strong>
+        <div class="hint">Expected file: APP_FIRMWARE_FILENAME_PLACEHOLDER</div>
+        <input id="firmware" type="file" accept=".bin" />
+        <button class="secondary" type="button" onclick="uploadFirmware()">Upload firmware</button>
+        <progress id="progress" value="0" max="100" hidden></progress>
+        <div id="ota-message" class="message"></div>
+      </section>
+    </main>
+    <script>
+      document.getElementById("radiusUnit").value = "RADIUS_UNIT_PLACEHOLDER";
+      document.getElementById("speedUnit").value = "SPEED_UNIT_PLACEHOLDER";
+      function message(id, text, bad) {
+        const el = document.getElementById(id);
+        el.textContent = text;
+        el.className = "message " + (bad ? "error" : "success");
+      }
+      async function scanNetworks() {
+        const box = document.getElementById("networks");
+        box.textContent = "Scanning...";
+        try {
+          const networks = await (await fetch("/scan")).json();
+          box.replaceChildren();
+          networks.forEach(function (network) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "network";
+            button.textContent = network.ssid + " (" + network.rssi + " dBm)";
+            button.onclick = function () { document.getElementById("ssid").value = network.ssid; };
+            box.appendChild(button);
+          });
+          if (!networks.length) box.textContent = "No networks found.";
+        } catch (_) { box.textContent = "Network scan failed."; }
+      }
+      async function saveSettings() {
+        const ids = ["ssid", "pass", "lat", "lon", "radius", "radiusUnit",
+                     "speedUnit", "brightness", "scrollSpeed"];
+        const params = new URLSearchParams();
+        ids.forEach(function (id) { params.set(id, document.getElementById(id).value); });
+        try {
+          const response = await fetch("/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: params.toString()
+          });
+          message("save-message", await response.text(), !response.ok);
+        } catch (_) { message("save-message", "Save failed.", true); }
+      }
+      function uploadFirmware() {
+        const file = document.getElementById("firmware").files[0];
+        if (!file) return message("ota-message", "Choose a .bin file first.", true);
+        const request = new XMLHttpRequest();
+        const progress = document.getElementById("progress");
+        request.open("POST", "/update");
+        request.upload.onprogress = function (event) {
+          if (event.lengthComputable) {
+            progress.hidden = false;
+            progress.value = Math.round(event.loaded * 100 / event.total);
+          }
+        };
+        request.onload = function () {
+          message("ota-message", request.status === 200
+            ? "Upload complete. Restarting..." : request.responseText, request.status !== 200);
+        };
+        request.onerror = function () { message("ota-message", "Upload failed.", true); };
+        const data = new FormData();
+        data.append("firmware", file, file.name);
+        request.send(data);
+      }
+    </script>
+  </body>

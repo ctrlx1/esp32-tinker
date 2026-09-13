@@ -1,0 +1,12 @@
+---
+import type { SiteProject } from "../lib/registry";
+
+interface Props {
+  project: SiteProject;
+}
+const { project } = Astro.props;
+const label = project.hardware.status === "configured"
+  ? `${project.hardware.chipFamily} · ${project.hardware.profile}`
+  : "Hardware unassigned";
+---
+<span class="badge">{label}</span>

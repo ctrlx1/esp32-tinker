@@ -1,0 +1,11 @@
+{
+  "name": "tinker-core",
+  "version": "0.1.0",
+  "description": "Shared ESP32 Arduino runtime for ESP32 Tinker firmware projects.",
+  "frameworks": [
+    "arduino"
+  ],
+  "platforms": [
+    "espressif32"
+  ]
+}

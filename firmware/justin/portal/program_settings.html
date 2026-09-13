@@ -1,0 +1,220 @@
+        <div class="settings-card">
+          <div class="settings-card-title">Program Schedule</div>
+          <div>
+            <label>Programs to run</label>
+            <div class="checks">
+              <label class="check">
+                <input type="checkbox" id="program-scroller" value="scroller" />
+                <span>Simple Scroller</span>
+              </label>
+              <label class="check">
+                <input type="checkbox" id="program-fireworks" value="fireworks" />
+                <span>Fireworks</span>
+              </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  id="program-maze-hero"
+                  value="maze_hero"
+                />
+                <span>Maze Hero</span>
+              </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  id="program-pixel-art"
+                  value="pixel_art"
+                />
+                <span>Pixel Art</span>
+              </label>
+            </div>
+            <div class="hint">
+              Checked programs cycle in this order and are remembered here.
+            </div>
+          </div>
+          <div>
+            <label>Program duration (minutes)</label>
+            <input
+              type="number"
+              id="program-duration-minutes"
+              min="0.1"
+              max="43200"
+              step="0.1"
+              value="PROGRAM_DURATION_PLACEHOLDER"
+            />
+            <div class="hint">Each selected program runs for this long.</div>
+          </div>
+          <button
+            class="btn-reset"
+            type="button"
+            onclick="resetProgramDefaults()"
+          >
+            Reset selected programs to defaults
+          </button>
+        </div>
+        <div id="scroller-config" class="settings-card program-config" hidden>
+          <div class="settings-card-title">Simple Scroller Settings</div>
+          <div>
+            <label>Scroll message</label>
+            <input
+              type="text"
+              id="scroll-message"
+              maxlength="64"
+              placeholder="Message to scroll on the display"
+              value="SCROLL_MESSAGE_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Scroll speed (ms)</label>
+            <input
+              type="number"
+              id="scroll-speed"
+              min="1"
+              step="1"
+              value="SCROLL_SPEED_PLACEHOLDER"
+            />
+            <div class="hint">
+              Milliseconds between scroll steps on the display.
+            </div>
+          </div>
+        </div>
+        <div id="fireworks-config" class="settings-card program-config" hidden>
+          <div class="settings-card-title">Fireworks Settings</div>
+          <div>
+            <label>Min launch delay (ms)</label>
+            <input
+              type="number"
+              id="fireworks-min-delay"
+              min="1"
+              step="1"
+              value="FW_MIN_DELAY_PLACEHOLDER"
+            />
+            <div class="hint">Shortest wait between launches.</div>
+          </div>
+          <div>
+            <label>Max launch delay (ms)</label>
+            <input
+              type="number"
+              id="fireworks-max-delay"
+              min="1"
+              step="1"
+              value="FW_MAX_DELAY_PLACEHOLDER"
+            />
+            <div class="hint">Longest wait between launches.</div>
+          </div>
+          <div>
+            <label>Animation speed (ms)</label>
+            <input
+              type="number"
+              id="fireworks-anim-ms"
+              min="1"
+              step="1"
+              value="FW_ANIM_MS_PLACEHOLDER"
+            />
+            <div class="hint">Milliseconds between animation frames.</div>
+          </div>
+          <div>
+            <label>Max brightness</label>
+            <input
+              type="number"
+              id="fireworks-max-brightness"
+              min="0"
+              max="15"
+              step="1"
+              value="MAX_BRIGHTNESS_PLACEHOLDER"
+            />
+            <div class="hint">
+              Brightness Fireworks can boost to as the display fills up.
+            </div>
+          </div>
+        </div>
+        <div id="maze-hero-config" class="settings-card program-config" hidden>
+          <div class="settings-card-title">Maze Hero Settings</div>
+          <div>
+            <label>Min maze width</label>
+            <input
+              type="number"
+              id="maze-min-width"
+              min="4"
+              max="80"
+              step="1"
+              value="MAZE_MIN_WIDTH_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Max maze width</label>
+            <input
+              type="number"
+              id="maze-max-width"
+              min="4"
+              max="80"
+              step="1"
+              value="MAZE_MAX_WIDTH_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Min maze height</label>
+            <input
+              type="number"
+              id="maze-min-height"
+              min="4"
+              max="48"
+              step="1"
+              value="MAZE_MIN_HEIGHT_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Max maze height</label>
+            <input
+              type="number"
+              id="maze-max-height"
+              min="4"
+              max="48"
+              step="1"
+              value="MAZE_MAX_HEIGHT_PLACEHOLDER"
+            />
+            <div class="hint">
+              A random size is picked between min and max for each maze.
+            </div>
+          </div>
+          <div>
+            <label>Min hero speed (ms)</label>
+            <input
+              type="number"
+              id="maze-hero-min-speed"
+              min="1"
+              step="1"
+              value="MAZE_HERO_MIN_SPEED_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Max hero speed (ms)</label>
+            <input
+              type="number"
+              id="maze-hero-max-speed"
+              min="1"
+              step="1"
+              value="MAZE_HERO_MAX_SPEED_PLACEHOLDER"
+            />
+            <div class="hint">
+              Each hero move picks a random delay between min and max.
+            </div>
+          </div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">Display Settings</div>
+          <div>
+            <label id="brightness-label">Brightness</label>
+            <input
+              type="number"
+              id="brightness"
+              min="0"
+              max="15"
+              step="1"
+              value="MIN_BRIGHTNESS_PLACEHOLDER"
+            />
+            <div class="hint" id="brightness-hint">
+              Baseline brightness for text and the dimmest Fireworks frames.
+            </div>
+          </div>
+        </div>

@@ -1,0 +1,54 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import VersionBadge from "../components/VersionBadge.astro";
+import HardwareBadge from "../components/HardwareBadge.astro";
+import InstallButton from "../components/InstallButton.astro";
+import FirmwareDownload from "../components/FirmwareDownload.astro";
+import Pinout from "../components/Pinout.astro";
+import SetupSteps from "../components/SetupSteps.astro";
+import Screenshot from "../components/Screenshot.astro";
+import { loadProjects, type SiteProject } from "../lib/registry";
+
+export function getStaticPaths() {
+  return loadProjects().map((project) => ({
+    params: { slug: project.slug },
+    props: { project },
+  }));
+}
+
+interface Props {
+  project: SiteProject;
+}
+
+const { project } = Astro.props;
+---
+<BaseLayout title={`${project.name} — ESP32 Tinker`} description={project.description}>
+  <section class="hero">
+    <h1>{project.name}</h1>
+    <p>{project.description}</p>
+    <div class="badges">
+      <VersionBadge version={project.version} />
+      <HardwareBadge project={project} />
+    </div>
+  </section>
+  <div class="stack">
+    <section class="panel">
+      <h2>{project.buildable ? "Install" : "Template"}</h2>
+      {project.buildable && project.manifestHref && project.firmwareHref ? (
+        <>
+          <p>Use Web Serial to flash this project's current image. The app file is always <code>firmware.bin</code>.</p>
+          <div class="install-row">
+            <InstallButton manifestPath={project.manifestHref} />
+            <FirmwareDownload href={project.firmwareHref} />
+          </div>
+          <p class="note">Chrome or Edge on desktop. OTA later uses the same <code>firmware.bin</code>.</p>
+        </>
+      ) : (
+        <p>This scaffold is not installable until you copy it, assign hardware, and register a buildable project.</p>
+      )}
+    </section>
+    <Screenshot label={project.name} />
+    <Pinout project={project} />
+    <SetupSteps installable={project.buildable} />
+  </div>
+</BaseLayout>

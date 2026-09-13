@@ -1,0 +1,13 @@
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>TODO Project Setup</title>
+  </head>
+  <body>
+    <main>
+      <h1>TODO Project</h1>
+      <p>Version APP_VERSION_PLACEHOLDER</p>
+      <p>IP_PLACEHOLDER</p>
+      <!-- TODO: Add project-owned settings fields and save script. -->
+    </main>
+  </body>

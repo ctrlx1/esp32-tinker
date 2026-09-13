@@ -1,6 +1,11 @@
 .env.local
 scripts/.env.local
-Firmware-PIO/include/*.generated.h
-/pixel-art
-/pixel-sheets-320
+firmware/*/include/*.generated.h
+/firmware/*/.pio/
+/dist/
+/site/dist/
+/site/node_modules/
+/firmware/justin/src/programs/pixel_art/assets/
+__pycache__/
+*.pyc
 .DS_Store

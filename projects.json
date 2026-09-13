@@ -1,0 +1,290 @@
+{
+  "schemaVersion": 1,
+  "projects": [
+    {
+      "id": "justin",
+      "name": "Justin",
+      "description": "Multi-program MAX7219 firmware with scroller, fireworks, maze hero, and pixel art.",
+      "path": "firmware/justin",
+      "versionFile": "firmware/justin/VERSION",
+      "buildable": true,
+      "environments": {
+        "production": "esp32dev",
+        "wokwi": "wokwi"
+      },
+      "hardware": {
+        "status": "configured",
+        "profile": "max7219-4-fc16",
+        "chipFamily": "ESP32"
+      },
+      "preBuild": [
+        [
+          "python3",
+          "scripts/import-pixel-art.py"
+        ]
+      ],
+      "dependencies": {
+        "commands": [
+          "python3"
+        ],
+        "pythonModules": [],
+        "conditionalPythonModules": [
+          {
+            "module": "PIL",
+            "whenPath": "firmware/justin/src/programs/pixel_art/assets"
+          }
+        ]
+      },
+      "docs": {
+        "route": "/justin/",
+        "path": "site/public/firmware/justin",
+        "manifest": "site/public/firmware/justin/manifest.json"
+      },
+      "artifacts": {
+        "bootloader": {
+          "source": "bootloader.bin",
+          "offset": 4096
+        },
+        "partitions": {
+          "source": "partitions.bin",
+          "offset": 32768
+        },
+        "app": {
+          "source": "firmware.bin",
+          "offset": 65536,
+          "publishedName": "firmware.bin"
+        }
+      }
+    },
+    {
+      "id": "moon_phase",
+      "name": "Moon Phase",
+      "description": "Standalone lunar phase display with nonblocking NTP synchronization.",
+      "path": "firmware/moon_phase",
+      "versionFile": "firmware/moon_phase/VERSION",
+      "buildable": true,
+      "environments": {
+        "production": "esp32dev",
+        "wokwi": "wokwi"
+      },
+      "hardware": {
+        "status": "configured",
+        "profile": "max7219-4-fc16",
+        "chipFamily": "ESP32"
+      },
+      "preBuild": [],
+      "dependencies": {
+        "commands": [],
+        "pythonModules": []
+      },
+      "docs": {
+        "route": "/moon-phase/",
+        "path": "site/public/firmware/moon_phase",
+        "manifest": "site/public/firmware/moon_phase/manifest.json"
+      },
+      "artifacts": {
+        "bootloader": {
+          "source": "bootloader.bin",
+          "offset": 4096
+        },
+        "partitions": {
+          "source": "partitions.bin",
+          "offset": 32768
+        },
+        "app": {
+          "source": "firmware.bin",
+          "offset": 65536,
+          "publishedName": "firmware.bin"
+        }
+      }
+    },
+    {
+      "id": "weather_watch",
+      "name": "Weather Watch",
+      "description": "Animated weather scenes for the four-module MAX7219 display.",
+      "path": "firmware/weather_watch",
+      "versionFile": "firmware/weather_watch/VERSION",
+      "buildable": true,
+      "environments": {
+        "production": "esp32dev",
+        "wokwi": "wokwi"
+      },
+      "hardware": {
+        "status": "configured",
+        "profile": "max7219-4-fc16",
+        "chipFamily": "ESP32"
+      },
+      "preBuild": [],
+      "dependencies": {
+        "commands": [],
+        "pythonModules": []
+      },
+      "docs": {
+        "route": "/weather-watch/",
+        "path": "site/public/firmware/weather_watch",
+        "manifest": "site/public/firmware/weather_watch/manifest.json"
+      },
+      "artifacts": {
+        "bootloader": {
+          "source": "bootloader.bin",
+          "offset": 4096
+        },
+        "partitions": {
+          "source": "partitions.bin",
+          "offset": 32768
+        },
+        "app": {
+          "source": "firmware.bin",
+          "offset": 65536,
+          "publishedName": "firmware.bin"
+        }
+      }
+    },
+    {
+      "id": "real_weather",
+      "name": "Real Weather",
+      "description": "Live Open-Meteo conditions and forecast scroller.",
+      "path": "firmware/real_weather",
+      "versionFile": "firmware/real_weather/VERSION",
+      "buildable": true,
+      "environments": {
+        "production": "esp32dev",
+        "wokwi": "wokwi"
+      },
+      "hardware": {
+        "status": "configured",
+        "profile": "max7219-4-fc16",
+        "chipFamily": "ESP32"
+      },
+      "preBuild": [],
+      "dependencies": {
+        "commands": [],
+        "pythonModules": []
+      },
+      "docs": {
+        "route": "/real-weather/",
+        "path": "site/public/firmware/real_weather",
+        "manifest": "site/public/firmware/real_weather/manifest.json"
+      },
+      "artifacts": {
+        "bootloader": {
+          "source": "bootloader.bin",
+          "offset": 4096
+        },
+        "partitions": {
+          "source": "partitions.bin",
+          "offset": 32768
+        },
+        "app": {
+          "source": "firmware.bin",
+          "offset": 65536,
+          "publishedName": "firmware.bin"
+        }
+      }
+    },
+    {
+      "id": "flight_watch",
+      "name": "Flight Watch",
+      "description": "Nearby aircraft scroller using the adsb.lol API.",
+      "path": "firmware/flight_watch",
+      "versionFile": "firmware/flight_watch/VERSION",
+      "buildable": true,
+      "environments": {
+        "production": "esp32dev",
+        "wokwi": "wokwi"
+      },
+      "hardware": {
+        "status": "configured",
+        "profile": "max7219-4-fc16",
+        "chipFamily": "ESP32"
+      },
+      "preBuild": [],
+      "dependencies": {
+        "commands": [],
+        "pythonModules": []
+      },
+      "docs": {
+        "route": "/flight-watch/",
+        "path": "site/public/firmware/flight_watch",
+        "manifest": "site/public/firmware/flight_watch/manifest.json"
+      },
+      "artifacts": {
+        "bootloader": {
+          "source": "bootloader.bin",
+          "offset": 4096
+        },
+        "partitions": {
+          "source": "partitions.bin",
+          "offset": 32768
+        },
+        "app": {
+          "source": "firmware.bin",
+          "offset": 65536,
+          "publishedName": "firmware.bin"
+        }
+      }
+    },
+    {
+      "id": "starter-max7219",
+      "name": "Starter MAX7219",
+      "description": "Minimal Hello World firmware for the four-module MAX7219 reference setup.",
+      "path": "firmware/starter-max7219",
+      "versionFile": "firmware/starter-max7219/VERSION",
+      "buildable": true,
+      "environments": {
+        "production": "esp32dev",
+        "wokwi": "wokwi"
+      },
+      "hardware": {
+        "status": "configured",
+        "profile": "max7219-4-fc16",
+        "chipFamily": "ESP32"
+      },
+      "preBuild": [],
+      "dependencies": {
+        "commands": [],
+        "pythonModules": []
+      },
+      "docs": {
+        "route": "/starter-max7219/",
+        "path": "site/public/firmware/starter-max7219",
+        "manifest": "site/public/firmware/starter-max7219/manifest.json"
+      },
+      "artifacts": {
+        "bootloader": {
+          "source": "bootloader.bin",
+          "offset": 4096
+        },
+        "partitions": {
+          "source": "partitions.bin",
+          "offset": 32768
+        },
+        "app": {
+          "source": "firmware.bin",
+          "offset": 65536,
+          "publishedName": "firmware.bin"
+        }
+      }
+    },
+    {
+      "id": "starter-template",
+      "name": "Starter Template",
+      "description": "Hardware-neutral scaffold for creating new firmware projects.",
+      "path": "firmware/starter-template",
+      "versionFile": "firmware/starter-template/VERSION",
+      "buildable": false,
+      "environments": {},
+      "hardware": {
+        "status": "unassigned"
+      },
+      "dependencies": {
+        "commands": [],
+        "pythonModules": []
+      },
+      "docs": {
+        "route": "/starter-template/",
+        "path": "site/public/firmware/starter-template"
+      }
+    }
+  ]
+}

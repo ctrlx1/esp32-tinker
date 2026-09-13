@@ -1,0 +1,15 @@
+{
+  "name": "tinker-display-max7219",
+  "version": "0.1.0",
+  "description": "MAX7219 and MD_Parola display adapter for ESP32 Tinker.",
+  "frameworks": [
+    "arduino"
+  ],
+  "platforms": [
+    "espressif32"
+  ],
+  "dependencies": {
+    "majicDesigns/MD_Parola": "3.7.5",
+    "majicDesigns/MD_MAX72XX": "3.5.1"
+  }
+}

@@ -8,14 +8,6 @@ import re
 import sys
 from pathlib import Path
 
-try:
-    from PIL import Image
-except ImportError as exc:
-    raise SystemExit(
-        "Pillow is required to split pixel sheets. Install it with: python3 -m pip install Pillow"
-    ) from exc
-
-
 TILE_SIZE = 32
 GRID_COLUMNS = 10
 GRID_ROWS = 10
@@ -23,8 +15,11 @@ FRAMES_PER_SHEET = GRID_COLUMNS * GRID_ROWS
 IMAGE_EXTENSIONS = {".bmp", ".gif", ".jpg", ".jpeg", ".png", ".webp"}
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SOURCE_DIR = ROOT / "pixel-sheets-320"
-DEFAULT_OUTPUT_DIR = ROOT / "pixel-art"
+PIXEL_ART_DIR = (
+    ROOT / "firmware" / "justin" / "src" / "programs" / "pixel_art"
+)
+DEFAULT_SOURCE_DIR = PIXEL_ART_DIR / "assets" / "sheets-320"
+DEFAULT_OUTPUT_DIR = PIXEL_ART_DIR / "assets"
 
 
 def natural_key(path: Path) -> list[object]:
@@ -49,6 +44,14 @@ def source_images(source_dir: Path) -> list[Path]:
 
 
 def split_sheet(sheet_path: Path, output_dir: Path) -> int:
+    try:
+        from PIL import Image
+    except ImportError as exc:
+        raise SystemExit(
+            "Pillow is required to split pixel sheets. "
+            "Install it with: python3 -m pip install Pillow"
+        ) from exc
+
     expected_width = TILE_SIZE * GRID_COLUMNS
     expected_height = TILE_SIZE * GRID_ROWS
 
@@ -78,7 +81,7 @@ def split_sheet(sheet_path: Path, output_dir: Path) -> int:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Split every image in pixel-sheets-320 into 100 32x32 frames, "
+            "Split every source sheet into 100 32x32 frames, "
             "saved as <sheet-name>-01.png through <sheet-name>-100.png."
         )
     )
@@ -86,13 +89,13 @@ def parse_args() -> argparse.Namespace:
         "--source-dir",
         type=Path,
         default=DEFAULT_SOURCE_DIR,
-        help="Directory containing 320x320 sheets (default: pixel-sheets-320)",
+        help="Directory containing project-local 320x320 sheets",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
         default=DEFAULT_OUTPUT_DIR,
-        help="Directory to write 32x32 PNG frames (default: pixel-art)",
+        help="Directory to write project-local 32x32 PNG frames",
     )
     return parser.parse_args()
 

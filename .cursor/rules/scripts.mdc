@@ -7,59 +7,93 @@ alwaysApply: true
 
 All scripts live in `scripts/` at the repo root. Run them from anywhere; each resolves paths relative to the repo root.
 
-## `scripts/build-firmware.sh`
+## `scripts/check-deps.sh`
 
-Builds the ESP32 firmware with PlatformIO in `Firmware-PIO/`.
+Checks shared and project-specific tools using `projects.json`.
 
-- Finds `pio` on PATH or at `~/.platformio/penv/bin/pio`
-- Equivalent to `cd Firmware-PIO && pio run`
-- Extra PlatformIO args are forwarded (e.g. `./scripts/build-firmware.sh -t upload`)
+- Accepts a project ID or `all` (default), plus optional `--env production|wokwi`
+- Required globally: `python3` and PlatformIO CLI (`pio`)
+- Checks Wokwi only when the selected scope includes it
+- Optional: PlatformIO IDE extension (CLI is enough to build)
+- Exits non-zero if a required tool is missing
 
-Use this instead of calling `pio` directly when you want a consistent entry point from the repo root.
+Run this first when setting up a new machine: `./scripts/check-deps.sh`
 
-## `scripts/update-web-installer.sh`
+## `scripts/build.sh`
 
-Refreshes the browser installer binaries in `docs/` after a successful build.
+Builds registered firmware projects with PlatformIO.
 
-- Copies from `Firmware-PIO/.pio/build/esp32dev/`:
-  - `bootloader.bin`
-  - `partitions.bin`
-- Copies `firmware.bin` to `docs/firmware_VERSION.bin`
-- Rewrites `docs/manifest.json` with the current `VERSION` and versioned firmware path
+- Usage: `./scripts/build.sh <project|all> [--env production|wokwi] [--target upload]`
+- Runs project pre-build hooks from `projects.json`
+- `scripts/build-firmware.sh` is a temporary `justin` migration wrapper for documented `-e`, `-t`, and `-v` usage only
+
+Use this instead of calling `pio` directly.
+
+## `scripts/stage.sh`
+
+Stages a verified production package under `dist/<project>/<version>/`.
+
+- Usage: `./scripts/stage.sh <project|all>`
+- Copies bootloader, partitions, and a stable `firmware.bin`
+- Writes `metadata.json` with project, version, environment, chip, offsets, and hashes
+- Production builds also stage automatically after a successful compile
+
+## `scripts/publish.sh`
+
+Publishes browser-installer binaries for a registered project after a successful production build.
+
+- Usage: `./scripts/publish.sh <project|all>`
+- Restages from the production build, then copies only after package metadata matches the registry
+- Rejects cross-project, version, chip, environment, offset, and hash mismatches
 - Requires a prior build; exits with an error if any file is missing
+- `scripts/update-web-installer.sh` is a temporary compatibility wrapper for `justin`
 
 ## `scripts/bump-version.sh`
 
-Increments the root `VERSION` file.
+Increments one registered project's version file.
 
+- Usage: `./scripts/bump-version.sh <project> [--major|--minor|--patch]`
 - Defaults to a patch bump when no flag is provided
-- Accepts `--major`, `--minor`, or `--patch`
 - Uses strict `MAJOR.MINOR.PATCH` semver
 
 Typical release workflow:
 
 ```bash
-./scripts/bump-version.sh
-./scripts/build-firmware.sh
-./scripts/update-web-installer.sh
+./scripts/bump-version.sh justin
+./scripts/build.sh justin
+./scripts/publish.sh justin
 ```
+
+`./scripts/deploy <project> --patch|--minor|--major` does that sequence, then
+creates one scoped commit and a `<project>/v<version>` tag. It restores the
+version file and skips the commit if a step fails. Add `--push` only when the
+user has asked to publish the tag. See `migration/stage-9-release-policy.md`.
 
 The [browser installer](https://justinmahar.github.io/esp32-tinker/) (esp-web-tools) serves these files from GitHub Pages. OTA updates on a flashed device use the app partition binary only; the browser installer flashes the full image.
 
-## `scripts/preview-installer.sh`
+## `scripts/build-site.sh` / `scripts/preview-site.sh`
 
-Serves `docs/` locally to preview the browser installer before publishing.
+Build or preview the Astro catalog in `site/`.
 
-- Default URL: `http://localhost:8765/`
-- Optional port: `./scripts/preview-installer.sh 9000`
-- Uses `python3 -m http.server`
+- Requires Node.js and npm
+- Preview URL: `http://localhost:4321/esp32-tinker/`
+- `scripts/preview-installer.sh` is a compatibility wrapper around `preview-site.sh`
 
-Use this to verify `docs/index.html`, `docs/manifest.json`, and the `.bin` files without pushing to GitHub Pages.
+## `scripts/validate.sh` / `scripts/validate-site.sh` / `scripts/ci-matrix.sh`
+
+CI helpers used by `.github/workflows/`.
+
+- `validate.sh` loads `projects.json` and runs `scripts/tests`
+- `ci-matrix.sh` prints the buildable project × environment matrix
+- `validate-site.sh` checks published `firmware.bin` packages against the registry and a built `site/dist`
+- Firmware CI and Pages deploy stay in separate workflows
 
 ## Deploy / Dev
 
-If users says to prepare to deploy, do the following:
-- Run `./scripts/build-firmware.sh`
+If the user names a project to prepare for deploy:
+- Run `./scripts/build.sh <project>`
 
-If users says to go back to development mode, do the following:
-- Run `./scripts/build-firmware.sh -e wokwi`
+If they say go back to development mode for a named project:
+- Run `./scripts/build.sh <project> --env wokwi`
+
+If they do not name a project, ask which one.
