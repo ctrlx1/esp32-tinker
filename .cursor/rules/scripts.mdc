@@ -94,7 +94,7 @@ When copying `firmware/starter-template`, add Wokwi in the same change as the
 hardware profile. A buildable project needs `[env:wokwi]` (`WOKWI_SIM=1`),
 `wokwi.toml`, a `diagram.json` whose wires match `hardware/<profile>.h`, and
 `"wokwi": "wokwi"` in `projects.json`. Use `starter-max7219` (MAX7219) or
-`flight_tracker` (HUB75) as the simulator reference. See
+`starter-hub75` (HUB75) as the simulator reference. See
 `firmware/starter-template/README.md`.
 
 ## Deploy / Dev

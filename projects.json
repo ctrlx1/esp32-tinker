@@ -309,6 +309,48 @@
       }
     },
     {
+      "id": "starter-hub75",
+      "name": "Starter HUB75",
+      "description": "Minimal Hello World firmware for a 64x32 HUB75 RGB panel.",
+      "path": "firmware/starter-hub75",
+      "versionFile": "firmware/starter-hub75/VERSION",
+      "buildable": true,
+      "environments": {
+        "production": "esp32dev",
+        "wokwi": "wokwi"
+      },
+      "hardware": {
+        "status": "configured",
+        "profile": "hub75-p4-64x32",
+        "chipFamily": "ESP32"
+      },
+      "preBuild": [],
+      "dependencies": {
+        "commands": [],
+        "pythonModules": []
+      },
+      "docs": {
+        "route": "/starter-hub75/",
+        "path": "site/public/firmware/starter-hub75",
+        "manifest": "site/public/firmware/starter-hub75/manifest.json"
+      },
+      "artifacts": {
+        "bootloader": {
+          "source": "bootloader.bin",
+          "offset": 4096
+        },
+        "partitions": {
+          "source": "partitions.bin",
+          "offset": 32768
+        },
+        "app": {
+          "source": "firmware.bin",
+          "offset": 65536,
+          "publishedName": "firmware.bin"
+        }
+      }
+    },
+    {
       "id": "starter-template",
       "name": "Starter Template",
       "description": "Hardware-neutral scaffold for creating new firmware projects.",

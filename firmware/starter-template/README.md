@@ -36,7 +36,7 @@ documents the boundary a new ESP32 Tinker project must implement before setting
 ```
 
 Use `firmware/starter-max7219` as the complete runnable MAX7219 reference, or
-`firmware/flight_tracker` for HUB75.
+`firmware/starter-hub75` for HUB75.
 
 ## Wokwi
 
@@ -57,7 +57,7 @@ every registered environment, so a missing Wokwi env is an incomplete project.
 
 If Wokwi has no official part for the panel, still add the diagram using the
 closest unofficial or custom-chip part and note that in the project README.
-`starter-max7219` uses `wokwi-max7219-matrix`; `flight_tracker` uses a custom
+`starter-max7219` uses `wokwi-max7219-matrix`; `starter-hub75` uses a custom
 `chip-hub75-matrix` because Wokwi does not emulate HUB75 I2S DMA.
 
 After building the Wokwi firmware, select `firmware/<project-id>/wokwi.toml`,

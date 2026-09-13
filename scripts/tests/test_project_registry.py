@@ -95,6 +95,7 @@ class ProjectRegistryTests(unittest.TestCase):
                 "flight_watch",
                 "flight_tracker",
                 "starter-max7219",
+                "starter-hub75",
                 "starter-template",
             ],
             [project.id for project in registry.projects],
