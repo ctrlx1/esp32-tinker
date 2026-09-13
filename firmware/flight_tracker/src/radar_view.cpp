@@ -1,5 +1,6 @@
 #include "radar_view.h"
 
+#include "airports_data.h"
 #include "terrain_mask.h"
 
 #include "../hardware/hub75_profile.h"
@@ -25,15 +26,15 @@ constexpr int kSpriteHalfPx = 2;
 constexpr uint8_t kBgR = 2;
 constexpr uint8_t kBgG = 6;
 constexpr uint8_t kBgB = 14;
-constexpr uint8_t kCircleR = 0;
-constexpr uint8_t kCircleG = 90;
-constexpr uint8_t kCircleB = 50;
 constexpr uint8_t kObserverR = 180;
 constexpr uint8_t kObserverG = 230;
 constexpr uint8_t kObserverB = 255;
 constexpr uint8_t kPlaneR = 200;
 constexpr uint8_t kPlaneG = 230;
 constexpr uint8_t kPlaneB = 70;
+constexpr uint8_t kAirportR = 150;
+constexpr uint8_t kAirportG = 150;
+constexpr uint8_t kAirportB = 150;
 
 uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
   return static_cast<uint16_t>(((r & 0xF8) << 8) | ((g & 0xFC) << 3) |
@@ -65,6 +66,25 @@ void setPanel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     return;
   }
   colorBuffer[y][x] = rgb565(r, g, b);
+}
+
+void unpackRgb565(uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b) {
+  r = static_cast<uint8_t>(((color >> 11) & 0x1F) * 255 / 31);
+  g = static_cast<uint8_t>(((color >> 5) & 0x3F) * 255 / 63);
+  b = static_cast<uint8_t>((color & 0x1F) * 255 / 31);
+}
+
+void blendWhite50(int x, int y) {
+  if (!inPanel(x, y)) {
+    return;
+  }
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+  unpackRgb565(colorBuffer[y][x], r, g, b);
+  colorBuffer[y][x] = rgb565(static_cast<uint8_t>((r + 255) / 2),
+                             static_cast<uint8_t>((g + 255) / 2),
+                             static_cast<uint8_t>((b + 255) / 2));
 }
 
 void fillBackground() {
@@ -113,20 +133,84 @@ void drawCircle() {
   const int cy = static_cast<int>(lroundf(kCenterY));
 
   while (x >= y) {
-    setPanel(cx + x, cy + y, kCircleR, kCircleG, kCircleB);
-    setPanel(cx + y, cy + x, kCircleR, kCircleG, kCircleB);
-    setPanel(cx - y, cy + x, kCircleR, kCircleG, kCircleB);
-    setPanel(cx - x, cy + y, kCircleR, kCircleG, kCircleB);
-    setPanel(cx - x, cy - y, kCircleR, kCircleG, kCircleB);
-    setPanel(cx - y, cy - x, kCircleR, kCircleG, kCircleB);
-    setPanel(cx + y, cy - x, kCircleR, kCircleG, kCircleB);
-    setPanel(cx + x, cy - y, kCircleR, kCircleG, kCircleB);
+    blendWhite50(cx + x, cy + y);
+    blendWhite50(cx + y, cy + x);
+    blendWhite50(cx - y, cy + x);
+    blendWhite50(cx - x, cy + y);
+    blendWhite50(cx - x, cy - y);
+    blendWhite50(cx - y, cy - x);
+    blendWhite50(cx + y, cy - x);
+    blendWhite50(cx + x, cy - y);
     ++y;
     if (err < 0) {
       err += 2 * y + 1;
     } else {
       --x;
       err += 2 * (y - x) + 1;
+    }
+  }
+}
+
+float wrapDeltaLon(float lon) {
+  while (lon > 180.0f) {
+    lon -= 360.0f;
+  }
+  while (lon < -180.0f) {
+    lon += 360.0f;
+  }
+  return lon;
+}
+
+void drawMajorAirportMarker(int x, int y) {
+  setPanel(x, y, kAirportR, kAirportG, kAirportB);
+  setPanel(x - 1, y - 1, kAirportR, kAirportG, kAirportB);
+  setPanel(x + 1, y - 1, kAirportR, kAirportG, kAirportB);
+  setPanel(x - 1, y + 1, kAirportR, kAirportG, kAirportB);
+  setPanel(x + 1, y + 1, kAirportR, kAirportG, kAirportB);
+}
+
+void projectAirport(const airports::Airport &airport, float lat, float lon,
+                    float cosLat, float pxPerNm, float maxEastNm,
+                    float maxNorthNm, int &x, int &y) {
+  const float airportLat = static_cast<float>(airport.lat) * 0.01f;
+  const float airportLon = static_cast<float>(airport.lon) * 0.01f;
+  const float northNm = (airportLat - lat) * 60.0f;
+  if (northNm > maxNorthNm || northNm < -maxNorthNm) {
+    x = -1;
+    return;
+  }
+  const float eastNm = wrapDeltaLon(airportLon - lon) * 60.0f * cosLat;
+  if (eastNm > maxEastNm || eastNm < -maxEastNm) {
+    x = -1;
+    return;
+  }
+  x = static_cast<int>(lroundf(kCenterX + eastNm * pxPerNm));
+  y = static_cast<int>(lroundf(kCenterY - northNm * pxPerNm));
+}
+
+void drawAirports(float lat, float lon, float pxPerNm) {
+  const float cosLat = cosf(lat * kDegToRad);
+  if (cosLat < 0.15f) {
+    return;
+  }
+  const float maxEastNm = (kCenterX + 2.0f) / pxPerNm;
+  const float maxNorthNm = (kCenterY + 2.0f) / pxPerNm;
+  for (uint16_t i = 0; i < airports::kMinorCount; ++i) {
+    int x = -1;
+    int y = 0;
+    projectAirport(airports::kMinor[i], lat, lon, cosLat, pxPerNm, maxEastNm,
+                   maxNorthNm, x, y);
+    if (x >= 0) {
+      setPanel(x, y, kAirportR, kAirportG, kAirportB);
+    }
+  }
+  for (uint16_t i = 0; i < airports::kMajorCount; ++i) {
+    int x = -1;
+    int y = 0;
+    projectAirport(airports::kMajor[i], lat, lon, cosLat, pxPerNm, maxEastNm,
+                   maxNorthNm, x, y);
+    if (x >= 0) {
+      drawMajorAirportMarker(x, y);
     }
   }
 }
@@ -197,6 +281,9 @@ void draw(tinker::RuntimeContext &runtime, const adsb::TrackedAircraft *tracks,
   }
   fillBackground();
   drawTerrain(brightness);
+  if (radiusNm > 0.0f) {
+    drawAirports(lat, lon, kRadiusPx / radiusNm);
+  }
   drawCircle();
   drawObserver();
 

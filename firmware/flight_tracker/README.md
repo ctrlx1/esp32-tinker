@@ -8,11 +8,16 @@ radius mapped to the long axis of the panel (`max(width, height) / 2`
 pixels). Planes clip per-pixel at the circle and at the panel edges.
 
 Land is green and water is blue across the panel at 75% of the
-configured brightness (minimum 1). The radar circle is drawn on top. That mask is projected from the
+configured brightness (minimum 1). The radar ring is 50% white blended
+over the map. That mask is projected from the
 saved GPS using public-domain [Natural Earth](https://www.naturalearthdata.com/)
 110m coastlines and major lakes, so continents and large lakes show up
-and small harbors or ponds do not. Regenerate the compact table with
-`python3 firmware/flight_tracker/scripts/generate_land_polygons.py`.
+and small harbors or ponds do not. Gray X markers show major
+[OurAirports](https://ourairports.com/data/) airports (`large_airport`);
+a single gray dot marks minor ones (`medium_airport`).
+Regenerate the compact tables with
+`python3 firmware/flight_tracker/scripts/generate_land_polygons.py` and
+`python3 firmware/flight_tracker/scripts/generate_airports.py`.
 
 The earlier rotating 3D aircraft cycle is parked in `parked/` and is not
 compiled. The portal matches Flight Watch search settings (lat/lon,
