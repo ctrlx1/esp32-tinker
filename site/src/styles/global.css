@@ -1,13 +1,13 @@
 :root {
-  --bg: #12110f;
-  --surface: #1b1916;
-  --surface-2: #24211c;
-  --border: #3a342c;
-  --text: #f4efe6;
-  --muted: #9a9184;
-  --led: #ffb347;
-  --led-dim: #d4892a;
-  --led-glow: rgba(255, 179, 71, 0.18);
+  --bg: #0f1218;
+  --surface: #161b24;
+  --surface-2: #1c2330;
+  --border: #2c3648;
+  --text: #e8eef6;
+  --muted: #8b97a8;
+  --led: #4c9fff;
+  --led-dim: #2b7de0;
+  --led-glow: rgba(76, 159, 255, 0.18);
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --sans: "IBM Plex Sans", system-ui, sans-serif;
 }
@@ -24,13 +24,13 @@ body {
   min-height: 100vh;
   color: var(--text);
   background:
-    radial-gradient(circle at 1px 1px, rgba(255, 179, 71, 0.08) 1px, transparent 0) 0 0 / 18px 18px,
+    radial-gradient(circle at 1px 1px, rgba(76, 159, 255, 0.08) 1px, transparent 0) 0 0 / 18px 18px,
     var(--bg);
   font-family: var(--sans);
 }
 
 a { color: var(--led); }
-a:hover { color: #ffd28a; }
+a:hover { color: #8ec4ff; }
 a:focus-visible, button:focus-visible {
   outline: 2px solid var(--led);
   outline-offset: 3px;
@@ -104,7 +104,7 @@ a:focus-visible, button:focus-visible {
   gap: 6px;
   padding: 3px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 179, 71, 0.28);
+  border: 1px solid rgba(76, 159, 255, 0.28);
   background: var(--led-glow);
   color: var(--led);
   font-family: var(--mono);
@@ -139,11 +139,11 @@ a:focus-visible, button:focus-visible {
 
 esp-web-install-button {
   --esp-tools-button-color: var(--led);
-  --esp-tools-button-text-color: #1a1206;
+  --esp-tools-button-text-color: #071018;
 }
 esp-web-install-button::part(button) {
   background: var(--led);
-  color: #1a1206;
+  color: #071018;
   border: none;
   border-radius: 10px;
   padding: 12px 22px;
