@@ -1,7 +1,7 @@
 # Stage 9 release policy
 
-These defaults are the packaging rules until the Astro site (Stage 10) and
-GitHub Releases (Stage 11) replace the current `docs/` installer.
+These defaults are the packaging rules for staged firmware. The Astro catalog
+lives in `site/`; GitHub Actions (Stage 11) deploys `site/dist/` to Pages.
 
 ## Identifiers
 
@@ -33,8 +33,8 @@ filename is rejected.
 - `dist/` is local and ephemeral. Do not commit it.
 - Each project keeps only the current `firmware.bin` on its site path.
   Publishing overwrites that file and removes leftover versioned app binaries.
-- Older builds are not uploaded to GitHub Releases in this stage. Revisit that
-  when Stage 11 adds release automation.
+- Older builds are not uploaded to GitHub Releases. Stage 11 deploys the
+  current `site/dist/` catalog, not a version archive.
 
 ## Deploy
 

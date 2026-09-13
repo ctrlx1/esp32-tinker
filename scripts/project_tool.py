@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import os
 import re
 import shutil
@@ -419,6 +420,9 @@ def create_parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("validate", help="validate projects.json")
     subparsers.add_parser("list", help="list registered projects")
+    subparsers.add_parser(
+        "ci-matrix", help="print the firmware CI matrix as JSON"
+    )
 
     build = subparsers.add_parser("build", help="build one project or all projects")
     build.add_argument("target")
@@ -460,6 +464,9 @@ def main() -> int:
         registry = load_registry()
         if args.command == "validate":
             print(f"projects.json: ok ({len(registry.projects)} project(s))")
+            return 0
+        if args.command == "ci-matrix":
+            print(json.dumps(registry.firmware_ci_matrix(), separators=(",", ":")))
             return 0
         if args.command == "list":
             for project in registry.projects:

@@ -66,11 +66,11 @@ class Stage9PackagingTests(unittest.TestCase):
         moon = registry.project("moon_phase")
 
         self.assertEqual("firmware.bin", justin.published_app_name)
-        self.assertEqual("justin/v2.0.4", justin.release_tag())
+        self.assertEqual(f"justin/v{justin.version}", justin.release_tag())
         self.assertEqual("firmware.bin", moon.published_app_name)
-        self.assertEqual("moon_phase/v1.0.0", moon.release_tag())
+        self.assertEqual(f"moon_phase/v{moon.version}", moon.release_tag())
         self.assertEqual(
-            justin.root / "dist" / "justin" / "2.0.4", justin.dist_dir
+            justin.root / "dist" / "justin" / justin.version, justin.dist_dir
         )
 
     def test_stage_writes_project_qualified_package(self) -> None:

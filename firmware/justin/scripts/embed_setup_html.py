@@ -32,7 +32,7 @@ content = content.replace("{{JUSTIN_PROGRAM_SETTINGS}}", settings)
 html = shell.replace("{{PROJECT_PORTAL_CONTENT}}", content)
 
 html = html.replace("APP_VERSION_PLACEHOLDER", app_version)
-html = html.replace("APP_FIRMWARE_FILENAME_PLACEHOLDER", f"firmware_{app_version}.bin")
+html = html.replace("APP_FIRMWARE_FILENAME_PLACEHOLDER", "firmware.bin")
 
 delimiter = "TinkerSetup"
 while f"){delimiter}" in html:

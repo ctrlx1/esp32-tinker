@@ -154,6 +154,15 @@ Verify Python, PlatformIO, project-specific tools, and supported simulator envir
 
 The checker reads `projects.json`, exits non-zero if the requested scope is not ready, and prints install hints. Node and npm are optional here; they are required only for the Astro site.
 
+CI equivalents:
+
+```bash
+./scripts/validate.sh          # registry + unit tests
+./scripts/ci-matrix.sh         # firmware build matrix
+./scripts/build-site.sh
+./scripts/validate-site.sh     # published packages + built catalog
+```
+
 Each project version lives in `firmware/<project>/VERSION`. Increment one with:
 
 ```bash
@@ -239,8 +248,12 @@ manifest, not the filename.
 ```
 
 Open `http://localhost:4321/esp32-tinker/`. Each project has its own page
-under that catalog. `docs/` remains the current GitHub Pages tree until
-site deployment is switched in a later stage.
+under that catalog.
+
+GitHub Actions builds every concrete production and Wokwi target, then deploys
+`site/dist/` with the official Pages actions. The Pages source must be **GitHub
+Actions**. `docs/` is the previous branch-based tree and is no longer the
+deployed site once that setting is switched.
 
 `scripts/preview-installer.sh` now wraps `preview-site.sh`. Artifact names,
 tags, and retention are recorded in `migration/stage-9-release-policy.md`.

@@ -149,6 +149,15 @@ class Registry:
             return list(self.projects)
         return [self.project(target)]
 
+    def firmware_ci_matrix(self) -> Dict[str, List[Dict[str, str]]]:
+        include = []
+        for project in self.projects:
+            if not project.buildable:
+                continue
+            for mode in project.environments:
+                include.append({"project": project.id, "env": mode})
+        return {"include": include}
+
 
 def _validate_project(root: Path, raw: Any, index: int) -> Project:
     label = f"projects[{index}]"
