@@ -118,6 +118,7 @@ Registered projects currently include:
 - `real_weather`: live Open-Meteo conditions and forecast;
 - `flight_watch`: nearby aircraft from adsb.lol;
 - `flight_tracker`: HUB75 radar of nearby aircraft from adsb.lol;
+- `flight_info`: HUB75 nearby-aircraft info cards from adsb.lol;
 - `starter-max7219`: a minimal configurable “Hello World” MAX7219 firmware;
 - `starter-hub75`: a minimal Hello World color-cycle firmware for a 64×32 HUB75 panel;
 - `starter-template`: a hardware-neutral scaffold that is intentionally not
@@ -136,7 +137,7 @@ fields, programs, and hardware profile. `packages/tinker-display-max7219`
 provides the shared MD_Parola/MD_MAX72XX adapter. The current MAX7219 projects
 use four FC16 modules with chip select on GPIO 5.
 `packages/tinker-display-hub75` provides the HUB75 DMA adapter used by
-`flight_tracker` and `starter-hub75`.
+`flight_tracker`, `flight_info`, and `starter-hub75`.
 
 The retained Justin programs live in project-local folders under
 `firmware/justin/src/programs/`. Pixel-art source images, when available, belong
@@ -193,8 +194,8 @@ Device targets such as `upload` require one project; the build tool rejects
 ### Wokwi simulator
 
 Simulate a firmware project without hardware. MAX7219 projects use the
-four-module FC16 diagram; `flight_tracker` and `starter-hub75` use a 64×32
-HUB75 diagram.
+four-module FC16 diagram; `flight_tracker`, `flight_info`, and `starter-hub75`
+use a 64×32 HUB75 diagram.
 
 **Requirements:** [PlatformIO](https://platformio.org/) and the [Wokwi for VS Code](https://marketplace.visualstudio.com/items?itemName=wokwi.wokwi-vscode) extension.
 

@@ -94,6 +94,7 @@ class ProjectRegistryTests(unittest.TestCase):
                 "real_weather",
                 "flight_watch",
                 "flight_tracker",
+                "flight_info",
                 "starter-max7219",
                 "starter-hub75",
                 "starter-template",
