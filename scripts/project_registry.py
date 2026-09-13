@@ -109,6 +109,23 @@ class Project:
     def artifacts(self) -> Mapping[str, Mapping[str, Any]]:
         return self.data.get("artifacts", {})  # type: ignore[return-value]
 
+    @property
+    def published_app_name(self) -> str:
+        return str(self.artifacts["app"]["publishedName"]).format(
+            version=self.version, project=self.id
+        )
+
+    @property
+    def dist_dir(self) -> Path:
+        return self.root / "dist" / self.id / self.version
+
+    @property
+    def package_metadata_path(self) -> Path:
+        return self.dist_dir / "metadata.json"
+
+    def release_tag(self, version: Optional[str] = None) -> str:
+        return f"{self.id}/v{version or self.version}"
+
     def environment(self, mode: str) -> Optional[str]:
         return self.environments.get(mode)
 

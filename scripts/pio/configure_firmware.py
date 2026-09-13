@@ -36,6 +36,7 @@ firmware_filename = f"{project_id}_{app_version}.bin"
 with open(version_header_path, "w", encoding="utf-8") as out_file:
     out_file.write("// Auto-generated from VERSION - do not edit\n")
     out_file.write("#pragma once\n\n")
+    out_file.write(f'#define APP_PROJECT_ID "{project_id}"\n')
     out_file.write(f'#define APP_VERSION "{app_version}"\n')
     out_file.write(f'#define APP_FIRMWARE_FILENAME "{firmware_filename}"\n')
 

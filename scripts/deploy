@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Bump, build, publish, commit, and push one registered project.
+# Bump, build, publish, commit, and tag one registered project.
+# Add --push only when the release should be sent to the remote.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

@@ -251,7 +251,14 @@ To refresh the web installer after firmware changes:
 ./scripts/publish.sh justin
 ```
 
-`scripts/publish.sh` reads the registered production environment and version, copies its artifacts, and generates the project's installer manifest. `scripts/update-web-installer.sh` remains as a temporary compatibility wrapper for `justin`.
+A production build stages a verified package under `dist/<project>/<version>/`
+with project, chip, environment, partition, and hash metadata.
+`scripts/publish.sh` copies from that package only after the metadata matches
+the registry, so one project's binaries cannot be published as another.
+
+`scripts/update-web-installer.sh` remains as a temporary compatibility wrapper
+for `justin`. Artifact names, tags, and retention are recorded in
+`migration/stage-9-release-policy.md`.
 
 **Note:** OTA updates on a flashed device use the app partition binary only. The browser installer flashes the full image (bootloader + partition table + app).
 

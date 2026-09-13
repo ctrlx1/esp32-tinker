@@ -174,14 +174,120 @@ private:
     ESP.restart();
   }
 
+  static bool isDecimalComponent(const String &value, int start, int end) {
+    if (end <= start) {
+      return false;
+    }
+    if (value.charAt(start) == '0' && end - start > 1) {
+      return false;
+    }
+    for (int index = start; index < end; ++index) {
+      const char digit = value.charAt(index);
+      if (digit < '0' || digit > '9') {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static bool isStrictSemver(const String &value) {
+    const int first = value.indexOf('.');
+    const int second = value.indexOf('.', first + 1);
+    if (first <= 0 || second <= first + 1 ||
+        value.indexOf('.', second + 1) >= 0) {
+      return false;
+    }
+    return isDecimalComponent(value, 0, first) &&
+           isDecimalComponent(value, first + 1, second) &&
+           isDecimalComponent(value, second + 1, value.length());
+  }
+
+  static bool isProjectIdStyle(const String &value) {
+    if (value.length() == 0) {
+      return false;
+    }
+    bool previousSeparator = true;
+    for (unsigned index = 0; index < value.length(); ++index) {
+      const char character = value.charAt(index);
+      const bool alnum = (character >= 'a' && character <= 'z') ||
+                         (character >= '0' && character <= '9');
+      const bool separator = character == '-' || character == '_';
+      if (alnum) {
+        previousSeparator = false;
+        continue;
+      }
+      if (!separator || previousSeparator) {
+        return false;
+      }
+      previousSeparator = true;
+    }
+    return !previousSeparator;
+  }
+
+  static String uploadBasename(const String &filename) {
+    String base = filename;
+    const int slash = base.lastIndexOf('/');
+    if (slash >= 0) {
+      base = base.substring(slash + 1);
+    }
+    const int backslash = base.lastIndexOf('\\');
+    if (backslash >= 0) {
+      base = base.substring(backslash + 1);
+    }
+    return base;
+  }
+
+  String expectedFirmwareFilename() const {
+    const ProjectDefinition definition = project_.definition();
+    if (strcmp(definition.id, "justin") == 0) {
+      return String("firmware_") + definition.version + ".bin";
+    }
+    return String(definition.id) + "_" + definition.version + ".bin";
+  }
+
+  bool otaFilenameAllowed(const String &filename) const {
+    const String base = uploadBasename(filename);
+    if (!base.endsWith(".bin")) {
+      return true;
+    }
+    const String stem = base.substring(0, base.length() - 4);
+    const int underscore = stem.lastIndexOf('_');
+    if (underscore <= 0) {
+      return true;
+    }
+    const String prefix = stem.substring(0, underscore);
+    const String version = stem.substring(underscore + 1);
+    if (!isProjectIdStyle(prefix) || !isStrictSemver(version)) {
+      return true;
+    }
+
+    const ProjectDefinition definition = project_.definition();
+    if (prefix == "firmware") {
+      return strcmp(definition.id, "justin") == 0;
+    }
+    return prefix == definition.id;
+  }
+
   void handleUpdate() {
     HTTPUpload &upload = server_.upload();
     if (upload.status == UPLOAD_FILE_START) {
+      otaRejected_ = false;
+      otaRejectReason_ = "";
       Serial.printf("OTA start: %s\n", upload.filename.c_str());
+      if (!otaFilenameAllowed(upload.filename)) {
+        otaRejected_ = true;
+        otaRejectReason_ = "Wrong firmware project. Expected " +
+                           expectedFirmwareFilename();
+        Serial.println(otaRejectReason_);
+        runtime_.showMessage("OTA reject");
+        return;
+      }
       runtime_.showMessage("OTA...");
       if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
         Update.printError(Serial);
       }
+    } else if (otaRejected_) {
+      return;
     } else if (upload.status == UPLOAD_FILE_WRITE) {
       if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
         Update.printError(Serial);
@@ -198,6 +304,10 @@ private:
   }
 
   void handleUpdateFinish() {
+    if (otaRejected_) {
+      server_.send(400, "text/plain", otaRejectReason_);
+      return;
+    }
     if (Update.hasError()) {
       server_.send(500, "text/plain", Update.errorString());
     } else {
@@ -338,6 +448,8 @@ private:
   String savedPass_;
   bool configMode_ = false;
   bool settingsWritable_ = true;
+  bool otaRejected_ = false;
+  String otaRejectReason_;
 };
 
 } // namespace tinker

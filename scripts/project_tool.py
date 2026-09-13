@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
-import json
 import os
 import re
 import shutil
@@ -14,7 +13,15 @@ import sys
 from pathlib import Path
 from typing import List, Optional, Sequence
 
-from project_registry import Project, RegistryError, SEMVER_RE, load_registry
+from package_release import (
+    next_semver,
+    path_is_scoped_release,
+    publish_project,
+    restore_version,
+    scoped_release_paths,
+    stage_project,
+)
+from project_registry import Project, RegistryError, load_registry
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,8 +59,8 @@ def run(command: Sequence[str], cwd: Path = ROOT) -> int:
     return subprocess.run(list(command), cwd=str(cwd), check=False).returncode
 
 
-def selected_projects(target: str) -> List[Project]:
-    return load_registry().select(target)
+def selected_projects(target: str, root: Optional[Path] = None) -> List[Project]:
+    return load_registry(root=root or ROOT).select(target)
 
 
 def environment_for(project: Project, mode: str, target: str) -> Optional[str]:
@@ -77,7 +84,11 @@ def run_pre_build(project: Project) -> int:
 
 
 def build_projects(
-    target: str, mode: str, build_targets: Sequence[str], verbose: bool = False
+    target: str,
+    mode: str,
+    build_targets: Sequence[str],
+    verbose: bool = False,
+    root: Optional[Path] = None,
 ) -> int:
     unsafe_aggregate_targets = {"erase", "upload", "uploadfs", "uploadfsota"}
     requested_unsafe_targets = unsafe_aggregate_targets.intersection(build_targets)
@@ -98,7 +109,7 @@ def build_projects(
         )
         return 1
 
-    for project in selected_projects(target):
+    for project in selected_projects(target, root=root):
         if not project.buildable:
             message = f"{project.id}: hardware is unassigned; project is not buildable"
             if target == "all":
@@ -122,6 +133,10 @@ def build_projects(
         result = run(command)
         if result:
             return result
+        if mode == "production":
+            result = stage_project(project)
+            if result:
+                return result
     return 0
 
 
@@ -253,79 +268,33 @@ def check_dependencies(target: str, mode: Optional[str]) -> int:
 
 def bump_project(project: Project, increment: str) -> str:
     version = project.version
-    match = SEMVER_RE.fullmatch(version)
-    if not match:
-        raise RegistryError(f"{project.relative_version_file} is not strict semver")
-    major, minor, patch = (int(part) for part in match.groups())
-    if increment == "major":
-        major, minor, patch = major + 1, 0, 0
-    elif increment == "minor":
-        minor, patch = minor + 1, 0
-    else:
-        patch += 1
-    new_version = f"{major}.{minor}.{patch}"
+    new_version = next_semver(version, increment)
     project.version_file.write_text(new_version + "\n", encoding="utf-8")
     print(f"{project.id}: {version} -> {new_version}")
     return new_version
 
 
-def publish_project(project: Project) -> int:
-    if not project.buildable:
-        print(f"{project.id}: project is not publishable", file=sys.stderr)
-        return 1
-    environment = project.environment("production")
-    if not environment:
-        print(f"{project.id}: no production environment", file=sys.stderr)
-        return 1
-
-    build_directory = project.path / ".pio" / "build" / environment
-    destinations = {}
-    for name in ("bootloader", "partitions", "app"):
-        artifact = project.artifacts[name]
-        source = build_directory / str(artifact["source"])
-        if not source.is_file():
-            print(
-                f"{project.id}: missing {source.relative_to(ROOT)}; build first",
-                file=sys.stderr,
-            )
-            return 1
-        if name == "app":
-            destination_name = str(artifact["publishedName"]).format(
-                version=project.version, project=project.id
-            )
-        else:
-            destination_name = source.name
-        destinations[name] = (source, project.docs_path / destination_name)
-
-    project.docs_path.mkdir(parents=True, exist_ok=True)
-    for source, destination in destinations.values():
-        shutil.copy2(source, destination)
-
-    manifest = {
-        "name": project.name,
-        "version": project.version,
-        "builds": [
-            {
-                "chipFamily": project.hardware["chipFamily"],
-                "parts": [
-                    {
-                        "path": destinations[name][1].name,
-                        "offset": project.artifacts[name]["offset"],
-                    }
-                    for name in ("bootloader", "partitions", "app")
-                ],
-            }
-        ],
-    }
-    project.manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    project.manifest_path.write_text(
-        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+def _git(project: Project, *arguments: str, capture: bool = False) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["git", *arguments],
+        cwd=str(project.root),
+        capture_output=capture,
+        text=True,
+        check=False,
     )
-    print(f"{project.id}: published {project.version} to {project.docs['path']}")
-    return 0
 
 
-def deploy_project(project: Project, increment: str) -> int:
+def _git_tag_exists(project: Project, tag: str) -> bool:
+    result = _git(project, "rev-parse", "-q", "--verify", f"refs/tags/{tag}", capture=True)
+    return result.returncode == 0
+
+
+def deploy_project(
+    project: Project,
+    increment: str,
+    push: bool = False,
+    build=None,
+) -> int:
     if not project.buildable:
         print(f"{project.id}: project is not deployable", file=sys.stderr)
         return 1
@@ -333,40 +302,91 @@ def deploy_project(project: Project, increment: str) -> int:
         print(f"{project.id}: no production environment", file=sys.stderr)
         return 1
 
-    status = subprocess.run(
-        ["git", "status", "--porcelain"],
-        cwd=str(ROOT),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    status = _git(project, "status", "--porcelain", capture=True)
     if status.returncode or status.stdout.strip():
         print("Cannot deploy: working tree is not clean.", file=sys.stderr)
         return 1
 
-    version = bump_project(project, increment)
-    result = build_projects(project.id, "production", [])
-    if result:
-        return result
-    result = publish_project(project)
-    if result:
-        return result
+    previous_version = project.version
+    try:
+        next_version = next_semver(previous_version, increment)
+    except RegistryError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    tag = project.release_tag(next_version)
+    if _git_tag_exists(project, tag):
+        print(f"Cannot deploy: tag {tag} already exists.", file=sys.stderr)
+        return 1
 
-    result = run(
-        [
-            "git",
-            "add",
-            "--",
-            str(project.relative_version_file),
-            project.docs["path"],
+    version = bump_project(project, increment)
+    committed = False
+    try:
+        result = (
+            build()
+            if build is not None
+            else build_projects(project.id, "production", [], root=project.root)
+        )
+        if result:
+            return result
+        result = publish_project(project)
+        if result:
+            return result
+
+        release_paths = scoped_release_paths(project)
+        add = _git(project, "add", "--", *[str(path) for path in release_paths])
+        if add.returncode:
+            return add.returncode
+
+        staged = _git(project, "diff", "--cached", "--name-only", "-z", capture=True)
+        if staged.returncode:
+            return staged.returncode
+        staged_files = [
+            project.root / name
+            for name in staged.stdout.split("\0")
+            if name
         ]
-    )
-    if result:
-        return result
-    result = run(["git", "commit", "-m", f"Release {project.id} {version}"])
-    if result:
-        return result
-    return run(["git", "push"])
+        unexpected = [
+            path for path in staged_files if not path_is_scoped_release(project, path)
+        ]
+        if unexpected:
+            print(
+                f"Cannot deploy: commit would include files outside {project.id}: "
+                + ", ".join(str(path.relative_to(project.root)) for path in unexpected),
+                file=sys.stderr,
+            )
+            _git(project, "reset", "--mixed", "HEAD")
+            return 1
+
+        commit = _git(
+            project,
+            "commit",
+            "-m",
+            f"Release {project.id} {version}",
+        )
+        if commit.returncode:
+            return commit.returncode
+        committed = True
+
+        tagged = _git(project, "tag", tag)
+        if tagged.returncode:
+            print(
+                f"{project.id}: commit succeeded but tagging {tag} failed",
+                file=sys.stderr,
+            )
+            return tagged.returncode
+
+        if not push:
+            print(f"{project.id}: created local tag {tag}; pass --push to publish it")
+            return 0
+
+        pushed = _git(project, "push")
+        if pushed.returncode:
+            return pushed.returncode
+        return _git(project, "push", "origin", tag).returncode
+    finally:
+        if not committed and project.version != previous_version:
+            restore_version(project, previous_version)
+            print(f"{project.id}: restored VERSION {previous_version}")
 
 
 def increment_from_args(args: argparse.Namespace) -> str:
@@ -409,12 +429,20 @@ def create_parser() -> argparse.ArgumentParser:
     bump.add_argument("target")
     add_increment_flags(bump)
 
+    stage = subparsers.add_parser("stage", help="stage one project or all")
+    stage.add_argument("target")
+
     publish = subparsers.add_parser("publish", help="publish one project or all")
     publish.add_argument("target")
 
     deploy = subparsers.add_parser("deploy", help="release one project")
     deploy.add_argument("target")
     add_increment_flags(deploy, required=True)
+    deploy.add_argument(
+        "--push",
+        action="store_true",
+        help="push the release commit and project tag",
+    )
     return parser
 
 
@@ -444,6 +472,15 @@ def main() -> int:
                 raise RegistryError("bump requires one project, not 'all'")
             bump_project(projects[0], increment_from_args(args))
             return 0
+        if args.command == "stage":
+            for project in registry.select(args.target):
+                if args.target == "all" and not project.buildable:
+                    print(f"skip  {project.id}: project is not stageable")
+                    continue
+                result = stage_project(project)
+                if result:
+                    return result
+            return 0
         if args.command == "publish":
             for project in registry.select(args.target):
                 if args.target == "all" and not project.buildable:
@@ -457,7 +494,9 @@ def main() -> int:
             projects = registry.select(args.target)
             if len(projects) != 1:
                 raise RegistryError("deploy requires one project, not 'all'")
-            return deploy_project(projects[0], increment_from_args(args))
+            return deploy_project(
+                projects[0], increment_from_args(args), push=args.push
+            )
     except RegistryError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

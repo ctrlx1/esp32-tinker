@@ -29,12 +29,22 @@ Builds registered firmware projects with PlatformIO.
 
 Use this instead of calling `pio` directly.
 
+## `scripts/stage.sh`
+
+Stages a verified production package under `dist/<project>/<version>/`.
+
+- Usage: `./scripts/stage.sh <project|all>`
+- Copies bootloader, partitions, and the project-qualified app binary
+- Writes `metadata.json` with project, version, environment, chip, offsets, and hashes
+- Production builds also stage automatically after a successful compile
+
 ## `scripts/publish.sh`
 
 Publishes browser-installer binaries for a registered project after a successful production build.
 
 - Usage: `./scripts/publish.sh <project|all>`
-- Reads build, docs, chip, offset, and naming metadata from `projects.json`
+- Restages from the production build, then copies only after package metadata matches the registry
+- Rejects cross-project, version, chip, environment, offset, and hash mismatches
 - Requires a prior build; exits with an error if any file is missing
 - `scripts/update-web-installer.sh` is a temporary compatibility wrapper for `justin`
 
@@ -53,6 +63,11 @@ Typical release workflow:
 ./scripts/build.sh justin
 ./scripts/publish.sh justin
 ```
+
+`./scripts/deploy <project> --patch|--minor|--major` does that sequence, then
+creates one scoped commit and a `<project>/v<version>` tag. It restores the
+version file and skips the commit if a step fails. Add `--push` only when the
+user has asked to publish the tag. See `migration/stage-9-release-policy.md`.
 
 The [browser installer](https://justinmahar.github.io/esp32-tinker/) (esp-web-tools) serves these files from GitHub Pages. OTA updates on a flashed device use the app partition binary only; the browser installer flashes the full image.
 

@@ -2,6 +2,7 @@
 scripts/.env.local
 firmware/*/include/*.generated.h
 /firmware/*/.pio/
+/dist/
 /firmware/justin/src/programs/pixel_art/assets/
 __pycache__/
 *.pyc
