@@ -1,5 +1,7 @@
 #include "radar_view.h"
 
+#include "terrain_mask.h"
+
 #include "../hardware/hub75_profile.h"
 
 #include <math.h>
@@ -70,6 +72,35 @@ void fillBackground() {
   for (uint8_t row = 0; row < kHeight; ++row) {
     for (uint16_t col = 0; col < kWidth; ++col) {
       colorBuffer[row][col] = color;
+    }
+  }
+}
+
+uint8_t scaleChannel(uint8_t value, uint8_t level) {
+  const uint16_t scaled = static_cast<uint16_t>(value) * level / 15;
+  return scaled == 0 && value > 0 ? 1 : static_cast<uint8_t>(scaled);
+}
+
+void drawTerrain(uint8_t brightness) {
+  uint8_t level = static_cast<uint8_t>((brightness * 3) / 4);
+  if (level < 1) {
+    level = 1;
+  }
+  const uint8_t landR = scaleChannel(24, level);
+  const uint8_t landG = scaleChannel(170, level);
+  const uint8_t landB = scaleChannel(36, level);
+  const uint8_t waterR = scaleChannel(12, level);
+  const uint8_t waterG = scaleChannel(48, level);
+  const uint8_t waterB = scaleChannel(200, level);
+
+  for (uint8_t row = 0; row < kHeight; ++row) {
+    for (uint16_t col = 0; col < kWidth; ++col) {
+      if (terrain::ready() &&
+          terrain::cell(col, row) == terrain::Cell::Land) {
+        colorBuffer[row][col] = rgb565(landR, landG, landB);
+      } else {
+        colorBuffer[row][col] = rgb565(waterR, waterG, waterB);
+      }
     }
   }
 }
@@ -159,8 +190,13 @@ void present(tinker::RuntimeContext &runtime) {
 } // namespace
 
 void draw(tinker::RuntimeContext &runtime, const adsb::TrackedAircraft *tracks,
-          uint8_t count, float radiusNm) {
+          uint8_t count, float radiusNm, float lat, float lon,
+          uint8_t brightness) {
+  if (radiusNm > 0.0f) {
+    terrain::update(lat, lon, radiusNm);
+  }
   fillBackground();
+  drawTerrain(brightness);
   drawCircle();
   drawObserver();
 

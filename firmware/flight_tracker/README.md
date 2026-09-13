@@ -7,6 +7,13 @@ small heading-oriented planes, and the circle is the configured search
 radius mapped to the long axis of the panel (`max(width, height) / 2`
 pixels). Planes clip per-pixel at the circle and at the panel edges.
 
+Land is green and water is blue across the panel at 75% of the
+configured brightness (minimum 1). The radar circle is drawn on top. That mask is projected from the
+saved GPS using public-domain [Natural Earth](https://www.naturalearthdata.com/)
+110m coastlines and major lakes, so continents and large lakes show up
+and small harbors or ponds do not. Regenerate the compact table with
+`python3 firmware/flight_tracker/scripts/generate_land_polygons.py`.
+
 The earlier rotating 3D aircraft cycle is parked in `parked/` and is not
 compiled. The portal matches Flight Watch search settings (lat/lon,
 radius, units, brightness), plus an Open in Google Maps link and a

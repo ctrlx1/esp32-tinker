@@ -216,7 +216,8 @@ void FlightTrackerProject::drawRadar() {
 
   runtime_.setBrightness(settings_.brightness);
   radar::draw(runtime_, adsb::tracks(), adsb::trackCount(),
-              adsb::radiusNm(settings_));
+              adsb::radiusNm(settings_), settings_.flightLat,
+              settings_.flightLon, settings_.brightness);
   started_ = true;
 }
 
