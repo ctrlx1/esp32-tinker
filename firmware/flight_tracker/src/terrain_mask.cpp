@@ -1,6 +1,7 @@
 #include "terrain_mask.h"
 
 #include "land_polygons_data.h"
+#include "map_geometry.h"
 
 #include "../hardware/hub75_profile.h"
 
@@ -15,10 +16,6 @@ constexpr uint16_t kWidth = flight_tracker_hardware::kDisplayWidth;
 constexpr uint8_t kHeight = flight_tracker_hardware::kDisplayHeight;
 constexpr float kCenterX = static_cast<float>(kWidth) * 0.5f;
 constexpr float kCenterY = static_cast<float>(kHeight) * 0.5f;
-constexpr float kRadiusPx =
-    (kWidth > kHeight ? static_cast<float>(kWidth)
-                      : static_cast<float>(kHeight)) *
-    0.5f;
 constexpr float kDegToRad = 0.01745329252f;
 
 Cell mask_[kHeight][kWidth];
@@ -141,7 +138,7 @@ bool classifyLand(float lat, float lon) {
 }
 
 void rebuild(float lat, float lon, float radiusNm) {
-  const float pxPerNm = kRadiusPx / radiusNm;
+  const float pxPerNm = map_geometry::cornerRadiusPx() / radiusNm;
   memset(mask_, 0, sizeof(mask_));
   for (uint8_t row = 0; row < kHeight; ++row) {
     for (uint16_t col = 0; col < kWidth; ++col) {

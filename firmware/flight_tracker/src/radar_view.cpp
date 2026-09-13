@@ -1,6 +1,7 @@
 #include "radar_view.h"
 
 #include "airports_data.h"
+#include "map_geometry.h"
 #include "terrain_mask.h"
 
 #include "../hardware/hub75_profile.h"
@@ -16,10 +17,6 @@ constexpr uint16_t kWidth = flight_tracker_hardware::kDisplayWidth;
 constexpr uint8_t kHeight = flight_tracker_hardware::kDisplayHeight;
 constexpr float kCenterX = static_cast<float>(kWidth) * 0.5f;
 constexpr float kCenterY = static_cast<float>(kHeight) * 0.5f;
-constexpr float kRadiusPx =
-    (kWidth > kHeight ? static_cast<float>(kWidth)
-                      : static_cast<float>(kHeight)) *
-    0.5f;
 constexpr float kDegToRad = 0.01745329252f;
 constexpr int kSpriteHalfPx = 2;
 
@@ -48,43 +45,11 @@ bool inPanel(int x, int y) {
          y < static_cast<int>(kHeight);
 }
 
-bool inCircle(int x, int y) {
-  const float dx = (static_cast<float>(x) + 0.5f) - kCenterX;
-  const float dy = (static_cast<float>(y) + 0.5f) - kCenterY;
-  return dx * dx + dy * dy <= kRadiusPx * kRadiusPx;
-}
-
-void setClipped(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
-  if (!inPanel(x, y) || !inCircle(x, y)) {
-    return;
-  }
-  colorBuffer[y][x] = rgb565(r, g, b);
-}
-
 void setPanel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
   if (!inPanel(x, y)) {
     return;
   }
   colorBuffer[y][x] = rgb565(r, g, b);
-}
-
-void unpackRgb565(uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b) {
-  r = static_cast<uint8_t>(((color >> 11) & 0x1F) * 255 / 31);
-  g = static_cast<uint8_t>(((color >> 5) & 0x3F) * 255 / 63);
-  b = static_cast<uint8_t>((color & 0x1F) * 255 / 31);
-}
-
-void blendWhite50(int x, int y) {
-  if (!inPanel(x, y)) {
-    return;
-  }
-  uint8_t r;
-  uint8_t g;
-  uint8_t b;
-  unpackRgb565(colorBuffer[y][x], r, g, b);
-  colorBuffer[y][x] = rgb565(static_cast<uint8_t>((r + 255) / 2),
-                             static_cast<uint8_t>((g + 255) / 2),
-                             static_cast<uint8_t>((b + 255) / 2));
 }
 
 void fillBackground() {
@@ -121,32 +86,6 @@ void drawTerrain(uint8_t brightness) {
       } else {
         colorBuffer[row][col] = rgb565(waterR, waterG, waterB);
       }
-    }
-  }
-}
-
-void drawCircle() {
-  int x = static_cast<int>(lroundf(kRadiusPx));
-  int y = 0;
-  int err = 1 - x;
-  const int cx = static_cast<int>(lroundf(kCenterX));
-  const int cy = static_cast<int>(lroundf(kCenterY));
-
-  while (x >= y) {
-    blendWhite50(cx + x, cy + y);
-    blendWhite50(cx + y, cy + x);
-    blendWhite50(cx - y, cy + x);
-    blendWhite50(cx - x, cy + y);
-    blendWhite50(cx - x, cy - y);
-    blendWhite50(cx - y, cy - x);
-    blendWhite50(cx + y, cy - x);
-    blendWhite50(cx + x, cy - y);
-    ++y;
-    if (err < 0) {
-      err += 2 * y + 1;
-    } else {
-      --x;
-      err += 2 * (y - x) + 1;
     }
   }
 }
@@ -218,11 +157,11 @@ void drawAirports(float lat, float lon, float pxPerNm) {
 void drawObserver() {
   const int cx = static_cast<int>(lroundf(kCenterX));
   const int cy = static_cast<int>(lroundf(kCenterY));
-  setClipped(cx, cy, kObserverR, kObserverG, kObserverB);
-  setClipped(cx - 1, cy, kObserverR, kObserverG, kObserverB);
-  setClipped(cx + 1, cy, kObserverR, kObserverG, kObserverB);
-  setClipped(cx, cy - 1, kObserverR, kObserverG, kObserverB);
-  setClipped(cx, cy + 1, kObserverR, kObserverG, kObserverB);
+  setPanel(cx, cy, kObserverR, kObserverG, kObserverB);
+  setPanel(cx - 1, cy, kObserverR, kObserverG, kObserverB);
+  setPanel(cx + 1, cy, kObserverR, kObserverG, kObserverB);
+  setPanel(cx, cy - 1, kObserverR, kObserverG, kObserverB);
+  setPanel(cx, cy + 1, kObserverR, kObserverG, kObserverB);
 }
 
 // Local offsets: +x starboard, +y nose. Track 0 = north.
@@ -244,7 +183,7 @@ void drawPlane(const adsb::TrackedAircraft &aircraft, float pxPerNm) {
     const float northPx = -lx * sinT + ly * cosT;
     const int x = static_cast<int>(lroundf(posX + eastPx));
     const int y = static_cast<int>(lroundf(posY - northPx));
-    setClipped(x, y, kPlaneR, kPlaneG, kPlaneB);
+    setPanel(x, y, kPlaneR, kPlaneG, kPlaneB);
   }
 }
 
@@ -281,16 +220,16 @@ void draw(tinker::RuntimeContext &runtime, const adsb::TrackedAircraft *tracks,
   }
   fillBackground();
   drawTerrain(brightness);
+  const float radiusPx = map_geometry::cornerRadiusPx();
   if (radiusNm > 0.0f) {
-    drawAirports(lat, lon, kRadiusPx / radiusNm);
+    drawAirports(lat, lon, radiusPx / radiusNm);
   }
-  drawCircle();
   drawObserver();
 
   if (tracks && radiusNm > 0.0f) {
-    const float pxPerNm = kRadiusPx / radiusNm;
+    const float pxPerNm = radiusPx / radiusNm;
     const float maxDistNm =
-        (kRadiusPx + static_cast<float>(kSpriteHalfPx)) / pxPerNm;
+        (radiusPx + static_cast<float>(kSpriteHalfPx)) / pxPerNm;
     for (uint8_t i = 0; i < count; ++i) {
       const float distNm =
           sqrtf(tracks[i].eastNm * tracks[i].eastNm +

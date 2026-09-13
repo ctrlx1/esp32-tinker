@@ -3,13 +3,11 @@
 ESP32 Tinker firmware for a P4-256x128-2121-A5 HUB75 panel (64×32 RGB,
 1/16 scan). The live program is a north-up radar: you are the center
 dot, nearby aircraft from [adsb.lol](https://api.adsb.lol) are drawn as
-small heading-oriented planes, and the circle is the configured search
-radius mapped to the long axis of the panel (`max(width, height) / 2`
-pixels). Planes clip per-pixel at the circle and at the panel edges.
+small heading-oriented planes, and the configured search radius maps
+to the panel corners. Planes clip at the panel edges.
 
 Land is green and water is blue across the panel at 75% of the
-configured brightness (minimum 1). The radar ring is 50% white blended
-over the map. That mask is projected from the
+configured brightness (minimum 1). That mask is projected from the
 saved GPS using public-domain [Natural Earth](https://www.naturalearthdata.com/)
 110m coastlines and major lakes, so continents and large lakes show up
 and small harbors or ponds do not. Gray X markers show major

@@ -1,6 +1,6 @@
 #include "adsb_client.h"
 
-#include "../hardware/hub75_profile.h"
+#include "map_geometry.h"
 
 #include <HTTPClient.h>
 #include <WiFi.h>
@@ -762,14 +762,6 @@ void applyFetch(const FetchResult &result,
   Serial.println(settings.flightLon, 5);
 }
 
-float viewportRadiusPx() {
-  const uint16_t width = flight_tracker_hardware::kDisplayWidth;
-  const uint8_t height = flight_tracker_hardware::kDisplayHeight;
-  return (width > height ? static_cast<float>(width)
-                         : static_cast<float>(height)) *
-         0.5f;
-}
-
 void deadReckon(unsigned long dtMs, const FlightTrackerSettings &settings) {
   if (dtMs == 0) {
     return;
@@ -777,7 +769,7 @@ void deadReckon(unsigned long dtMs, const FlightTrackerSettings &settings) {
   const float dtSec = static_cast<float>(dtMs) * 0.001f;
   const float range = radiusNm(settings);
   const float maxDistNm =
-      range * (1.0f + kSpriteHalfPx / viewportRadiusPx());
+      range * (1.0f + kSpriteHalfPx / map_geometry::cornerRadiusPx());
 
   uint8_t write = 0;
   for (uint8_t i = 0; i < trackUsed; ++i) {
