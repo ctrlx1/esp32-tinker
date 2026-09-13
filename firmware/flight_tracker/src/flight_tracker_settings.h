@@ -12,8 +12,8 @@ constexpr float DEFAULT_FLIGHT_LAT = 40.6413f;
 constexpr float DEFAULT_FLIGHT_LON = -73.7781f;
 constexpr float DEFAULT_FLIGHT_RADIUS = 25.0f;
 constexpr uint8_t DEFAULT_FLIGHT_RADIUS_UNIT = FLIGHT_RADIUS_UNIT_MI;
-constexpr uint8_t DEFAULT_FLIGHT_SPEED_UNIT = FLIGHT_SPEED_UNIT_KT;
-constexpr uint8_t DEFAULT_BRIGHTNESS = 4;
+constexpr uint8_t DEFAULT_FLIGHT_SPEED_UNIT = FLIGHT_SPEED_UNIT_MPH;
+constexpr uint8_t DEFAULT_BRIGHTNESS = 15;
 
 constexpr float MAX_FLIGHT_RADIUS_NM = 250.0f;
 
