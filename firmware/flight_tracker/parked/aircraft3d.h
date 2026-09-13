@@ -1,5 +1,8 @@
 #pragma once
 
+// Parked turntable demo. Not compiled; radar is the active display.
+// Move these files back under src/ to restore the rotating 3D aircraft cycle.
+
 #include <stdint.h>
 #include <tinker/runtime_context.h>
 

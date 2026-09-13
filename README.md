@@ -117,7 +117,7 @@ Registered projects currently include:
 - `weather_watch`: animated weather scenes;
 - `real_weather`: live Open-Meteo conditions and forecast;
 - `flight_watch`: nearby aircraft from adsb.lol;
-- `flight_tracker`: rotating 3D aircraft cycle for the P4-256x128-2121-A5 HUB75 panel;
+- `flight_tracker`: HUB75 radar of nearby aircraft from adsb.lol;
 - `starter-max7219`: a minimal configurable “Hello World” MAX7219 firmware;
 - `starter-hub75`: a minimal Hello World color-cycle firmware for a 64×32 HUB75 panel;
 - `starter-template`: a hardware-neutral scaffold that is intentionally not

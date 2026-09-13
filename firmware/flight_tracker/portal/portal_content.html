@@ -30,7 +30,7 @@
         border-top: 1px solid #303030;
       }
       label { display: block; margin: 0.7rem 0 0.3rem; font-weight: 600; }
-      input, button {
+      input, select, button {
         width: 100%;
         min-height: 42px;
         border: 1px solid #3a3a3a;
@@ -59,6 +59,14 @@
         border-color: #444;
         color: #eee;
       }
+      .row { display: flex; gap: 0.6rem; }
+      .row > * { flex: 1; }
+      a.maps {
+        display: inline-block;
+        margin-top: 0.55rem;
+        color: #74b9ff;
+        font-size: 0.88rem;
+      }
       .message { min-height: 1.2rem; margin-top: 0.7rem; font-size: 0.88rem; }
       .error { color: #ff7675; }
       .success { color: #55efc4; }
@@ -84,7 +92,37 @@
       </section>
 
       <section>
-        <strong>Display</strong>
+        <strong>Aircraft search</strong>
+        <label for="lat">Latitude</label>
+        <input id="lat" type="number" min="-90" max="90" step="any"
+               value="LAT_PLACEHOLDER" />
+        <label for="lon">Longitude</label>
+        <input id="lon" type="number" min="-180" max="180" step="any"
+               value="LON_PLACEHOLDER" />
+        <div class="row">
+          <button class="secondary" type="button" onclick="pasteGps()">
+            Paste GPS
+          </button>
+        </div>
+        <a id="maps-link" class="maps" href="https://www.google.com/maps" target="_blank"
+           rel="noopener noreferrer">Open in Google Maps</a>
+        <div class="hint">
+          Right-click the map and copy coordinates, then use Paste GPS.
+        </div>
+        <label for="radius">Radius</label>
+        <input id="radius" type="number" min="0.000001" step="any"
+               value="RADIUS_PLACEHOLDER" />
+        <label for="radiusUnit">Radius unit</label>
+        <select id="radiusUnit">
+          <option value="0">Miles</option>
+          <option value="1">Kilometres</option>
+        </select>
+        <label for="speedUnit">Speed unit</label>
+        <select id="speedUnit">
+          <option value="0">Knots</option>
+          <option value="1">Miles/hour</option>
+          <option value="2">Kilometres/hour</option>
+        </select>
         <label for="brightness">Brightness (0&ndash;15)</label>
         <input id="brightness" type="number" min="0" max="15"
                value="BRIGHTNESS_PLACEHOLDER" />
@@ -107,11 +145,60 @@
     </main>
 
     <script>
+      document.getElementById("radiusUnit").value = "RADIUS_UNIT_PLACEHOLDER";
+      document.getElementById("speedUnit").value = "SPEED_UNIT_PLACEHOLDER";
+
       function setMessage(id, text, isError) {
         const element = document.getElementById(id);
         element.textContent = text;
         element.className = "message " + (isError ? "error" : "success");
       }
+
+      function updateMapsLink() {
+        const lat = document.getElementById("lat").value;
+        const lon = document.getElementById("lon").value;
+        document.getElementById("maps-link").href =
+          "https://www.google.com/maps?q=" +
+          encodeURIComponent(lat + "," + lon);
+      }
+
+      function parseGps(text) {
+        const match = String(text).trim().match(
+          /^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/
+        );
+        if (!match) {
+          return null;
+        }
+        const lat = parseFloat(match[1]);
+        const lon = parseFloat(match[2]);
+        if (!isFinite(lat) || !isFinite(lon) || lat < -90 || lat > 90 ||
+            lon < -180 || lon > 180) {
+          return null;
+        }
+        return { lat: lat, lon: lon };
+      }
+
+      async function pasteGps() {
+        let text = "";
+        try {
+          text = await navigator.clipboard.readText();
+        } catch (_) {
+          text = window.prompt("Paste latitude, longitude") || "";
+        }
+        const parsed = parseGps(text);
+        if (!parsed) {
+          setMessage("save-message", "Could not parse lat, lon from the clipboard.", true);
+          return;
+        }
+        document.getElementById("lat").value = parsed.lat;
+        document.getElementById("lon").value = parsed.lon;
+        updateMapsLink();
+        setMessage("save-message", "Pasted " + parsed.lat + ", " + parsed.lon, false);
+      }
+
+      document.getElementById("lat").addEventListener("input", updateMapsLink);
+      document.getElementById("lon").addEventListener("input", updateMapsLink);
+      updateMapsLink();
 
       async function scanNetworks() {
         const container = document.getElementById("networks");
@@ -142,6 +229,11 @@
         const params = new URLSearchParams({
           ssid: document.getElementById("ssid").value,
           pass: document.getElementById("pass").value,
+          lat: document.getElementById("lat").value,
+          lon: document.getElementById("lon").value,
+          radius: document.getElementById("radius").value,
+          radiusUnit: document.getElementById("radiusUnit").value,
+          speedUnit: document.getElementById("speedUnit").value,
           brightness: document.getElementById("brightness").value
         });
         try {
