@@ -6,6 +6,17 @@ Each project supplies panel geometry and the HUB75 GPIO map. The adapter owns
 one `MatrixPanel_I2S_DMA` instance and exposes text, brightness, boot status,
 and RGB drawing through `tinker::RuntimeContext`.
 
+`fillColor` and `setPixelColor` present immediately unless the caller wraps them
+in `beginColorFrame` / `endColorFrame`, which batch draws and flush once.
+`blitRgb565` copies a full RGB565 bitmap in one call; use it for offscreen
+compose so the live DMA panel does not show mid-frame rasterization.
+
+The Wokwi backend is a GPIO stand-in, not the hardware I2S DMA driver. It uses
+one color bit per channel, skips unchanged scan rows, and does not flush again
+on brightness-only updates. Rebuild `wokwi/hub75-matrix.chip.wasm` after
+changing `HUB75_WOKWI_COLOR_BITS`. Production firmware still draws full RGB565
+through `MatrixPanel_I2S_DMA`.
+
 Brightness values use the shared portal range of 0–15 and are mapped onto the
 DMA driver’s 0–255 scale. The 1-bit framebuffer group is intentionally unset.
 

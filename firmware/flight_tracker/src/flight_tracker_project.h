@@ -24,11 +24,13 @@ public:
   void tickPrograms();
 
 private:
-  void drawHelloWorld();
+  void drawAircraft();
 
   tinker::RuntimeContext &runtime_;
   FlightTrackerSettings settings_;
   bool started_ = false;
-  uint16_t hue_ = 0;
+  uint8_t aircraft_ = 0;
+  float yaw_ = 0.0f;
+  float rotor_ = 0.0f;
   unsigned long lastFrameMs_ = 0;
 };

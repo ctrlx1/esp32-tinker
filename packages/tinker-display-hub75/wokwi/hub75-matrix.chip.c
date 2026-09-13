@@ -1,8 +1,8 @@
 #include "wokwi-api.h"
 
-/* Wokwi HUB75-lite: 4 color bits per channel, LSB first, 8 clocks would
- * also work if firmware and chip stay in sync. Must match Hub75Display. */
-#define HUB75_WOKWI_COLOR_BITS 4
+/* Wokwi HUB75-lite: 1 color bit per channel, LSB first. Must match
+ * Hub75Display::kWokwiColorBits. One clock per pixel keeps the sim fluid. */
+#define HUB75_WOKWI_COLOR_BITS 1
 #define HUB75_WOKWI_WIDTH 64
 #define HUB75_WOKWI_HEIGHT 32
 
@@ -48,10 +48,13 @@ static uint8_t expand_bits(uint8_t bits) {
   if (HUB75_WOKWI_COLOR_BITS >= 8) {
     return bits;
   }
-  const uint8_t shift = (uint8_t)(8 - HUB75_WOKWI_COLOR_BITS);
   const uint8_t mask = (uint8_t)((1u << HUB75_WOKWI_COLOR_BITS) - 1u);
   bits = (uint8_t)(bits & mask);
-  return (uint8_t)((bits << shift) | (bits >> (HUB75_WOKWI_COLOR_BITS - shift)));
+  uint8_t expanded = 0;
+  for (uint8_t shift = 0; shift < 8; shift += HUB75_WOKWI_COLOR_BITS) {
+    expanded = (uint8_t)(expanded | (uint8_t)(bits << shift));
+  }
+  return expanded;
 }
 
 static void fill_display(rgba_t color) {

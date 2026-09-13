@@ -1,8 +1,10 @@
 # Flight Tracker
 
 Minimal ESP32 Tinker firmware for a P4-256x128-2121-A5 HUB75 panel
-(64×32 RGB, 1/16 scan). The first program shows a two-line Hello World
-whose color cycles smoothly through the hue wheel.
+(64×32 RGB, 1/16 scan). The first program cycles four low-poly aircraft
+(airliner, fighter, high-wing prop, helicopter) that rotate in 3D. The
+helicopter rotor and prop spinner keep turning while each model completes
+one full turntable revolution before the next aircraft appears.
 
 Power the panel from a dedicated 5 V / ≥4 A supply on the VH4 header and
 share ground with the ESP32. Do not feed LED power from the DevKit.
@@ -25,5 +27,5 @@ driver. Unused address `E` is tied to GND. Stop and restart the simulator
 after changing `diagram.json` or the chip binary.
 
 The Wokwi build fills the panel red as soon as the display adapter starts,
-then continues into the normal boot/version/Hello World path. Serial reports
+then continues into the normal boot/version/aircraft path. Serial reports
 `HUB75 Wokwi: GPIO bit-bang`.

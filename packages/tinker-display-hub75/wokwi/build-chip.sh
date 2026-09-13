@@ -6,20 +6,25 @@ SRC="$ROOT/hub75-matrix.chip.c"
 OUT="$ROOT/hub75-matrix.chip.wasm"
 
 CLANG=""
-if command -v clang >/dev/null 2>&1; then
+SYSROOT=""
+for candidate in \
+  /tmp/wasi-sdk-25/wasi-sdk-25.0-arm64-macos \
+  /tmp/wasi-sdk-25/wasi-sdk-25.0-x86_64-macos \
+  /tmp/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux; do
+  if [ -x "$candidate/bin/clang" ]; then
+    CLANG="$candidate/bin/clang"
+    SYSROOT="$candidate/share/wasi-sysroot"
+    break
+  fi
+done
+
+if [ -z "$CLANG" ] && command -v clang >/dev/null 2>&1; then
   CLANG="clang"
-elif [ -x /tmp/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux/bin/clang ]; then
-  CLANG="/tmp/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux/bin/clang"
 fi
 
 if [ -z "$CLANG" ]; then
   echo "clang is required to build the Wokwi HUB75 chip" >&2
   exit 1
-fi
-
-SYSROOT=""
-if [ -d /tmp/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux/share/wasi-sysroot ]; then
-  SYSROOT="/tmp/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux/share/wasi-sysroot"
 fi
 
 if [ -n "$SYSROOT" ]; then

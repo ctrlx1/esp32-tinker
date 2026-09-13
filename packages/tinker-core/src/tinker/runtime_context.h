@@ -202,6 +202,30 @@ public:
     }
   }
 
+  void beginColorFrame() const {
+    if (displayCapabilities_ && displayCapabilities_->color.beginFrame) {
+      displayCapabilities_->color.beginFrame(displayContext_);
+    }
+  }
+
+  void endColorFrame() const {
+    if (displayCapabilities_ && displayCapabilities_->color.endFrame) {
+      displayCapabilities_->color.endFrame(displayContext_);
+    }
+  }
+
+  void blitRgb565(const uint16_t *pixels, uint16_t width, uint8_t height) const {
+    if (displayCapabilities_ && displayCapabilities_->color.blitRgb565 &&
+        pixels) {
+      displayCapabilities_->color.blitRgb565(displayContext_, pixels, width,
+                                             height);
+    }
+  }
+
+  bool hasRgb565Blit() const {
+    return displayCapabilities_ && displayCapabilities_->color.blitRgb565;
+  }
+
 private:
   void *displayContext_;
   const DisplayCapabilities *displayCapabilities_;

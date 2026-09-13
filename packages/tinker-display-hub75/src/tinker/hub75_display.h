@@ -66,6 +66,12 @@ private:
   static void fill(void *context, uint8_t r, uint8_t g, uint8_t b);
   static void setPixel(void *context, uint8_t row, uint16_t column, uint8_t r,
                        uint8_t g, uint8_t b);
+  static void beginColorFrame(void *context);
+  static void endColorFrame(void *context);
+  static void blitRgb565(void *context, const uint16_t *pixels, uint16_t width,
+                         uint8_t height);
+
+  void presentIfIdle();
 
   Adafruit_GFX &gfx();
   void clearScreen();
@@ -74,6 +80,7 @@ private:
   void drawCenteredMessage(const char *message);
   void drawScrolledMessage();
 #ifdef WOKWI_SIM
+  static uint8_t simChannelBit(uint8_t scaled, uint8_t bit, uint8_t shift);
   void configureSimPins();
   void writePin(int8_t pin, bool high) const;
   void pulsePin(int8_t pin) const;
@@ -85,13 +92,15 @@ private:
   static constexpr uint8_t kGlyphWidth = 6;
   static constexpr uint8_t kGlyphHeight = 8;
 #ifdef WOKWI_SIM
-  static constexpr uint8_t kWokwiColorBits = 4;
+  static constexpr uint8_t kWokwiColorBits = 1;
 #endif
 
 #ifdef WOKWI_SIM
   Config pins_;
   GFXcanvas16 canvas_;
   uint8_t brightness8_ = 128;
+  uint16_t *prevFrame_ = nullptr;
+  bool havePrevFrame_ = false;
 #else
   HUB75_I2S_CFG mxconfig_;
   MatrixPanel_I2S_DMA panel_;
@@ -106,6 +115,7 @@ private:
   uint16_t scrollSpeedMs_ = 40;
   unsigned long lastScrollMs_ = 0;
   bool scrollActive_ = false;
+  bool frameOpen_ = false;
 };
 
 } // namespace tinker

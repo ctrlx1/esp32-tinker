@@ -48,6 +48,10 @@ struct ColorDisplayCapabilities {
   void (*fill)(void *context, uint8_t r, uint8_t g, uint8_t b);
   void (*setPixel)(void *context, uint8_t row, uint16_t column, uint8_t r,
                    uint8_t g, uint8_t b);
+  void (*beginFrame)(void *context);
+  void (*endFrame)(void *context);
+  void (*blitRgb565)(void *context, const uint16_t *pixels, uint16_t width,
+                     uint8_t height);
 };
 
 struct DisplayCapabilities {

@@ -19,7 +19,9 @@ const DisplayCapabilities Hub75Display::kCapabilities = {
     {&Hub75Display::showVersion, &Hub75Display::showIp,
      &Hub75Display::beginSetup, &Hub75Display::tickSetup},
     {},
-    {&Hub75Display::setTextColor, &Hub75Display::fill, &Hub75Display::setPixel},
+    {&Hub75Display::setTextColor, &Hub75Display::fill, &Hub75Display::setPixel,
+     &Hub75Display::beginColorFrame, &Hub75Display::endColorFrame,
+     &Hub75Display::blitRgb565},
 };
 
 #ifndef WOKWI_SIM
@@ -47,6 +49,9 @@ void Hub75Display::begin() {
   Serial.println(
       "HUB75 Wokwi: GPIO bit-bang (ESP32 I2S LCD/DMA is not emulated)");
   configureSimPins();
+  if (prevFrame_ == nullptr && width_ > 0 && height_ > 0) {
+    prevFrame_ = new uint16_t[static_cast<size_t>(width_) * height_];
+  }
   canvas_.setTextWrap(false);
   canvas_.setTextSize(1);
   applyTextColor();
@@ -108,11 +113,27 @@ void Hub75Display::present() {
 #endif
 }
 
+void Hub75Display::presentIfIdle() {
+  if (!frameOpen_) {
+    present();
+  }
+}
+
 void Hub75Display::applyTextColor() {
   gfx().setTextColor(rgb565(textR_, textG_, textB_));
 }
 
 #ifdef WOKWI_SIM
+uint8_t Hub75Display::simChannelBit(uint8_t scaled, uint8_t bit,
+                                    uint8_t shift) {
+  if (kWokwiColorBits == 1) {
+    // Portal brightness 4 scales 255 → 68, so the MSB is always 0. Treat any
+    // 4-bit-visible channel as on so the 1-bit sim still shows the scene.
+    return scaled >= 16 ? 1 : 0;
+  }
+  return static_cast<uint8_t>((scaled >> (bit + shift)) & 1);
+}
+
 void Hub75Display::configureSimPins() {
   const int8_t pins[] = {pins_.r1,  pins_.g1, pins_.b1, pins_.r2, pins_.g2,
                          pins_.b2,  pins_.a,  pins_.b,  pins_.c,  pins_.d,
@@ -135,9 +156,7 @@ void Hub75Display::writePin(int8_t pin, bool high) const {
 
 void Hub75Display::pulsePin(int8_t pin) const {
   writePin(pin, true);
-  delayMicroseconds(4);
   writePin(pin, false);
-  delayMicroseconds(4);
 }
 
 void Hub75Display::flushSim() {
@@ -148,16 +167,27 @@ void Hub75Display::flushSim() {
   const uint16_t *pixels = canvas_.getBuffer();
   const uint8_t scanRows = static_cast<uint8_t>(height_ / 2);
   const uint16_t scale = brightness8_ + 1;
+  const uint32_t rowBytes = static_cast<uint32_t>(width_) * sizeof(uint16_t);
+  const uint8_t shift = static_cast<uint8_t>(8 - kWokwiColorBits);
 
   writePin(pins_.clk, false);
   writePin(pins_.lat, false);
   writePin(pins_.oe, true);
 
+  uint8_t lastColors = 0xFF;
   for (uint8_t row = 0; row < scanRows; ++row) {
+    const uint16_t topOffset = static_cast<uint16_t>(row) * width_;
+    const uint16_t botOffset =
+        static_cast<uint16_t>(row + scanRows) * width_;
+    if (havePrevFrame_ && prevFrame_ != nullptr &&
+        memcmp(pixels + topOffset, prevFrame_ + topOffset, rowBytes) == 0 &&
+        memcmp(pixels + botOffset, prevFrame_ + botOffset, rowBytes) == 0) {
+      continue;
+    }
+
     for (uint16_t column = 0; column < width_; ++column) {
-      const uint16_t top = pixels[static_cast<uint16_t>(row) * width_ + column];
-      const uint16_t bottom =
-          pixels[static_cast<uint16_t>(row + scanRows) * width_ + column];
+      const uint16_t top = pixels[topOffset + column];
+      const uint16_t bottom = pixels[botOffset + column];
       uint8_t topR = static_cast<uint8_t>((((top >> 11) & 0x1F) * 255) / 31);
       uint8_t topG = static_cast<uint8_t>((((top >> 5) & 0x3F) * 255) / 63);
       uint8_t topB = static_cast<uint8_t>(((top & 0x1F) * 255) / 31);
@@ -173,14 +203,23 @@ void Hub75Display::flushSim() {
       botG = static_cast<uint8_t>((static_cast<uint16_t>(botG) * scale) >> 8);
       botB = static_cast<uint8_t>((static_cast<uint16_t>(botB) * scale) >> 8);
 
-      const uint8_t shift = static_cast<uint8_t>(8 - kWokwiColorBits);
       for (uint8_t bit = 0; bit < kWokwiColorBits; ++bit) {
-        writePin(pins_.r1, (topR >> (bit + shift)) & 1);
-        writePin(pins_.g1, (topG >> (bit + shift)) & 1);
-        writePin(pins_.b1, (topB >> (bit + shift)) & 1);
-        writePin(pins_.r2, (botR >> (bit + shift)) & 1);
-        writePin(pins_.g2, (botG >> (bit + shift)) & 1);
-        writePin(pins_.b2, (botB >> (bit + shift)) & 1);
+        const uint8_t colors = static_cast<uint8_t>(
+            (simChannelBit(topR, bit, shift) << 5) |
+            (simChannelBit(topG, bit, shift) << 4) |
+            (simChannelBit(topB, bit, shift) << 3) |
+            (simChannelBit(botR, bit, shift) << 2) |
+            (simChannelBit(botG, bit, shift) << 1) |
+            simChannelBit(botB, bit, shift));
+        if (colors != lastColors) {
+          writePin(pins_.r1, (colors >> 5) & 1);
+          writePin(pins_.g1, (colors >> 4) & 1);
+          writePin(pins_.b1, (colors >> 3) & 1);
+          writePin(pins_.r2, (colors >> 2) & 1);
+          writePin(pins_.g2, (colors >> 1) & 1);
+          writePin(pins_.b2, colors & 1);
+          lastColors = colors;
+        }
         pulsePin(pins_.clk);
       }
     }
@@ -189,8 +228,13 @@ void Hub75Display::flushSim() {
     writePin(pins_.b, row & 2);
     writePin(pins_.c, row & 4);
     writePin(pins_.d, row & 8);
-    delayMicroseconds(4);
     pulsePin(pins_.lat);
+  }
+
+  if (prevFrame_ != nullptr) {
+    memcpy(prevFrame_, pixels,
+           static_cast<size_t>(width_) * height_ * sizeof(uint16_t));
+    havePrevFrame_ = true;
   }
 
   writePin(pins_.oe, false);
@@ -322,8 +366,11 @@ void Hub75Display::setBrightness(void *context, uint8_t brightness) {
   }
   const uint8_t scaled = static_cast<uint8_t>(brightness * 17);
 #ifdef WOKWI_SIM
-  self(context).brightness8_ = scaled;
-  self(context).present();
+  Hub75Display &adapter = self(context);
+  if (adapter.brightness8_ != scaled) {
+    adapter.brightness8_ = scaled;
+    adapter.havePrevFrame_ = false;
+  }
 #else
   self(context).panel_.setBrightness8(scaled);
 #endif
@@ -375,14 +422,36 @@ void Hub75Display::setTextColor(void *context, uint8_t r, uint8_t g,
 void Hub75Display::fill(void *context, uint8_t r, uint8_t g, uint8_t b) {
   Hub75Display &adapter = self(context);
   adapter.gfx().fillScreen(rgb565(r, g, b));
-  adapter.present();
+  adapter.presentIfIdle();
 }
 
 void Hub75Display::setPixel(void *context, uint8_t row, uint16_t column,
                             uint8_t r, uint8_t g, uint8_t b) {
   Hub75Display &adapter = self(context);
   adapter.gfx().drawPixel(column, row, rgb565(r, g, b));
+  adapter.presentIfIdle();
+}
+
+void Hub75Display::beginColorFrame(void *context) {
+  self(context).frameOpen_ = true;
+}
+
+void Hub75Display::endColorFrame(void *context) {
+  Hub75Display &adapter = self(context);
+  adapter.frameOpen_ = false;
   adapter.present();
+}
+
+void Hub75Display::blitRgb565(void *context, const uint16_t *pixels,
+                              uint16_t width, uint8_t height) {
+  if (!pixels || width == 0 || height == 0) {
+    return;
+  }
+  Hub75Display &adapter = self(context);
+  adapter.gfx().drawRGBBitmap(0, 0, const_cast<uint16_t *>(pixels),
+                              static_cast<int16_t>(width),
+                              static_cast<int16_t>(height));
+  adapter.presentIfIdle();
 }
 
 } // namespace tinker

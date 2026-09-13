@@ -1,5 +1,6 @@
 #include "flight_tracker_project.h"
 
+#include "aircraft3d.h"
 #include "app_version.h"
 #include "setup_html.h"
 
@@ -9,12 +10,7 @@ namespace {
 
 constexpr uint8_t kSettingsVersion = 1;
 constexpr uint8_t kDefaultBrightness = 4;
-#ifdef WOKWI_SIM
-constexpr unsigned long kFrameIntervalMs = 80;
-#else
 constexpr unsigned long kFrameIntervalMs = 16;
-#endif
-constexpr const char *kHelloWorld = "Hello\nWorld";
 
 String htmlEscape(String value) {
   value.replace("&", "&amp;");
@@ -40,47 +36,6 @@ bool parseLongInRange(String value, long minimum, long maximum, long &result) {
 
   result = parsed;
   return true;
-}
-
-void hsvToRgb(uint16_t hue, uint8_t &red, uint8_t &green, uint8_t &blue) {
-  const uint8_t region = static_cast<uint8_t>(hue / 60);
-  const uint8_t remainder =
-      static_cast<uint8_t>(((hue % 60) * 255) / 60);
-  const uint8_t rising = remainder;
-  const uint8_t falling = static_cast<uint8_t>(255 - remainder);
-
-  switch (region) {
-  case 0:
-    red = 255;
-    green = rising;
-    blue = 0;
-    break;
-  case 1:
-    red = falling;
-    green = 255;
-    blue = 0;
-    break;
-  case 2:
-    red = 0;
-    green = 255;
-    blue = rising;
-    break;
-  case 3:
-    red = 0;
-    green = falling;
-    blue = 255;
-    break;
-  case 4:
-    red = rising;
-    green = 0;
-    blue = 255;
-    break;
-  default:
-    red = 255;
-    green = 0;
-    blue = falling;
-    break;
-  }
 }
 
 } // namespace
@@ -146,28 +101,22 @@ bool FlightTrackerProject::applyPortalRequest(
   return true;
 }
 
-void FlightTrackerProject::drawHelloWorld() {
-  if (!runtime_.hasText() || !runtime_.hasColor()) {
-    Serial.println("Flight tracker display is missing text or color.");
+void FlightTrackerProject::drawAircraft() {
+  if (!runtime_.hasColor()) {
+    Serial.println("Flight tracker display is missing color.");
     started_ = false;
     return;
   }
 
-  uint8_t red = 0;
-  uint8_t green = 0;
-  uint8_t blue = 0;
-  hsvToRgb(hue_, red, green, blue);
   runtime_.setBrightness(settings_.brightness);
-  runtime_.setTextColor(red, green, blue);
-  runtime_.clearText();
-  runtime_.showMessage(kHelloWorld);
+  aircraft3d::draw(runtime_, aircraft_, yaw_, rotor_);
   started_ = true;
 }
 
 void FlightTrackerProject::startPrograms() {
-  hue_ = 0;
+  aircraft3d::reset(aircraft_, yaw_, rotor_);
   lastFrameMs_ = 0;
-  drawHelloWorld();
+  drawAircraft();
 }
 
 void FlightTrackerProject::tickPrograms() {
@@ -176,7 +125,16 @@ void FlightTrackerProject::tickPrograms() {
       now - lastFrameMs_ < kFrameIntervalMs) {
     return;
   }
+  unsigned long dtMs = 0;
+  if (started_ && lastFrameMs_ != 0) {
+    dtMs = now - lastFrameMs_;
+    if (dtMs > 100) {
+      dtMs = 100;
+    }
+  }
   lastFrameMs_ = now;
-  hue_ = static_cast<uint16_t>((hue_ + 1) % 360);
-  drawHelloWorld();
+  if (started_ && dtMs > 0) {
+    aircraft3d::advance(aircraft_, yaw_, rotor_, dtMs);
+  }
+  drawAircraft();
 }
