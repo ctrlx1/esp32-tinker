@@ -1,6 +1,6 @@
 #include "maze_hero.h"
 
-#include "maze_hero/maze_hero_game.h"
+#include "maze_hero_game.h"
 // Start the Maze Hero game
 void mazeHeroStart(const ProgramConfig &cfg) { MazeHero::start(cfg); }
 

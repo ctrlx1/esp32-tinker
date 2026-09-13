@@ -27,8 +27,12 @@
         "commands": [
           "python3"
         ],
-        "pythonModules": [
-          "PIL"
+        "pythonModules": [],
+        "conditionalPythonModules": [
+          {
+            "module": "PIL",
+            "whenPath": "firmware/justin/src/programs/pixel_art/assets"
+          }
         ]
       },
       "docs": {

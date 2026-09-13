@@ -87,7 +87,7 @@ class Project:
         return [list(command) for command in self.data.get("preBuild", [])]
 
     @property
-    def dependencies(self) -> Mapping[str, List[str]]:
+    def dependencies(self) -> Mapping[str, object]:
         return self.data.get("dependencies", {})  # type: ignore[return-value]
 
     @property
@@ -211,6 +211,19 @@ def _validate_project(root: Path, raw: Any, index: int) -> Project:
             raise RegistryError(
                 f"{label}.dependencies.{dependency_type} must be a string array"
             )
+    conditional_modules = dependencies.get("conditionalPythonModules", [])
+    if not isinstance(conditional_modules, list):
+        raise RegistryError(
+            f"{label}.dependencies.conditionalPythonModules must be an array"
+        )
+    for module_index, dependency in enumerate(conditional_modules):
+        dependency_label = (
+            f"{label}.dependencies.conditionalPythonModules[{module_index}]"
+        )
+        if not isinstance(dependency, dict):
+            raise RegistryError(f"{dependency_label} must be an object")
+        _string(dependency.get("module"), f"{dependency_label}.module")
+        _relative_path(dependency.get("whenPath"), f"{dependency_label}.whenPath")
 
     docs = raw.get("docs")
     if not isinstance(docs, dict):

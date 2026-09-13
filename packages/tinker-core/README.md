@@ -34,3 +34,9 @@ Text adapters own the mutable scroll buffer exposed by `RuntimeContext`.
 Asynchronous text animation retains that buffer, so programs must keep its
 contents unchanged until they stop or restart the animation. The scheduler's
 single-active-program model enforces that ownership for the current projects.
+
+The reusable portal document shell lives in `assets/portal/shell.html`.
+Firmware projects provide the project-owned form and script fragments, then
+compose them into one generated PROGMEM page during their PlatformIO pre-build
+step. This keeps routes and the outer document contract shared without adding
+runtime string-fragment assembly on the ESP32.

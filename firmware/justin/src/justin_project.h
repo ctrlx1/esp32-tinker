@@ -23,10 +23,9 @@ public:
 
   void startPrograms();
   void tickPrograms();
+  const JustinSettings &settings() const { return config_; }
 
 private:
-  static void startProgram(void *context, uint8_t programIndex);
-  static void tickProgram(void *context, uint8_t programIndex);
   static void startTransition(void *context);
   static bool tickTransition(void *context);
   static uint32_t nowMs(void *context);
@@ -34,6 +33,6 @@ private:
   tinker::SchedulerBindings schedulerBindings();
 
   static const tinker::ProgramDescriptor kPrograms[8];
-  ProgramConfig config_;
+  JustinSettings config_;
   tinker::DescriptorScheduler<uint8_t> scheduler_;
 };

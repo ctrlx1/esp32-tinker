@@ -1,6 +1,6 @@
 #pragma once
 
-#include "program.h"
+#include "../program.h"
 
 void pixelArtStart(const ProgramConfig &cfg);
 void pixelArtTick(const ProgramConfig &cfg);

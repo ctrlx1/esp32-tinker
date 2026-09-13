@@ -199,6 +199,28 @@ def check_dependencies(target: str, mode: Optional[str]) -> int:
                 project_failed = True
                 print(f"  miss  Python module    {module}")
 
+        for dependency in project.dependencies.get(
+            "conditionalPythonModules", []
+        ):
+            module = dependency["module"]
+            when_path = project.root / dependency["whenPath"]
+            has_assets = when_path.exists() and any(
+                path.is_file() for path in when_path.rglob("*")
+            )
+            if not has_assets:
+                print(
+                    f"  skip  Python module    {module} "
+                    f"(no assets at {dependency['whenPath']})"
+                )
+            elif importlib.util.find_spec(module):
+                print(f"  ok    Python module    {module} (asset regeneration)")
+            else:
+                project_failed = True
+                print(
+                    f"  miss  Python module    {module} "
+                    f"(required by assets at {dependency['whenPath']})"
+                )
+
         if project_failed:
             failed = True
 

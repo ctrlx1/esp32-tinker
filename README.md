@@ -122,6 +122,12 @@ fields, programs, and hardware profile. `packages/tinker-display-max7219`
 provides the shared MD_Parola/MD_MAX72XX adapter; `justin` configures it for
 four FC16 modules with chip select on GPIO 5.
 
+The retained Justin programs live in project-local folders under
+`firmware/justin/src/programs/`. Pixel-art source images, when available, belong
+in `firmware/justin/src/programs/pixel_art/assets/`; the checked-in catalog is
+kept in `pixel_art/catalog/`. Pillow is required only when those source assets
+are present and need regeneration.
+
 ### Check dependencies
 
 Verify Python, PlatformIO, project-specific tools, and supported simulator environments:
@@ -187,6 +193,10 @@ auto-connects to **`Wokwi-GUEST`** for simulator setup.
 
 Wokwi remembers the selected config for the workspace. Run **Wokwi: Select
 Config File** again whenever you switch projects.
+
+Portal settings survive resets while one simulator session remains open, but
+Wokwi does not persist ESP32 NVS writes after the simulator is stopped. A new
+simulator session therefore starts with the firmware defaults.
 
 The `wokwi` PlatformIO environment defines `WOKWI_SIM=1`, so the firmware tries `Wokwi-GUEST` before starting the normal setup hotspot. Hardware builds use the default `esp32dev` environment.
 

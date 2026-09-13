@@ -1,0 +1,328 @@
+        <div class="settings-card">
+          <div class="settings-card-title">Program Schedule</div>
+          <div>
+            <label>Programs to run</label>
+            <div class="checks">
+              <label class="check">
+                <input type="checkbox" id="program-scroller" value="scroller" />
+                <span>Simple Scroller</span>
+              </label>
+              <label class="check">
+                <input type="checkbox" id="program-fireworks" value="fireworks" />
+                <span>Fireworks</span>
+              </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  id="program-maze-hero"
+                  value="maze_hero"
+                />
+                <span>Maze Hero</span>
+              </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  id="program-pixel-art"
+                  value="pixel_art"
+                />
+                <span>Pixel Art</span>
+              </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  id="program-weather-watch"
+                  value="weather_watch"
+                />
+                <span>Weather Watch</span>
+              </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  id="program-real-weather"
+                  value="real_weather"
+                />
+                <span>Real Weather</span>
+              </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  id="program-moon-phase"
+                  value="moon_phase"
+                />
+                <span>Moon Phase</span>
+              </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  id="program-flight-watch"
+                  value="flight_watch"
+                />
+                <span>Flight Watch</span>
+              </label>
+            </div>
+            <div class="hint">
+              Checked programs cycle in this order and are remembered here.
+            </div>
+          </div>
+          <div>
+            <label>Program duration (minutes)</label>
+            <input
+              type="number"
+              id="program-duration-minutes"
+              min="0.1"
+              max="43200"
+              step="0.1"
+              value="PROGRAM_DURATION_PLACEHOLDER"
+            />
+            <div class="hint">Each selected program runs for this long.</div>
+          </div>
+          <button
+            class="btn-reset"
+            type="button"
+            onclick="resetProgramDefaults()"
+          >
+            Reset selected programs to defaults
+          </button>
+        </div>
+        <div id="scroller-config" class="settings-card program-config" hidden>
+          <div class="settings-card-title">Simple Scroller Settings</div>
+          <div>
+            <label>Scroll message</label>
+            <input
+              type="text"
+              id="scroll-message"
+              maxlength="64"
+              placeholder="Message to scroll on the display"
+              value="SCROLL_MESSAGE_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Scroll speed (ms)</label>
+            <input
+              type="number"
+              id="scroll-speed"
+              min="1"
+              step="1"
+              value="SCROLL_SPEED_PLACEHOLDER"
+            />
+            <div class="hint">
+              Milliseconds between scroll steps on the display.
+            </div>
+          </div>
+        </div>
+        <div id="fireworks-config" class="settings-card program-config" hidden>
+          <div class="settings-card-title">Fireworks Settings</div>
+          <div>
+            <label>Min launch delay (ms)</label>
+            <input
+              type="number"
+              id="fireworks-min-delay"
+              min="1"
+              step="1"
+              value="FW_MIN_DELAY_PLACEHOLDER"
+            />
+            <div class="hint">Shortest wait between launches.</div>
+          </div>
+          <div>
+            <label>Max launch delay (ms)</label>
+            <input
+              type="number"
+              id="fireworks-max-delay"
+              min="1"
+              step="1"
+              value="FW_MAX_DELAY_PLACEHOLDER"
+            />
+            <div class="hint">Longest wait between launches.</div>
+          </div>
+          <div>
+            <label>Animation speed (ms)</label>
+            <input
+              type="number"
+              id="fireworks-anim-ms"
+              min="1"
+              step="1"
+              value="FW_ANIM_MS_PLACEHOLDER"
+            />
+            <div class="hint">Milliseconds between animation frames.</div>
+          </div>
+          <div>
+            <label>Max brightness</label>
+            <input
+              type="number"
+              id="fireworks-max-brightness"
+              min="0"
+              max="15"
+              step="1"
+              value="MAX_BRIGHTNESS_PLACEHOLDER"
+            />
+            <div class="hint">
+              Brightness Fireworks can boost to as the display fills up.
+            </div>
+          </div>
+        </div>
+        <div id="maze-hero-config" class="settings-card program-config" hidden>
+          <div class="settings-card-title">Maze Hero Settings</div>
+          <div>
+            <label>Min maze width</label>
+            <input
+              type="number"
+              id="maze-min-width"
+              min="4"
+              max="80"
+              step="1"
+              value="MAZE_MIN_WIDTH_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Max maze width</label>
+            <input
+              type="number"
+              id="maze-max-width"
+              min="4"
+              max="80"
+              step="1"
+              value="MAZE_MAX_WIDTH_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Min maze height</label>
+            <input
+              type="number"
+              id="maze-min-height"
+              min="4"
+              max="48"
+              step="1"
+              value="MAZE_MIN_HEIGHT_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Max maze height</label>
+            <input
+              type="number"
+              id="maze-max-height"
+              min="4"
+              max="48"
+              step="1"
+              value="MAZE_MAX_HEIGHT_PLACEHOLDER"
+            />
+            <div class="hint">
+              A random size is picked between min and max for each maze.
+            </div>
+          </div>
+          <div>
+            <label>Min hero speed (ms)</label>
+            <input
+              type="number"
+              id="maze-hero-min-speed"
+              min="1"
+              step="1"
+              value="MAZE_HERO_MIN_SPEED_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Max hero speed (ms)</label>
+            <input
+              type="number"
+              id="maze-hero-max-speed"
+              min="1"
+              step="1"
+              value="MAZE_HERO_MAX_SPEED_PLACEHOLDER"
+            />
+            <div class="hint">
+              Each hero move picks a random delay between min and max.
+            </div>
+          </div>
+        </div>
+        <div id="real-weather-config" class="settings-card program-config" hidden>
+          <div class="settings-card-title">Real Weather Settings</div>
+          <div>
+            <label>ZIP / postal code</label>
+            <input
+              type="text"
+              id="weather-postal-code"
+              maxlength="16"
+              placeholder="14169"
+              value="WEATHER_ZIP_PLACEHOLDER"
+            />
+            <div class="hint">
+              Used to fetch current conditions and a 7-day forecast.
+            </div>
+          </div>
+        </div>
+        <div id="flight-watch-config" class="settings-card program-config" hidden>
+          <div class="settings-card-title">Flight Watch Settings</div>
+          <div>
+            <label>Latitude</label>
+            <input
+              type="number"
+              id="flight-lat"
+              min="-90"
+              max="90"
+              step="0.00001"
+              value="FLIGHT_LAT_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Longitude</label>
+            <input
+              type="number"
+              id="flight-lon"
+              min="-180"
+              max="180"
+              step="0.00001"
+              value="FLIGHT_LON_PLACEHOLDER"
+            />
+          </div>
+          <div>
+            <label>Watch radius</label>
+            <div class="flight-radius-row">
+              <input
+                type="number"
+                id="flight-radius"
+                min="0.1"
+                max="287.5"
+                step="0.1"
+                value="FLIGHT_RADIUS_PLACEHOLDER"
+              />
+              <select id="flight-radius-unit" aria-label="Radius unit">
+                <option value="0">mi</option>
+                <option value="1">km</option>
+              </select>
+            </div>
+            <div class="hint">
+              Aircraft within this radius of the lat/lon are shown (max ~250
+              nautical miles). Cycles nearby airborne flights. Airline names
+              come from callsign prefix; airport origin/destination are not
+              available from the live feed.
+            </div>
+          </div>
+          <div>
+            <label>Air speed</label>
+            <select id="flight-speed-unit" aria-label="Air speed unit">
+              <option value="0">Kt</option>
+              <option value="1">Mph</option>
+              <option value="2">Kph</option>
+            </select>
+            <div class="hint">
+              Ground speed on the display uses this unit (ADS-B data is
+              always knots).
+            </div>
+          </div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">Display Settings</div>
+          <div>
+            <label id="brightness-label">Brightness</label>
+            <input
+              type="number"
+              id="brightness"
+              min="0"
+              max="15"
+              step="1"
+              value="MIN_BRIGHTNESS_PLACEHOLDER"
+            />
+            <div class="hint" id="brightness-hint">
+              Baseline brightness for text and the dimmest Fireworks frames.
+            </div>
+          </div>
+        </div>

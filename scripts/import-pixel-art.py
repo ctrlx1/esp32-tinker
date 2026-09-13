@@ -8,22 +8,16 @@ import shutil
 import sys
 from pathlib import Path
 
-try:
-    from PIL import Image
-except ImportError as exc:
-    raise SystemExit(
-        "Pillow is required to import pixel art. Install it with: python3 -m pip install Pillow"
-    ) from exc
-
-
 ART_WIDTH = 32
 BRIGHTNESS_THRESHOLD = 127.5
 IMAGE_EXTENSIONS = {".bmp", ".gif", ".jpg", ".jpeg", ".png", ".webp"}
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE_DIR = ROOT / "pixel-art"
+SOURCE_DIR = (
+    ROOT / "firmware" / "justin" / "src" / "programs" / "pixel_art" / "assets"
+)
 OUTPUT_DIR = (
-    ROOT / "firmware" / "justin" / "src" / "programs" / "pixel_art" / "generated"
+    ROOT / "firmware" / "justin" / "src" / "programs" / "pixel_art" / "catalog"
 )
 
 
@@ -73,6 +67,14 @@ def alpha_composited_luminance(pixel: tuple[int, ...]) -> float:
 
 
 def packed_rows(path: Path) -> list[int]:
+    try:
+        from PIL import Image
+    except ImportError as exc:
+        raise SystemExit(
+            "Pillow is required to import pixel art. "
+            "Install it with: python3 -m pip install Pillow"
+        ) from exc
+
     with Image.open(path) as image:
         rgba = image.convert("RGBA")
         if rgba.width != ART_WIDTH:
@@ -185,7 +187,7 @@ def write_catalog(entries: list[tuple[str, str]]) -> None:
 def main() -> int:
     images = source_images()
     if not images:
-        # Keep a previously generated catalog when pixel-art/ has no sources
+        # Keep a previously generated catalog when assets/ has no sources
         # (e.g. checked-in generated headers without the gitignored PNGs).
         catalog = OUTPUT_DIR / "pixel_art_catalog.cpp"
         if catalog.exists():

@@ -1,6 +1,6 @@
 #include "pixel_art_program.h"
 
-#include "generated/pixel_art_catalog.h"
+#include "catalog/pixel_art_catalog.h"
 
 #include <Arduino.h>
 #include <esp_system.h>

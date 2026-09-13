@@ -1,8 +1,7 @@
 .env.local
 scripts/.env.local
 firmware/*/include/*.generated.h
-/pixel-art
-/pixel-sheets-320
+/firmware/justin/src/programs/pixel_art/assets/
 __pycache__/
 *.pyc
 .DS_Store

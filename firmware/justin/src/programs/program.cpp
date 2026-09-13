@@ -1,14 +1,5 @@
 #include "program.h"
 
-#include "fireworks.h"
-#include "flight_watch.h"
-#include "maze_hero.h"
-#include "moon_phase.h"
-#include "pixel_art.h"
-#include "real_weather.h"
-#include "scroller.h"
-#include "weather_watch.h"
-
 #include <cassert>
 
 namespace {
@@ -91,69 +82,5 @@ uint8_t programIdToFlag(ProgramId id) {
   case ProgramId::Scroller:
   default:
     return PROGRAM_SCROLLER_FLAG;
-  }
-}
-
-void programStart(const ProgramConfig &cfg) { programStart(cfg.program, cfg); }
-
-void programStart(ProgramId id, const ProgramConfig &cfg) {
-  switch (id) {
-  case ProgramId::Fireworks:
-    fireworksStart(cfg);
-    break;
-  case ProgramId::MazeHero:
-    mazeHeroStart(cfg);
-    break;
-  case ProgramId::PixelArt:
-    pixelArtStart(cfg);
-    break;
-  case ProgramId::WeatherWatch:
-    weatherWatchStart(cfg);
-    break;
-  case ProgramId::RealWeather:
-    realWeatherStart(cfg);
-    break;
-  case ProgramId::MoonPhase:
-    moonPhaseStart(cfg);
-    break;
-  case ProgramId::FlightWatch:
-    flightWatchStart(cfg);
-    break;
-  case ProgramId::Scroller:
-  default:
-    scrollerStart(cfg);
-    break;
-  }
-}
-
-void programTick(const ProgramConfig &cfg) { programTick(cfg.program, cfg); }
-
-void programTick(ProgramId id, const ProgramConfig &cfg) {
-  switch (id) {
-  case ProgramId::Fireworks:
-    fireworksTick(cfg);
-    break;
-  case ProgramId::MazeHero:
-    mazeHeroTick(cfg);
-    break;
-  case ProgramId::PixelArt:
-    pixelArtTick(cfg);
-    break;
-  case ProgramId::WeatherWatch:
-    weatherWatchTick(cfg);
-    break;
-  case ProgramId::RealWeather:
-    realWeatherTick(cfg);
-    break;
-  case ProgramId::MoonPhase:
-    moonPhaseTick(cfg);
-    break;
-  case ProgramId::FlightWatch:
-    flightWatchTick(cfg);
-    break;
-  case ProgramId::Scroller:
-  default:
-    scrollerTick(cfg);
-    break;
   }
 }

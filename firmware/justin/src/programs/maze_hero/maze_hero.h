@@ -1,6 +1,6 @@
 #pragma once
 
-#include "program.h"
+#include "../program.h"
 
 void mazeHeroStart(const ProgramConfig &cfg);
 void mazeHeroTick(const ProgramConfig &cfg);

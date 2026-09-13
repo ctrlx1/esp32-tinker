@@ -98,6 +98,23 @@ class ProjectRegistryTests(unittest.TestCase):
         self.assertEqual("alpha", registry.project("alpha").id)
         self.assertEqual("1.0.0", registry.project("alpha").version)
 
+    def test_validates_conditional_python_dependencies(self) -> None:
+        fixture = RegistryFixture()
+        self.addCleanup(fixture.close)
+        project = project_entry("alpha")
+        project["dependencies"]["conditionalPythonModules"] = [
+            {"module": "PIL", "whenPath": "firmware/alpha/assets"}
+        ]
+        path = fixture.write([project])
+
+        registry = load_registry(path=path, root=fixture.root)
+
+        self.assertEqual(
+            "PIL",
+            registry.project("alpha")
+            .dependencies["conditionalPythonModules"][0]["module"],
+        )
+
     def test_rejects_duplicate_project_ids(self) -> None:
         fixture = RegistryFixture()
         self.addCleanup(fixture.close)

@@ -1,7 +1,15 @@
 #include "justin_project.h"
 
 #include "app_version.h"
+#include "programs/fireworks/fireworks.h"
+#include "programs/flight_watch.h"
+#include "programs/maze_hero/maze_hero.h"
+#include "programs/moon_phase.h"
+#include "programs/pixel_art/pixel_art.h"
+#include "programs/real_weather.h"
+#include "programs/scroller/scroller.h"
 #include "programs/transitions.h"
+#include "programs/weather_watch.h"
 #include "setup_html.h"
 
 namespace {
@@ -23,6 +31,11 @@ constexpr uint8_t DEFAULT_DISPLAY_BRIGHTNESS = 0;
 constexpr uint8_t DEFAULT_FIREWORKS_MAX_BRIGHTNESS = 15;
 
 constexpr uint8_t PROGRAM_COUNT = 8;
+
+template <void (*Callback)(const ProgramConfig &)>
+void dispatchProgram(void *context, uint8_t) {
+  Callback(static_cast<JustinProject *>(context)->settings());
+}
 
 uint8_t sanitizeSelectedPrograms(uint8_t selectedPrograms,
                                  ProgramId fallbackProgram) {
@@ -125,15 +138,22 @@ static_assert(static_cast<uint8_t>(ProgramId::FlightWatch) == 7,
               "Program order must remain persistence-compatible");
 
 const tinker::ProgramDescriptor JustinProject::kPrograms[8] = {
-    {"scroller", &JustinProject::startProgram, &JustinProject::tickProgram},
-    {"fireworks", &JustinProject::startProgram, &JustinProject::tickProgram},
-    {"maze_hero", &JustinProject::startProgram, &JustinProject::tickProgram},
-    {"pixel_art", &JustinProject::startProgram, &JustinProject::tickProgram},
-    {"weather_watch", &JustinProject::startProgram,
-     &JustinProject::tickProgram},
-    {"real_weather", &JustinProject::startProgram, &JustinProject::tickProgram},
-    {"moon_phase", &JustinProject::startProgram, &JustinProject::tickProgram},
-    {"flight_watch", &JustinProject::startProgram, &JustinProject::tickProgram},
+    {"scroller", &dispatchProgram<scrollerStart>,
+     &dispatchProgram<scrollerTick>},
+    {"fireworks", &dispatchProgram<fireworksStart>,
+     &dispatchProgram<fireworksTick>},
+    {"maze_hero", &dispatchProgram<mazeHeroStart>,
+     &dispatchProgram<mazeHeroTick>},
+    {"pixel_art", &dispatchProgram<pixelArtStart>,
+     &dispatchProgram<pixelArtTick>},
+    {"weather_watch", &dispatchProgram<weatherWatchStart>,
+     &dispatchProgram<weatherWatchTick>},
+    {"real_weather", &dispatchProgram<realWeatherStart>,
+     &dispatchProgram<realWeatherTick>},
+    {"moon_phase", &dispatchProgram<moonPhaseStart>,
+     &dispatchProgram<moonPhaseTick>},
+    {"flight_watch", &dispatchProgram<flightWatchStart>,
+     &dispatchProgram<flightWatchTick>},
 };
 
 JustinProject::JustinProject(tinker::RuntimeContext &runtime) {
@@ -621,16 +641,6 @@ void JustinProject::tickPrograms() {
     startPrograms();
   }
   scheduler_.tick(schedulerBindings());
-}
-
-void JustinProject::startProgram(void *context, uint8_t programIndex) {
-  JustinProject &project = *static_cast<JustinProject *>(context);
-  programStart(static_cast<ProgramId>(programIndex), project.config_);
-}
-
-void JustinProject::tickProgram(void *context, uint8_t programIndex) {
-  JustinProject &project = *static_cast<JustinProject *>(context);
-  programTick(static_cast<ProgramId>(programIndex), project.config_);
 }
 
 void JustinProject::startTransition(void *) { transitionStartRandom(); }
