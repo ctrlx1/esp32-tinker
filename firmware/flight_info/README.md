@@ -3,12 +3,12 @@
 ESP32 Tinker firmware for a P4-256x128-2121-A5 HUB75 panel (64×32 RGB,
 1/16 scan). The live program cycles a full-color info card for nearby
 aircraft from [adsb.lol](https://api.adsb.lol): callsign, airline, type,
-altitude, speed, track, and climb/descend.
+altitude, speed, track, climb/descend, and distance from the viewer.
 
 It is the HUB75 counterpart to Flight Watch. Up to ten nearest aircraft
 are queued and shown one at a time for a configurable dwell (default 6
 seconds). The captive portal matches Flight Tracker search settings
-(lat/lon, radius, units, brightness), plus card dwell, an Open in Google
+(lat/lon, radius, units, brightness), plus card dwell, distance units, an Open in Google
 Maps link, and a Paste GPS button.
 
 Power the panel from a dedicated 5 V / ≥4 A supply on the VH4 header and

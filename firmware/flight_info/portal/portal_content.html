@@ -123,6 +123,11 @@
           <option value="1">Miles/hour</option>
           <option value="2">Kilometres/hour</option>
         </select>
+        <label for="distUnit">Distance to Aircraft</label>
+        <select id="distUnit">
+          <option value="0">Miles</option>
+          <option value="1">Kilometres</option>
+        </select>
         <label for="brightness">Brightness (0&ndash;15)</label>
         <input id="brightness" type="number" min="0" max="15"
                value="BRIGHTNESS_PLACEHOLDER" />
@@ -150,6 +155,7 @@
     <script>
       document.getElementById("radiusUnit").value = "RADIUS_UNIT_PLACEHOLDER";
       document.getElementById("speedUnit").value = "SPEED_UNIT_PLACEHOLDER";
+      document.getElementById("distUnit").value = "DIST_UNIT_PLACEHOLDER";
 
       function setMessage(id, text, isError) {
         const element = document.getElementById(id);
@@ -237,6 +243,7 @@
           radius: document.getElementById("radius").value,
           radiusUnit: document.getElementById("radiusUnit").value,
           speedUnit: document.getElementById("speedUnit").value,
+          distUnit: document.getElementById("distUnit").value,
           brightness: document.getElementById("brightness").value,
           cardDwell: document.getElementById("cardDwell").value
         });

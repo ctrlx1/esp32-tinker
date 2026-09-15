@@ -19,6 +19,7 @@ constexpr uint8_t kRow0Y = 0;
 constexpr uint8_t kRow1Y = 7;
 constexpr uint8_t kRow2Y = 14;
 constexpr uint8_t kRow3Y = 21;
+constexpr uint8_t kRow4Y = 27;
 
 constexpr uint8_t kBgR = 2;
 constexpr uint8_t kBgG = 6;
@@ -41,6 +42,9 @@ constexpr uint8_t kSpeedB = 230;
 constexpr uint8_t kTrackR = 150;
 constexpr uint8_t kTrackG = 150;
 constexpr uint8_t kTrackB = 160;
+constexpr uint8_t kDistR = 180;
+constexpr uint8_t kDistG = 200;
+constexpr uint8_t kDistB = 220;
 constexpr uint8_t kClimbR = 70;
 constexpr uint8_t kClimbG = 220;
 constexpr uint8_t kClimbB = 110;
@@ -103,7 +107,7 @@ void drawGlyph(int x, int y, char value, uint8_t r, uint8_t g, uint8_t b) {
 }
 
 int drawText(int x, int y, const char *text, uint8_t r, uint8_t g, uint8_t b,
-             int maxChars = 20) {
+             int maxChars = 20, int gap = 1) {
   if (!text) {
     return x;
   }
@@ -111,7 +115,7 @@ int drawText(int x, int y, const char *text, uint8_t r, uint8_t g, uint8_t b,
   int drawn = 0;
   while (text[0] && drawn < maxChars) {
     if (drawn > 0) {
-      cursor += 1;
+      cursor += gap;
     }
     drawGlyph(cursor, y, text[0], r, g, b);
     cursor += font3x5::kWidth;
@@ -230,10 +234,23 @@ const char *speedSuffix(uint8_t speedUnit) {
   return "kt";
 }
 
+bool formatDistance(float dstNm, uint8_t distanceUnit, char *out, size_t outSize) {
+  if (!out || outSize == 0 || !std::isfinite(dstNm) || dstNm < 0.0f ||
+      dstNm >= 9000.0f) {
+    return false;
+  }
+  const bool useKm = distanceUnit == FLIGHT_DISTANCE_UNIT_KM;
+  const float value = dstNm * (useKm ? 1.852f : 1.15078f);
+  snprintf(out, outSize, "%.1f%s", static_cast<double>(value),
+           useKm ? "km" : "mi");
+  return true;
+}
+
 } // namespace
 
 void draw(tinker::RuntimeContext &runtime, const adsb::Aircraft &aircraft,
-          uint8_t index, uint8_t count, uint8_t speedUnit, uint8_t brightness) {
+          uint8_t index, uint8_t count, uint8_t speedUnit, uint8_t distanceUnit,
+          uint8_t brightness) {
   uint8_t level = brightness;
   if (level > 15) {
     level = 15;
@@ -332,6 +349,14 @@ void draw(tinker::RuntimeContext &runtime, const adsb::Aircraft &aircraft,
     drawLeftRight(kRow3Y, trackText, scaleChannel(kTrackR, level),
                   scaleChannel(kTrackG, level), scaleChannel(kTrackB, level),
                   vertLabel, vertR, vertG, vertB);
+  }
+
+  char distText[12];
+  if (formatDistance(aircraft.dstNm, distanceUnit, distText, sizeof(distText))) {
+    drawLeftRight(kRow4Y, distText, scaleChannel(kDistR, level),
+                  scaleChannel(kDistG, level), scaleChannel(kDistB, level),
+                  "to craft", scaleChannel(kDistR, level),
+                  scaleChannel(kDistG, level), scaleChannel(kDistB, level));
   }
 
   runtime.setBrightness(brightness);

@@ -130,6 +130,12 @@ void FlightInfoProject::loadSettings(Preferences &preferences) {
     settings_.flightSpeedUnit = DEFAULT_FLIGHT_SPEED_UNIT;
   }
 
+  settings_.flightDistanceUnit =
+      preferences.getUChar("dstUnit", DEFAULT_FLIGHT_DISTANCE_UNIT);
+  if (settings_.flightDistanceUnit > FLIGHT_DISTANCE_UNIT_KM) {
+    settings_.flightDistanceUnit = DEFAULT_FLIGHT_DISTANCE_UNIT;
+  }
+
   settings_.brightness =
       preferences.getUChar("brightness", DEFAULT_BRIGHTNESS);
   if (settings_.brightness > 15) {
@@ -161,6 +167,7 @@ void FlightInfoProject::saveSettings(Preferences &preferences) const {
   preferences.putFloat("fltRad", settings_.flightRadius);
   preferences.putUChar("fltRadUnit", settings_.flightRadiusUnit);
   preferences.putUChar("fltSpdUnit", settings_.flightSpeedUnit);
+  preferences.putUChar("dstUnit", settings_.flightDistanceUnit);
   preferences.putUChar("brightness", settings_.brightness);
   preferences.putUChar("cardDwell", settings_.cardDwellSec);
 }
@@ -179,6 +186,7 @@ String FlightInfoProject::buildPortalPage(const String &ip,
   page.replace("RADIUS_PLACEHOLDER", String(settings_.flightRadius, 2));
   page.replace("RADIUS_UNIT_PLACEHOLDER", String(settings_.flightRadiusUnit));
   page.replace("SPEED_UNIT_PLACEHOLDER", String(settings_.flightSpeedUnit));
+  page.replace("DIST_UNIT_PLACEHOLDER", String(settings_.flightDistanceUnit));
   page.replace("BRIGHTNESS_PLACEHOLDER", String(settings_.brightness));
   page.replace("DWELL_PLACEHOLDER", String(settings_.cardDwellSec));
   return page;
@@ -188,8 +196,8 @@ bool FlightInfoProject::applyPortalRequest(const tinker::PortalRequest &request,
                                            String &error) {
   if (!request.hasArg("lat") || !request.hasArg("lon") ||
       !request.hasArg("radius") || !request.hasArg("radiusUnit") ||
-      !request.hasArg("speedUnit") || !request.hasArg("brightness") ||
-      !request.hasArg("cardDwell")) {
+      !request.hasArg("speedUnit") || !request.hasArg("distUnit") ||
+      !request.hasArg("brightness") || !request.hasArg("cardDwell")) {
     error = "Missing flight info settings.";
     return false;
   }
@@ -199,6 +207,7 @@ bool FlightInfoProject::applyPortalRequest(const tinker::PortalRequest &request,
   float radius;
   long radiusUnit;
   long speedUnit;
+  long distUnit;
   long brightness;
   long cardDwell;
   if (!parseFloatStrict(request.arg("lat"), -90.0f, 90.0f, lat)) {
@@ -225,6 +234,11 @@ bool FlightInfoProject::applyPortalRequest(const tinker::PortalRequest &request,
     error = "Speed unit is invalid.";
     return false;
   }
+  if (!parseLongStrict(request.arg("distUnit"), FLIGHT_DISTANCE_UNIT_MI,
+                       FLIGHT_DISTANCE_UNIT_KM, distUnit)) {
+    error = "Distance unit is invalid.";
+    return false;
+  }
   if (!parseLongStrict(request.arg("brightness"), 0, 15, brightness)) {
     error = "Brightness must be between 0 and 15.";
     return false;
@@ -240,6 +254,7 @@ bool FlightInfoProject::applyPortalRequest(const tinker::PortalRequest &request,
   settings_.flightRadius = radius;
   settings_.flightRadiusUnit = static_cast<uint8_t>(radiusUnit);
   settings_.flightSpeedUnit = static_cast<uint8_t>(speedUnit);
+  settings_.flightDistanceUnit = static_cast<uint8_t>(distUnit);
   settings_.brightness = static_cast<uint8_t>(brightness);
   settings_.cardDwellSec = static_cast<uint8_t>(cardDwell);
   return true;
@@ -279,7 +294,8 @@ void FlightInfoProject::drawCurrent() {
     featuredIndex_ = 0;
   }
   card::draw(runtime_, adsb::items()[featuredIndex_], featuredIndex_, count,
-             settings_.flightSpeedUnit, settings_.brightness);
+             settings_.flightSpeedUnit, settings_.flightDistanceUnit,
+             settings_.brightness);
   showingCard_ = true;
   lastStatus_ = "";
   started_ = true;
