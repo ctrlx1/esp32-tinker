@@ -7,7 +7,7 @@
 
 namespace adsb {
 
-constexpr uint8_t kMaxAircraft = 5;
+constexpr uint8_t kMaxAircraft = 10;
 
 enum class Status : uint8_t {
   Loading,

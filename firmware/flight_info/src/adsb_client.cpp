@@ -697,11 +697,17 @@ void loadFallbackAircraft(const FlightInfoSettings &settings) {
       {"UAL789", "B77W", 38000, 510, 180, 0, 0.55f},
       {"DAL321", "A321", 12000, 310, 45, 600, 0.67f},
       {"SWA555", "B737", 8000, 280, 315, -200, 0.81f},
+      {"FFT210", "A20N", 24000, 390, 135, 900, 0.36f},
+      {"NKS884", "A321", 16000, 340, 225, -500, 0.48f},
+      {"ASA172", "B739", 33000, 460, 300, 200, 0.61f},
+      {"FDX401", "B763", 36000, 490, 15, -100, 0.74f},
+      {"UPS980", "B748", 39000, 520, 75, 0, 0.88f},
   };
+  constexpr uint8_t kDemoCount = sizeof(kDemo) / sizeof(kDemo[0]);
 
   const float range = radiusNm(settings);
   aircraftCount = 0;
-  for (uint8_t i = 0; i < kMaxAircraft; ++i) {
+  for (uint8_t i = 0; i < kDemoCount && i < kMaxAircraft; ++i) {
     Aircraft &item = aircraftQueue[aircraftCount++];
     memset(&item, 0, sizeof(item));
     strncpy(item.callsign, kDemo[i].callsign, sizeof(item.callsign) - 1);
