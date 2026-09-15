@@ -3,6 +3,7 @@
 #include "font3x5.h"
 #include "../hardware/hub75_profile.h"
 
+#include <Arduino.h>
 #include <cmath>
 #include <stdio.h>
 #include <string.h>
@@ -358,6 +359,148 @@ void draw(tinker::RuntimeContext &runtime, const adsb::Aircraft &aircraft,
                   "to craft", scaleChannel(kDistR, level),
                   scaleChannel(kDistG, level), scaleChannel(kDistB, level));
   }
+
+  runtime.setBrightness(brightness);
+  runtime.blitRgb565(&colorBuffer[0][0], kWidth, kHeight);
+}
+
+void hsvToRgb(uint16_t hue, uint8_t &red, uint8_t &green, uint8_t &blue) {
+  const uint8_t region = static_cast<uint8_t>(hue / 60);
+  const uint8_t remainder =
+      static_cast<uint8_t>(((hue % 60) * 255) / 60);
+  const uint8_t rising = remainder;
+  const uint8_t falling = static_cast<uint8_t>(255 - remainder);
+
+  switch (region) {
+  case 0:
+    red = 255;
+    green = rising;
+    blue = 0;
+    break;
+  case 1:
+    red = falling;
+    green = 255;
+    blue = 0;
+    break;
+  case 2:
+    red = 0;
+    green = 255;
+    blue = rising;
+    break;
+  case 3:
+    red = 0;
+    green = falling;
+    blue = 255;
+    break;
+  case 4:
+    red = rising;
+    green = 0;
+    blue = 255;
+    break;
+  default:
+    red = 255;
+    green = 0;
+    blue = falling;
+    break;
+  }
+}
+
+uint32_t nextRng(uint32_t &state) {
+  state = state * 1664525u + 1013904223u;
+  return state;
+}
+
+void drawArc(int cx, int cy, float radius, float startDeg, float endDeg,
+             uint8_t r, uint8_t g, uint8_t b) {
+  constexpr float kDegToRad = 0.01745329252f;
+  if (endDeg < startDeg) {
+    endDeg += 360.0f;
+  }
+  const float step = radius < 8.0f ? 6.0f : 3.0f;
+  for (float deg = startDeg; deg <= endDeg; deg += step) {
+    const float rad = deg * kDegToRad;
+    const int x = cx + static_cast<int>(lroundf(sinf(rad) * radius));
+    const int y = cy - static_cast<int>(lroundf(cosf(rad) * radius));
+    setPanel(x, y, r, g, b);
+    setPanel(x + 1, y, r, g, b);
+  }
+}
+
+void drawDish(uint8_t r, uint8_t g, uint8_t b) {
+  constexpr int kCx = 32;
+  constexpr int kCy = 27;
+  for (int dx = -9; dx <= 9; ++dx) {
+    const int y = kCy - (dx * dx) / 16;
+    setPanel(kCx + dx, y, r, g, b);
+    setPanel(kCx + dx, y + 1, r, g, b);
+  }
+  for (int y = kCy; y < static_cast<int>(kHeight); ++y) {
+    setPanel(kCx - 1, y, r, g, b);
+    setPanel(kCx, y, r, g, b);
+    setPanel(kCx + 1, y, r, g, b);
+  }
+  setPanel(kCx - 3, kHeight - 1, r, g, b);
+  setPanel(kCx - 2, kHeight - 1, r, g, b);
+  setPanel(kCx + 2, kHeight - 1, r, g, b);
+  setPanel(kCx + 3, kHeight - 1, r, g, b);
+}
+
+void drawIdleRadar(tinker::RuntimeContext &runtime, uint8_t brightness) {
+  uint8_t level = brightness;
+  if (level > 15) {
+    level = 15;
+  }
+  if (level < 1) {
+    level = 1;
+  }
+
+  fillBackground(scaleChannel(kBgR, level), scaleChannel(kBgG, level),
+                 scaleChannel(kBgB, level));
+
+  constexpr int kFocusX = 32;
+  constexpr int kFocusY = 26;
+  constexpr uint8_t kBeamCount = 4;
+  constexpr float kMinRadius = 4.0f;
+  constexpr float kMaxRadius = 25.0f;
+  constexpr float kSpreadDeg = 48.0f;
+  static uint16_t beamHue[kBeamCount] = {20, 140, 210, 300};
+  static uint32_t rng = 1;
+  static unsigned long lastJumpMs = 0;
+
+  const unsigned long now = millis();
+  const float travel = kMaxRadius - kMinRadius;
+  const float phase = static_cast<float>((now / 28) % 1000) * travel / 80.0f;
+
+  for (uint8_t i = 0; i < kBeamCount; ++i) {
+    beamHue[i] = static_cast<uint16_t>((beamHue[i] + 1 + i) % 360);
+  }
+  if (now - lastJumpMs > 450) {
+    lastJumpMs = now;
+    const uint8_t which =
+        static_cast<uint8_t>(nextRng(rng) % kBeamCount);
+    beamHue[which] = static_cast<uint16_t>(nextRng(rng) % 360);
+  }
+
+  for (uint8_t i = 0; i < kBeamCount; ++i) {
+    uint8_t red = 0;
+    uint8_t green = 0;
+    uint8_t blue = 0;
+    hsvToRgb(beamHue[i], red, green, blue);
+    red = scaleChannel(red, level);
+    green = scaleChannel(green, level);
+    blue = scaleChannel(blue, level);
+
+    float offset = phase + travel * static_cast<float>(i) / kBeamCount;
+    while (offset >= travel) {
+      offset -= travel;
+    }
+    const float radius = kMinRadius + offset;
+    drawArc(kFocusX, kFocusY, radius, -kSpreadDeg, kSpreadDeg, red, green,
+            blue);
+  }
+
+  drawDish(scaleChannel(180, level), scaleChannel(190, level),
+           scaleChannel(200, level));
 
   runtime.setBrightness(brightness);
   runtime.blitRgb565(&colorBuffer[0][0], kWidth, kHeight);

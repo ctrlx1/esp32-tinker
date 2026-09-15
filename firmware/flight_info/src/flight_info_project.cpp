@@ -286,7 +286,14 @@ void FlightInfoProject::drawCurrent() {
 
   const uint8_t count = adsb::count();
   if (count == 0) {
-    showStatus(statusMessage(adsb::status()));
+    if (adsb::status() == adsb::Status::Success) {
+      card::drawIdleRadar(runtime_, settings_.brightness);
+      showingCard_ = false;
+      lastStatus_ = "";
+      started_ = true;
+    } else {
+      showStatus(statusMessage(adsb::status()));
+    }
     return;
   }
 
