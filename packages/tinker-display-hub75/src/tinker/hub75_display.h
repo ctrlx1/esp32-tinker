@@ -76,6 +76,7 @@ private:
   Adafruit_GFX &gfx();
   void clearScreen();
   void present();
+  void presentCleared();
   void applyTextColor();
   void drawCenteredMessage(const char *message);
   void drawScrolledMessage();

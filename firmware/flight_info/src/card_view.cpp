@@ -360,8 +360,9 @@ void draw(tinker::RuntimeContext &runtime, const adsb::Aircraft &aircraft,
                   scaleChannel(kDistG, level), scaleChannel(kDistB, level));
   }
 
-  runtime.setBrightness(brightness);
+  runtime.beginColorFrame();
   runtime.blitRgb565(&colorBuffer[0][0], kWidth, kHeight);
+  runtime.endColorFrame();
 }
 
 void hsvToRgb(uint16_t hue, uint8_t &red, uint8_t &green, uint8_t &blue) {
@@ -502,8 +503,9 @@ void drawIdleRadar(tinker::RuntimeContext &runtime, uint8_t brightness) {
   drawDish(scaleChannel(180, level), scaleChannel(190, level),
            scaleChannel(200, level));
 
-  runtime.setBrightness(brightness);
+  runtime.beginColorFrame();
   runtime.blitRgb565(&colorBuffer[0][0], kWidth, kHeight);
+  runtime.endColorFrame();
 }
 
 } // namespace card

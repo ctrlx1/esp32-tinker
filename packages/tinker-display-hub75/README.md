@@ -9,7 +9,8 @@ and RGB drawing through `tinker::RuntimeContext`.
 `fillColor` and `setPixelColor` present immediately unless the caller wraps them
 in `beginColorFrame` / `endColorFrame`, which batch draws and flush once.
 `blitRgb565` copies a full RGB565 bitmap in one call; use it for offscreen
-compose so the live DMA panel does not show mid-frame rasterization.
+compose. Production firmware enables DMA double-buffering and flips after each
+present so the scanning panel does not show mid-frame writes.
 
 The Wokwi backend is a GPIO stand-in, not the hardware I2S DMA driver. It sends
 4 color bits per channel, skips unchanged scan rows, and does not flush again

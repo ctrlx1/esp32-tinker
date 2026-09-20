@@ -30,7 +30,9 @@ HUB75_I2S_CFG Hub75Display::makeMxConfig(const Config &config) {
       config.r1, config.g1, config.b1, config.r2,  config.g2,
       config.b2, config.a,  config.b,  config.c,   config.d,
       config.e,  config.lat, config.oe, config.clk};
-  return HUB75_I2S_CFG(config.width, config.height, 1, pins);
+  HUB75_I2S_CFG mxconfig(config.width, config.height, 1, pins);
+  mxconfig.double_buff = true;
+  return mxconfig;
 }
 #endif
 
@@ -110,6 +112,15 @@ void Hub75Display::clearScreen() {
 void Hub75Display::present() {
 #ifdef WOKWI_SIM
   flushSim();
+#else
+  panel_.flipDMABuffer();
+#endif
+}
+
+void Hub75Display::presentCleared() {
+  clearScreen();
+#ifndef WOKWI_SIM
+  present();
 #endif
 }
 
@@ -288,7 +299,7 @@ void Hub75Display::drawScrolledMessage() {
 void Hub75Display::clearText(void *context) {
   Hub75Display &adapter = self(context);
   adapter.scrollActive_ = false;
-  adapter.clearScreen();
+  adapter.presentCleared();
 }
 
 void Hub75Display::print(void *context, const char *message) {
@@ -372,7 +383,7 @@ void Hub75Display::showVersion(void *context, const char *version) {
   adapter.clearScreen();
   adapter.drawCenteredMessage(version);
   delay(700);
-  adapter.clearScreen();
+  adapter.presentCleared();
 }
 
 void Hub75Display::showIp(void *context, const IPAddress &address) {
@@ -384,7 +395,7 @@ void Hub75Display::showIp(void *context, const IPAddress &address) {
   }
   delay(2000);
   adapter.scrollActive_ = false;
-  adapter.clearScreen();
+  adapter.presentCleared();
 }
 
 void Hub75Display::beginSetup(void *context, const char *apSsid) {

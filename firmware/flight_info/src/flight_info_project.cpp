@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include <stdlib.h>
+#include <string.h>
 
 namespace {
 
@@ -273,8 +274,28 @@ void FlightInfoProject::showStatus(const char *message) {
     runtime_.showMessage(message);
     lastStatus_ = message;
     showingCard_ = false;
+    haveLastCard_ = false;
   }
   started_ = true;
+}
+
+bool FlightInfoProject::cardUnchanged(const adsb::Aircraft &aircraft,
+                                      uint8_t count) const {
+  return haveLastCard_ && showingCard_ && lastCardIndex_ == featuredIndex_ &&
+         lastCardCount_ == count &&
+         lastSpeedUnit_ == settings_.flightSpeedUnit &&
+         lastDistanceUnit_ == settings_.flightDistanceUnit &&
+         memcmp(&lastAircraft_, &aircraft, sizeof(adsb::Aircraft)) == 0;
+}
+
+void FlightInfoProject::rememberCard(const adsb::Aircraft &aircraft,
+                                     uint8_t count) {
+  lastAircraft_ = aircraft;
+  lastCardIndex_ = featuredIndex_;
+  lastCardCount_ = count;
+  lastSpeedUnit_ = settings_.flightSpeedUnit;
+  lastDistanceUnit_ = settings_.flightDistanceUnit;
+  haveLastCard_ = true;
 }
 
 void FlightInfoProject::drawCurrent() {
@@ -286,6 +307,7 @@ void FlightInfoProject::drawCurrent() {
 
   const uint8_t count = adsb::count();
   if (count == 0) {
+    haveLastCard_ = false;
     if (adsb::status() == adsb::Status::Success) {
       card::drawIdleRadar(runtime_, settings_.brightness);
       showingCard_ = false;
@@ -300,9 +322,15 @@ void FlightInfoProject::drawCurrent() {
   if (featuredIndex_ >= count) {
     featuredIndex_ = 0;
   }
-  card::draw(runtime_, adsb::items()[featuredIndex_], featuredIndex_, count,
+  const adsb::Aircraft &aircraft = adsb::items()[featuredIndex_];
+  if (cardUnchanged(aircraft, count)) {
+    started_ = true;
+    return;
+  }
+  card::draw(runtime_, aircraft, featuredIndex_, count,
              settings_.flightSpeedUnit, settings_.flightDistanceUnit,
              settings_.brightness);
+  rememberCard(aircraft, count);
   showingCard_ = true;
   lastStatus_ = "";
   started_ = true;
@@ -313,6 +341,7 @@ void FlightInfoProject::startPrograms() {
   lastCardMs_ = millis();
   featuredIndex_ = 0;
   showingCard_ = false;
+  haveLastCard_ = false;
   lastStatus_ = "";
   adsb::start(settings_);
   drawCurrent();
