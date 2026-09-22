@@ -4,7 +4,8 @@
 
 namespace flight_info_hardware {
 
-// P4-256x128-2121-A5 is a 64×32 HUB75 indoor module (256mm × 128mm, 1/16 scan).
+// P4-256x128-2121-A5 is a 64×32 HUB75 indoor module (256mm × 128mm, 1/16 scan)
+// driven by FM6124-family chips (FM6124HJ / FM6124HU).
 // GPIO 12 (G2) is an ESP32 strapping pin; keep it stable during boot.
 constexpr uint16_t kDisplayWidth = 64;
 constexpr uint8_t kDisplayHeight = 32;
@@ -28,6 +29,7 @@ constexpr tinker::Hub75DisplayConfig kDisplayConfig = {
     kDisplayWidth, kDisplayHeight, kR1Pin,   kG1Pin, kB1Pin, kR2Pin,
     kG2Pin,        kB2Pin,         kAPin,    kBPin,  kCPin,  kDPin,
     kEPin,         kLatPin,        kOePin,   kClkPin,
+    tinker::Hub75Driver::Fm6124,
 };
 
 } // namespace flight_info_hardware

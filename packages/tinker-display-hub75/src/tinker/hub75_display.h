@@ -9,6 +9,12 @@
 
 namespace tinker {
 
+// Maps onto the DMA library shift_driver values used on hardware.
+enum class Hub75Driver : uint8_t {
+  ShiftRegister = 0,
+  Fm6124 = 1,
+};
+
 struct Hub75DisplayConfig {
   uint16_t width;
   uint8_t height;
@@ -26,6 +32,7 @@ struct Hub75DisplayConfig {
   int8_t lat;
   int8_t oe;
   int8_t clk;
+  Hub75Driver driver;
 };
 
 class Hub75Display {

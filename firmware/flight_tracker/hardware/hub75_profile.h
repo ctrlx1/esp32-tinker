@@ -28,6 +28,7 @@ constexpr tinker::Hub75DisplayConfig kDisplayConfig = {
     kDisplayWidth, kDisplayHeight, kR1Pin,   kG1Pin, kB1Pin, kR2Pin,
     kG2Pin,        kB2Pin,         kAPin,    kBPin,  kCPin,  kDPin,
     kEPin,         kLatPin,        kOePin,   kClkPin,
+    tinker::Hub75Driver::ShiftRegister,
 };
 
 } // namespace flight_tracker_hardware

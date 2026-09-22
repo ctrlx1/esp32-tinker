@@ -2,7 +2,8 @@
 
 Shared HUB75 RGB matrix adapter for ESP32 Tinker firmware projects.
 
-Each project supplies panel geometry and the HUB75 GPIO map. The adapter owns
+Each project supplies panel geometry, the HUB75 GPIO map, and the shift
+driver (`ShiftRegister` or `Fm6124`). The adapter owns
 one `MatrixPanel_I2S_DMA` instance and exposes text, brightness, boot status,
 and RGB drawing through `tinker::RuntimeContext`.
 

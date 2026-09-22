@@ -1,7 +1,7 @@
 # Flight Info
 
 ESP32 Tinker firmware for a P4-256x128-2121-A5 HUB75 panel (64×32 RGB,
-1/16 scan). The live program cycles a full-color info card for nearby
+1/16 scan, FM6124HJ / FM6124HU drivers). The live program cycles a full-color info card for nearby
 aircraft from [adsb.lol](https://api.adsb.lol): callsign, airline, type,
 altitude, speed, track, climb/descend, and distance from the viewer.
 
