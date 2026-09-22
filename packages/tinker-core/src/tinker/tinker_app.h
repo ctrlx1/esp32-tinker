@@ -67,6 +67,14 @@ private:
   static unsigned long wokwiSetupTimeoutMs() { return 8000UL; }
   static const char *wokwiGuestSsid() { return "Wokwi-GUEST"; }
 
+  // Modem sleep wakes the radio on the same bus as HUB75 DMA and shows up
+  // as random pixels. Leave the radio awake once WiFi has started.
+  void keepWiFiAwake() {
+#ifndef WOKWI_SIM
+    WiFi.setSleep(false);
+#endif
+  }
+
   static bool runningInWokwi() {
 #ifdef WOKWI_SIM
     return true;
@@ -355,6 +363,7 @@ private:
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(wokwiGuestSsid());
+    keepWiFiAwake();
 
     unsigned long start = millis();
     while (WiFi.status() != WL_CONNECTED &&
@@ -386,6 +395,7 @@ private:
     WiFi.mode(WIFI_AP);
     String apSsid = setupApSsid();
     WiFi.softAP(apSsid.c_str());
+    keepWiFiAwake();
     delay(500);
 
     dnsServer_.start(dnsPort(), "*", WiFi.softAPIP());
@@ -407,6 +417,7 @@ private:
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(savedSsid_.c_str(), savedPass_.c_str());
+    keepWiFiAwake();
     project_.startPrograms();
 
     unsigned long start = millis();
@@ -430,6 +441,7 @@ private:
     Serial.println("");
     Serial.print("Connected! IP: ");
     Serial.println(WiFi.localIP());
+    keepWiFiAwake();
     runtime_.showBootIp(WiFi.localIP());
     project_.startPrograms();
     return true;
