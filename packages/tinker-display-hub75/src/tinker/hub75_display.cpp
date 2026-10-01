@@ -32,9 +32,15 @@ HUB75_I2S_CFG Hub75Display::makeMxConfig(const Config &config) {
       config.e,  config.lat, config.oe, config.clk};
   HUB75_I2S_CFG mxconfig(config.width, config.height, 1, pins);
   mxconfig.double_buff = true;
-  mxconfig.driver = config.driver == Hub75Driver::Fm6124
-                        ? HUB75_I2S_CFG::FM6124
-                        : HUB75_I2S_CFG::SHIFTREG;
+  if (config.driver == Hub75Driver::Fm6124) {
+    mxconfig.driver = HUB75_I2S_CFG::FM6124;
+    // The last 16 columns are the far FM6124. Sample on the falling edge and
+    // hold OE blanked longer so that chip can settle before the row latches.
+    mxconfig.clkphase = false;
+    mxconfig.latch_blanking = 4;
+  } else {
+    mxconfig.driver = HUB75_I2S_CFG::SHIFTREG;
+  }
   return mxconfig;
 }
 #endif
