@@ -23,6 +23,7 @@ public:
 
   void startPrograms();
   void tickPrograms();
+  void showConnectedSplash();
 
 private:
   void showStatus(const char *message);

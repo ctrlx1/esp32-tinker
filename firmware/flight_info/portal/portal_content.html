@@ -134,6 +134,9 @@
         <label for="cardDwell">Card dwell (seconds)</label>
         <input id="cardDwell" type="number" min="2" max="30"
                value="DWELL_PLACEHOLDER" />
+        <label for="trackFlights">Track Flights (1&ndash;14)</label>
+        <input id="trackFlights" type="number" min="1" max="14"
+               value="TRACK_FLIGHTS_PLACEHOLDER" />
         <button type="button" onclick="saveSettings()">Save &amp; restart</button>
         <div id="save-message" class="message"></div>
       </section>
@@ -245,7 +248,8 @@
           speedUnit: document.getElementById("speedUnit").value,
           distUnit: document.getElementById("distUnit").value,
           brightness: document.getElementById("brightness").value,
-          cardDwell: document.getElementById("cardDwell").value
+          cardDwell: document.getElementById("cardDwell").value,
+          trackFlights: document.getElementById("trackFlights").value
         });
         try {
           const response = await fetch("/save", {

@@ -16,6 +16,15 @@
 
 namespace tinker {
 
+template <typename T>
+auto callConnectedSplash(T &project, int)
+    -> decltype(project.showConnectedSplash(), void()) {
+  project.showConnectedSplash();
+}
+
+template <typename T>
+void callConnectedSplash(T &, long) {}
+
 template <typename DisplayAdapter, typename Project> class TinkerApp {
 public:
   explicit TinkerApp(const typename DisplayAdapter::Config &displayConfig)
@@ -379,6 +388,7 @@ private:
     configMode_ = false;
     registerRoutes();
     server_.begin();
+    callConnectedSplash(project_, 0);
     project_.startPrograms();
 
     Serial.println("Wokwi ready.");
@@ -443,6 +453,7 @@ private:
     Serial.println(WiFi.localIP());
     keepWiFiAwake();
     runtime_.showBootIp(WiFi.localIP());
+    callConnectedSplash(project_, 0);
     project_.startPrograms();
     return true;
   }

@@ -12,4 +12,6 @@ void draw(tinker::RuntimeContext &runtime, const adsb::Aircraft &aircraft,
 
 void drawIdleRadar(tinker::RuntimeContext &runtime, uint8_t brightness);
 
+void playBootTitle(tinker::RuntimeContext &runtime);
+
 } // namespace card

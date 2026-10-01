@@ -150,6 +150,13 @@ void FlightInfoProject::loadSettings(Preferences &preferences) {
     settings_.cardDwellSec = DEFAULT_CARD_DWELL_SEC;
   }
 
+  settings_.trackFlights =
+      preferences.getUChar("trkCnt", DEFAULT_TRACK_FLIGHTS);
+  if (settings_.trackFlights < MIN_TRACK_FLIGHTS ||
+      settings_.trackFlights > MAX_TRACK_FLIGHTS) {
+    settings_.trackFlights = DEFAULT_TRACK_FLIGHTS;
+  }
+
   Serial.print(" flight_info lat=");
   Serial.print(settings_.flightLat, 5);
   Serial.print(" lon=");
@@ -158,6 +165,8 @@ void FlightInfoProject::loadSettings(Preferences &preferences) {
   Serial.print(settings_.flightRadius);
   Serial.print(" dwell=");
   Serial.print(settings_.cardDwellSec);
+  Serial.print(" track=");
+  Serial.print(settings_.trackFlights);
   Serial.print(" brightness=");
   Serial.println(settings_.brightness);
 }
@@ -171,6 +180,7 @@ void FlightInfoProject::saveSettings(Preferences &preferences) const {
   preferences.putUChar("dstUnit", settings_.flightDistanceUnit);
   preferences.putUChar("brightness", settings_.brightness);
   preferences.putUChar("cardDwell", settings_.cardDwellSec);
+  preferences.putUChar("trkCnt", settings_.trackFlights);
 }
 
 uint8_t FlightInfoProject::displayBrightness() const {
@@ -190,6 +200,7 @@ String FlightInfoProject::buildPortalPage(const String &ip,
   page.replace("DIST_UNIT_PLACEHOLDER", String(settings_.flightDistanceUnit));
   page.replace("BRIGHTNESS_PLACEHOLDER", String(settings_.brightness));
   page.replace("DWELL_PLACEHOLDER", String(settings_.cardDwellSec));
+  page.replace("TRACK_FLIGHTS_PLACEHOLDER", String(settings_.trackFlights));
   return page;
 }
 
@@ -198,7 +209,8 @@ bool FlightInfoProject::applyPortalRequest(const tinker::PortalRequest &request,
   if (!request.hasArg("lat") || !request.hasArg("lon") ||
       !request.hasArg("radius") || !request.hasArg("radiusUnit") ||
       !request.hasArg("speedUnit") || !request.hasArg("distUnit") ||
-      !request.hasArg("brightness") || !request.hasArg("cardDwell")) {
+      !request.hasArg("brightness") || !request.hasArg("cardDwell") ||
+      !request.hasArg("trackFlights")) {
     error = "Missing flight info settings.";
     return false;
   }
@@ -211,6 +223,7 @@ bool FlightInfoProject::applyPortalRequest(const tinker::PortalRequest &request,
   long distUnit;
   long brightness;
   long cardDwell;
+  long trackFlights;
   if (!parseFloatStrict(request.arg("lat"), -90.0f, 90.0f, lat)) {
     error = "Latitude must be a number from -90 through 90.";
     return false;
@@ -249,6 +262,11 @@ bool FlightInfoProject::applyPortalRequest(const tinker::PortalRequest &request,
     error = "Card dwell must be between 2 and 30 seconds.";
     return false;
   }
+  if (!parseLongStrict(request.arg("trackFlights"), MIN_TRACK_FLIGHTS,
+                       MAX_TRACK_FLIGHTS, trackFlights)) {
+    error = "Track Flights must be between 1 and 14.";
+    return false;
+  }
 
   settings_.flightLat = lat;
   settings_.flightLon = lon;
@@ -258,6 +276,7 @@ bool FlightInfoProject::applyPortalRequest(const tinker::PortalRequest &request,
   settings_.flightDistanceUnit = static_cast<uint8_t>(distUnit);
   settings_.brightness = static_cast<uint8_t>(brightness);
   settings_.cardDwellSec = static_cast<uint8_t>(cardDwell);
+  settings_.trackFlights = static_cast<uint8_t>(trackFlights);
   return true;
 }
 
@@ -334,6 +353,14 @@ void FlightInfoProject::drawCurrent() {
   showingCard_ = true;
   lastStatus_ = "";
   started_ = true;
+}
+
+void FlightInfoProject::showConnectedSplash() {
+  runtime_.setBrightness(settings_.brightness);
+  runtime_.showBootVersion(definition().version);
+  if (runtime_.hasRgb565Blit()) {
+    card::playBootTitle(runtime_);
+  }
 }
 
 void FlightInfoProject::startPrograms() {

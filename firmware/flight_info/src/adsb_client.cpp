@@ -22,6 +22,7 @@ struct FetchRequest {
   float lat;
   float lon;
   float radiusNm;
+  uint8_t trackLimit;
   uint64_t generation;
 };
 
@@ -47,6 +48,7 @@ float lastLat = 0;
 float lastLon = 0;
 float lastRadius = 0;
 uint8_t lastRadiusUnit = 0;
+uint8_t lastTrackLimit = 0;
 
 portMUX_TYPE workerMux = portMUX_INITIALIZER_UNLOCKED;
 TaskHandle_t workerHandle = nullptr;
@@ -64,6 +66,14 @@ float radiusNm(const FlightInfoSettings &settings) {
   return radiusToNm(settings.flightRadius, settings.flightRadiusUnit);
 }
 
+uint8_t trackLimit(const FlightInfoSettings &settings) {
+  if (settings.trackFlights < MIN_TRACK_FLIGHTS ||
+      settings.trackFlights > MAX_TRACK_FLIGHTS) {
+    return DEFAULT_TRACK_FLIGHTS;
+  }
+  return settings.trackFlights;
+}
+
 void bumpGeneration() {
   ++currentGeneration;
   if (currentGeneration == 0) {
@@ -76,6 +86,7 @@ void rememberFetchConfig(const FlightInfoSettings &settings) {
   lastLon = settings.flightLon;
   lastRadius = settings.flightRadius;
   lastRadiusUnit = settings.flightRadiusUnit;
+  lastTrackLimit = trackLimit(settings);
 }
 
 bool resultMatches(const FetchResult &result,
@@ -339,6 +350,10 @@ private:
 };
 
 void insertSorted(FetchResult &result, const Aircraft &candidate) {
+  const uint8_t limit = result.request.trackLimit;
+  if (limit == 0 || limit > kMaxAircraft) {
+    return;
+  }
   uint8_t insertAt = result.count;
   for (uint8_t i = 0; i < result.count; ++i) {
     if (candidate.dstNm < result.aircraft[i].dstNm) {
@@ -346,14 +361,14 @@ void insertSorted(FetchResult &result, const Aircraft &candidate) {
       break;
     }
   }
-  if (result.count < kMaxAircraft) {
+  if (result.count < limit) {
     for (uint8_t i = result.count; i > insertAt; --i) {
       result.aircraft[i] = result.aircraft[i - 1];
     }
     result.aircraft[insertAt] = candidate;
     ++result.count;
-  } else if (insertAt < kMaxAircraft) {
-    for (uint8_t i = kMaxAircraft - 1; i > insertAt; --i) {
+  } else if (insertAt < limit) {
+    for (uint8_t i = static_cast<uint8_t>(limit - 1); i > insertAt; --i) {
       result.aircraft[i] = result.aircraft[i - 1];
     }
     result.aircraft[insertAt] = candidate;
@@ -649,7 +664,7 @@ LaunchStatus launchFetch(const FlightInfoSettings &settings,
   }
 
   workerRequest = {settings.flightLat, settings.flightLon, radiusNm(settings),
-                   generation};
+                   trackLimit(settings), generation};
   TaskHandle_t created = nullptr;
   const BaseType_t started =
       xTaskCreate(fetchWorker, "flight-info", kWorkerStackBytes, nullptr, 1,
@@ -707,7 +722,8 @@ void loadFallbackAircraft(const FlightInfoSettings &settings) {
 
   const float range = radiusNm(settings);
   aircraftCount = 0;
-  for (uint8_t i = 0; i < kDemoCount && i < kMaxAircraft; ++i) {
+  const uint8_t limit = trackLimit(settings);
+  for (uint8_t i = 0; i < kDemoCount && i < limit; ++i) {
     Aircraft &item = aircraftQueue[aircraftCount++];
     memset(&item, 0, sizeof(item));
     strncpy(item.callsign, kDemo[i].callsign, sizeof(item.callsign) - 1);
@@ -820,11 +836,16 @@ void start(const FlightInfoSettings &settings) {
 }
 
 void tick(const FlightInfoSettings &settings) {
+  const uint8_t limit = trackLimit(settings);
   const bool locationChanged =
       settings.flightLat != lastLat || settings.flightLon != lastLon ||
       settings.flightRadius != lastRadius ||
       settings.flightRadiusUnit != lastRadiusUnit;
-  if (locationChanged) {
+  const bool trackLimitChanged = limit != lastTrackLimit;
+  if (trackLimitChanged && aircraftCount > limit) {
+    aircraftCount = limit;
+  }
+  if (locationChanged || trackLimitChanged) {
     bumpGeneration();
     rememberFetchConfig(settings);
     fetchNeeded = true;

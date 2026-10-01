@@ -20,6 +20,9 @@ constexpr uint8_t DEFAULT_BRIGHTNESS = 15;
 constexpr uint8_t DEFAULT_CARD_DWELL_SEC = 6;
 constexpr uint8_t MIN_CARD_DWELL_SEC = 2;
 constexpr uint8_t MAX_CARD_DWELL_SEC = 30;
+constexpr uint8_t MIN_TRACK_FLIGHTS = 1;
+constexpr uint8_t MAX_TRACK_FLIGHTS = 14;
+constexpr uint8_t DEFAULT_TRACK_FLIGHTS = MAX_TRACK_FLIGHTS;
 
 constexpr float MAX_FLIGHT_RADIUS_NM = 250.0f;
 
@@ -32,4 +35,5 @@ struct FlightInfoSettings {
   uint8_t flightDistanceUnit = DEFAULT_FLIGHT_DISTANCE_UNIT;
   uint8_t brightness = DEFAULT_BRIGHTNESS;
   uint8_t cardDwellSec = DEFAULT_CARD_DWELL_SEC;
+  uint8_t trackFlights = DEFAULT_TRACK_FLIGHTS;
 };

@@ -508,4 +508,28 @@ void drawIdleRadar(tinker::RuntimeContext &runtime, uint8_t brightness) {
   runtime.endColorFrame();
 }
 
+void playBootTitle(tinker::RuntimeContext &runtime) {
+  constexpr unsigned long kDurationMs = 3000;
+  constexpr unsigned long kFrameMs = 30;
+  constexpr char kTitle[] = "Flight Info";
+  const int titleWidth = static_cast<int>(font3x5::textWidth(kTitle));
+  const int x = (static_cast<int>(kWidth) - titleWidth) / 2;
+  const int y = (static_cast<int>(kHeight) - font3x5::kHeight) / 2;
+  const unsigned long started = millis();
+  uint16_t hue = 0;
+  while (millis() - started < kDurationMs) {
+    uint8_t red = 0;
+    uint8_t green = 0;
+    uint8_t blue = 0;
+    hsvToRgb(hue, red, green, blue);
+    fillBackground(0, 0, 0);
+    drawText(x, y, kTitle, red, green, blue);
+    runtime.beginColorFrame();
+    runtime.blitRgb565(&colorBuffer[0][0], kWidth, kHeight);
+    runtime.endColorFrame();
+    hue = static_cast<uint16_t>((hue + 24) % 360);
+    delay(kFrameMs);
+  }
+}
+
 } // namespace card
