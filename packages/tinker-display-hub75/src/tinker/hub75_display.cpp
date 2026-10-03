@@ -21,7 +21,7 @@ const DisplayCapabilities Hub75Display::kCapabilities = {
     {},
     {&Hub75Display::setTextColor, &Hub75Display::fill, &Hub75Display::setPixel,
      &Hub75Display::beginColorFrame, &Hub75Display::endColorFrame,
-     &Hub75Display::blitRgb565},
+     &Hub75Display::blitRgb565, &Hub75Display::drawChar},
 };
 
 #ifndef WOKWI_SIM
@@ -461,6 +461,14 @@ void Hub75Display::blitRgb565(void *context, const uint16_t *pixels,
   adapter.gfx().drawRGBBitmap(0, 0, const_cast<uint16_t *>(pixels),
                               static_cast<int16_t>(width),
                               static_cast<int16_t>(height));
+  adapter.presentIfIdle();
+}
+
+void Hub75Display::drawChar(void *context, int16_t x, int16_t y, char glyph) {
+  Hub75Display &adapter = self(context);
+  const uint16_t color = rgb565(adapter.textR_, adapter.textG_, adapter.textB_);
+  adapter.gfx().drawChar(x, y, static_cast<unsigned char>(glyph), color, color,
+                         1);
   adapter.presentIfIdle();
 }
 

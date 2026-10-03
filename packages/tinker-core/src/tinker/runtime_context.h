@@ -226,6 +226,16 @@ public:
     return displayCapabilities_ && displayCapabilities_->color.blitRgb565;
   }
 
+  bool hasColorGlyph() const {
+    return displayCapabilities_ && displayCapabilities_->color.drawChar;
+  }
+
+  void drawColorGlyph(int16_t x, int16_t y, char glyph) const {
+    if (displayCapabilities_ && displayCapabilities_->color.drawChar) {
+      displayCapabilities_->color.drawChar(displayContext_, x, y, glyph);
+    }
+  }
+
 private:
   void *displayContext_;
   const DisplayCapabilities *displayCapabilities_;

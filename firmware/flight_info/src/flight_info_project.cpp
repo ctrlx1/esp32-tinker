@@ -378,7 +378,7 @@ void FlightInfoProject::drawCurrent() {
 void FlightInfoProject::showConnectedSplash() {
   runtime_.setBrightness(settings_.brightness);
   runtime_.showBootVersion(definition().version);
-  if (runtime_.hasRgb565Blit()) {
+  if (runtime_.hasColorGlyph()) {
     card::playBootTitle(runtime_);
   }
 }

@@ -581,24 +581,50 @@ void drawIdleRadar(tinker::RuntimeContext &runtime, uint8_t brightness) {
   runtime.endColorFrame();
 }
 
-void playBootTitle(tinker::RuntimeContext &runtime) {
-  constexpr unsigned long kDurationMs = 3000;
-  constexpr unsigned long kFrameMs = 30;
-  constexpr char kTitle[] = "Flight Info";
-  const int titleWidth = static_cast<int>(font3x5::textWidth(kTitle));
-  const int x = (static_cast<int>(kWidth) - titleWidth) / 2;
-  const int y = (static_cast<int>(kHeight) - font3x5::kHeight) / 2;
-  const unsigned long started = millis();
-  uint16_t hue = 0;
-  while (millis() - started < kDurationMs) {
+void paintBootLine(tinker::RuntimeContext &runtime, const char *text, int x,
+                   int y, uint16_t hue, uint8_t &index) {
+  constexpr uint8_t kGlyphWidth = 6;
+  constexpr uint16_t kHueStep = 36;
+  if (!text) {
+    return;
+  }
+  for (uint8_t column = 0; text[column]; ++column) {
     uint8_t red = 0;
     uint8_t green = 0;
     uint8_t blue = 0;
-    hsvToRgb(hue, red, green, blue);
-    fillBackground(0, 0, 0);
-    drawText(x, y, kTitle, red, green, blue);
+    const uint16_t letterHue = static_cast<uint16_t>(
+        (hue + static_cast<uint16_t>(index) * kHueStep) % 360);
+    hsvToRgb(letterHue, red, green, blue);
+    runtime.setTextColor(red, green, blue);
+    runtime.drawColorGlyph(static_cast<int16_t>(x + column * kGlyphWidth),
+                           static_cast<int16_t>(y), text[column]);
+    ++index;
+  }
+}
+
+void playBootTitle(tinker::RuntimeContext &runtime) {
+  constexpr unsigned long kDurationMs = 3000;
+  constexpr unsigned long kFrameMs = 30;
+  constexpr uint8_t kGlyphWidth = 6;
+  constexpr uint8_t kGlyphHeight = 8;
+  constexpr char kLine1[] = "Flight";
+  constexpr char kLine2[] = "Info";
+  const int x1 =
+      (static_cast<int>(kWidth) - static_cast<int>(sizeof(kLine1) - 1) * kGlyphWidth) /
+      2;
+  const int x2 =
+      (static_cast<int>(kWidth) - static_cast<int>(sizeof(kLine2) - 1) * kGlyphWidth) /
+      2;
+  const int y1 = (static_cast<int>(kHeight) - 2 * kGlyphHeight) / 2;
+  const int y2 = y1 + kGlyphHeight;
+  const unsigned long started = millis();
+  uint16_t hue = 0;
+  while (millis() - started < kDurationMs) {
     runtime.beginColorFrame();
-    runtime.blitRgb565(&colorBuffer[0][0], kWidth, kHeight);
+    runtime.fillColor(0, 0, 0);
+    uint8_t index = 0;
+    paintBootLine(runtime, kLine1, x1, y1, hue, index);
+    paintBootLine(runtime, kLine2, x2, y2, hue, index);
     runtime.endColorFrame();
     hue = static_cast<uint16_t>((hue + 24) % 360);
     delay(kFrameMs);

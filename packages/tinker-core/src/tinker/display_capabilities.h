@@ -52,6 +52,7 @@ struct ColorDisplayCapabilities {
   void (*endFrame)(void *context);
   void (*blitRgb565)(void *context, const uint16_t *pixels, uint16_t width,
                      uint8_t height);
+  void (*drawChar)(void *context, int16_t x, int16_t y, char glyph);
 };
 
 struct DisplayCapabilities {
