@@ -1,6 +1,7 @@
 #include "card_view.h"
 
 #include "font3x5.h"
+#include "jet_sprite.h"
 #include "../hardware/hub75_profile.h"
 
 #include <Arduino.h>
@@ -582,7 +583,7 @@ void drawIdleRadar(tinker::RuntimeContext &runtime, uint8_t brightness) {
 }
 
 void paintBootLine(tinker::RuntimeContext &runtime, const char *text, int x,
-                   int y, uint16_t hue, uint8_t &index) {
+                   int y, uint16_t hue, uint8_t &index, uint8_t fade) {
   constexpr uint8_t kGlyphWidth = 6;
   constexpr uint16_t kHueStep = 36;
   if (!text) {
@@ -595,10 +596,39 @@ void paintBootLine(tinker::RuntimeContext &runtime, const char *text, int x,
     const uint16_t letterHue = static_cast<uint16_t>(
         (hue + static_cast<uint16_t>(index) * kHueStep) % 360);
     hsvToRgb(letterHue, red, green, blue);
+    red = static_cast<uint8_t>(static_cast<uint16_t>(red) * fade / 255);
+    green = static_cast<uint8_t>(static_cast<uint16_t>(green) * fade / 255);
+    blue = static_cast<uint8_t>(static_cast<uint16_t>(blue) * fade / 255);
     runtime.setTextColor(red, green, blue);
     runtime.drawColorGlyph(static_cast<int16_t>(x + column * kGlyphWidth),
                            static_cast<int16_t>(y), text[column]);
     ++index;
+  }
+}
+
+void flyBootJet(tinker::RuntimeContext &runtime) {
+  constexpr unsigned long kFrameMs = 20;
+  for (int origin = static_cast<int>(kWidth); origin >= -static_cast<int>(kJetWidth);
+       --origin) {
+    fillBackground(0, 0, 0);
+    for (uint8_t row = 0; row < kJetHeight; ++row) {
+      for (uint8_t column = 0; column < kJetWidth; ++column) {
+        const uint16_t color =
+            kJetPixels[static_cast<uint16_t>(row) * kJetWidth + column];
+        if (color == 0) {
+          continue;
+        }
+        const int x = origin + column;
+        if (x < 0 || x >= static_cast<int>(kWidth)) {
+          continue;
+        }
+        colorBuffer[row][x] = color;
+      }
+    }
+    runtime.beginColorFrame();
+    runtime.blitRgb565(&colorBuffer[0][0], kWidth, kHeight);
+    runtime.endColorFrame();
+    delay(kFrameMs);
   }
 }
 
@@ -619,16 +649,35 @@ void playBootTitle(tinker::RuntimeContext &runtime) {
   const int y2 = y1 + kGlyphHeight;
   const unsigned long started = millis();
   uint16_t hue = 0;
+  uint16_t shownHue = 0;
   while (millis() - started < kDurationMs) {
+    shownHue = hue;
     runtime.beginColorFrame();
     runtime.fillColor(0, 0, 0);
     uint8_t index = 0;
-    paintBootLine(runtime, kLine1, x1, y1, hue, index);
-    paintBootLine(runtime, kLine2, x2, y2, hue, index);
+    paintBootLine(runtime, kLine1, x1, y1, hue, index, 255);
+    paintBootLine(runtime, kLine2, x2, y2, hue, index, 255);
     runtime.endColorFrame();
     hue = static_cast<uint16_t>((hue + 24) % 360);
     delay(kFrameMs);
   }
+
+  constexpr unsigned long kFadeMs = 500;
+  const unsigned long fadeStarted = millis();
+  while (millis() - fadeStarted < kFadeMs) {
+    const unsigned long elapsed = millis() - fadeStarted;
+    const uint8_t fade =
+        static_cast<uint8_t>(255 - elapsed * 255 / kFadeMs);
+    runtime.beginColorFrame();
+    runtime.fillColor(0, 0, 0);
+    uint8_t index = 0;
+    paintBootLine(runtime, kLine1, x1, y1, shownHue, index, fade);
+    paintBootLine(runtime, kLine2, x2, y2, shownHue, index, fade);
+    runtime.endColorFrame();
+    delay(kFrameMs);
+  }
+
+  flyBootJet(runtime);
 }
 
 } // namespace card
