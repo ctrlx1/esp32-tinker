@@ -137,6 +137,12 @@ void FlightInfoProject::loadSettings(Preferences &preferences) {
     settings_.flightDistanceUnit = DEFAULT_FLIGHT_DISTANCE_UNIT;
   }
 
+  settings_.flightHeading =
+      preferences.getUChar("hdgFmt", DEFAULT_FLIGHT_HEADING);
+  if (settings_.flightHeading > FLIGHT_HEADING_COMPASS) {
+    settings_.flightHeading = DEFAULT_FLIGHT_HEADING;
+  }
+
   settings_.brightness =
       preferences.getUChar("brightness", DEFAULT_BRIGHTNESS);
   if (settings_.brightness > 15) {
@@ -167,6 +173,8 @@ void FlightInfoProject::loadSettings(Preferences &preferences) {
   Serial.print(settings_.cardDwellSec);
   Serial.print(" track=");
   Serial.print(settings_.trackFlights);
+  Serial.print(" heading=");
+  Serial.print(settings_.flightHeading);
   Serial.print(" brightness=");
   Serial.println(settings_.brightness);
 }
@@ -178,6 +186,7 @@ void FlightInfoProject::saveSettings(Preferences &preferences) const {
   preferences.putUChar("fltRadUnit", settings_.flightRadiusUnit);
   preferences.putUChar("fltSpdUnit", settings_.flightSpeedUnit);
   preferences.putUChar("dstUnit", settings_.flightDistanceUnit);
+  preferences.putUChar("hdgFmt", settings_.flightHeading);
   preferences.putUChar("brightness", settings_.brightness);
   preferences.putUChar("cardDwell", settings_.cardDwellSec);
   preferences.putUChar("trkCnt", settings_.trackFlights);
@@ -198,6 +207,7 @@ String FlightInfoProject::buildPortalPage(const String &ip,
   page.replace("RADIUS_UNIT_PLACEHOLDER", String(settings_.flightRadiusUnit));
   page.replace("SPEED_UNIT_PLACEHOLDER", String(settings_.flightSpeedUnit));
   page.replace("DIST_UNIT_PLACEHOLDER", String(settings_.flightDistanceUnit));
+  page.replace("HEADING_PLACEHOLDER", String(settings_.flightHeading));
   page.replace("BRIGHTNESS_PLACEHOLDER", String(settings_.brightness));
   page.replace("DWELL_PLACEHOLDER", String(settings_.cardDwellSec));
   page.replace("TRACK_FLIGHTS_PLACEHOLDER", String(settings_.trackFlights));
@@ -209,6 +219,7 @@ bool FlightInfoProject::applyPortalRequest(const tinker::PortalRequest &request,
   if (!request.hasArg("lat") || !request.hasArg("lon") ||
       !request.hasArg("radius") || !request.hasArg("radiusUnit") ||
       !request.hasArg("speedUnit") || !request.hasArg("distUnit") ||
+      !request.hasArg("heading") ||
       !request.hasArg("brightness") || !request.hasArg("cardDwell") ||
       !request.hasArg("trackFlights")) {
     error = "Missing flight info settings.";
@@ -221,6 +232,7 @@ bool FlightInfoProject::applyPortalRequest(const tinker::PortalRequest &request,
   long radiusUnit;
   long speedUnit;
   long distUnit;
+  long heading;
   long brightness;
   long cardDwell;
   long trackFlights;
@@ -253,6 +265,11 @@ bool FlightInfoProject::applyPortalRequest(const tinker::PortalRequest &request,
     error = "Distance unit is invalid.";
     return false;
   }
+  if (!parseLongStrict(request.arg("heading"), FLIGHT_HEADING_DEGREES,
+                       FLIGHT_HEADING_COMPASS, heading)) {
+    error = "Heading format is invalid.";
+    return false;
+  }
   if (!parseLongStrict(request.arg("brightness"), 0, 15, brightness)) {
     error = "Brightness must be between 0 and 15.";
     return false;
@@ -274,6 +291,7 @@ bool FlightInfoProject::applyPortalRequest(const tinker::PortalRequest &request,
   settings_.flightRadiusUnit = static_cast<uint8_t>(radiusUnit);
   settings_.flightSpeedUnit = static_cast<uint8_t>(speedUnit);
   settings_.flightDistanceUnit = static_cast<uint8_t>(distUnit);
+  settings_.flightHeading = static_cast<uint8_t>(heading);
   settings_.brightness = static_cast<uint8_t>(brightness);
   settings_.cardDwellSec = static_cast<uint8_t>(cardDwell);
   settings_.trackFlights = static_cast<uint8_t>(trackFlights);
@@ -304,6 +322,7 @@ bool FlightInfoProject::cardUnchanged(const adsb::Aircraft &aircraft,
          lastCardCount_ == count &&
          lastSpeedUnit_ == settings_.flightSpeedUnit &&
          lastDistanceUnit_ == settings_.flightDistanceUnit &&
+         lastHeadingFormat_ == settings_.flightHeading &&
          memcmp(&lastAircraft_, &aircraft, sizeof(adsb::Aircraft)) == 0;
 }
 
@@ -314,6 +333,7 @@ void FlightInfoProject::rememberCard(const adsb::Aircraft &aircraft,
   lastCardCount_ = count;
   lastSpeedUnit_ = settings_.flightSpeedUnit;
   lastDistanceUnit_ = settings_.flightDistanceUnit;
+  lastHeadingFormat_ = settings_.flightHeading;
   haveLastCard_ = true;
 }
 
@@ -348,7 +368,7 @@ void FlightInfoProject::drawCurrent() {
   }
   card::draw(runtime_, aircraft, featuredIndex_, count,
              settings_.flightSpeedUnit, settings_.flightDistanceUnit,
-             settings_.brightness);
+             settings_.flightHeading, settings_.brightness);
   rememberCard(aircraft, count);
   showingCard_ = true;
   lastStatus_ = "";

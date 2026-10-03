@@ -247,11 +247,63 @@ bool formatDistance(float dstNm, uint8_t distanceUnit, char *out, size_t outSize
   return true;
 }
 
+constexpr uint8_t kCompassBy[font3x5::kWidth] = {0x1F, 0x14, 0x18};
+
+void drawCompassGlyph(int x, int y, char value, uint8_t r, uint8_t g,
+                      uint8_t b) {
+  const uint8_t *columns =
+      value == 'b' ? kCompassBy : font3x5::glyph(value);
+  for (uint8_t col = 0; col < font3x5::kWidth; ++col) {
+    const uint8_t bits = columns[col];
+    for (uint8_t row = 0; row < font3x5::kHeight; ++row) {
+      if (bits & (1 << row)) {
+        setPanel(x + col, y + row, r, g, b);
+      }
+    }
+  }
+}
+
+int drawCompassText(int x, int y, const char *text, uint8_t r, uint8_t g,
+                    uint8_t b) {
+  if (!text) {
+    return x;
+  }
+  int cursor = x;
+  int drawn = 0;
+  while (text[0] && drawn < 4) {
+    if (drawn > 0) {
+      cursor += 1;
+    }
+    drawCompassGlyph(cursor, y, text[0], r, g, b);
+    cursor += font3x5::kWidth;
+    ++text;
+    ++drawn;
+  }
+  return cursor;
+}
+
+const char *compassPoint(int16_t trackDeg) {
+  static const char *kPoints[] = {
+      "N",    "NbE", "NNE", "NEbN", "NE",  "NEbE", "ENE", "EbN",
+      "E",    "EbS", "ESE", "SEbE", "SE",  "SEbS", "SSE", "SbE",
+      "S",    "SbW", "SSW", "SWbS", "SW",  "SWbW", "WSW", "WbS",
+      "W",    "WbN", "WNW", "NWbW", "NW",  "NWbN", "NNW", "NbW"};
+  int degrees = static_cast<int>(trackDeg) % 360;
+  if (degrees < 0) {
+    degrees += 360;
+  }
+  int point = (degrees * 32 + 180) / 360;
+  if (point < 0 || point >= 32) {
+    point = 0;
+  }
+  return kPoints[point];
+}
+
 } // namespace
 
 void draw(tinker::RuntimeContext &runtime, const adsb::Aircraft &aircraft,
           uint8_t index, uint8_t count, uint8_t speedUnit, uint8_t distanceUnit,
-          uint8_t brightness) {
+          uint8_t headingFormat, uint8_t brightness) {
   uint8_t level = brightness;
   if (level > 15) {
     level = 15;
@@ -327,7 +379,12 @@ void draw(tinker::RuntimeContext &runtime, const adsb::Aircraft &aircraft,
                 scaleChannel(kSpeedG, level), scaleChannel(kSpeedB, level));
 
   char trackText[8];
-  snprintf(trackText, sizeof(trackText), "%03ddeg", aircraft.trackDeg);
+  const bool useCompass = headingFormat == FLIGHT_HEADING_COMPASS;
+  if (useCompass) {
+    snprintf(trackText, sizeof(trackText), "%s", compassPoint(aircraft.trackDeg));
+  } else {
+    snprintf(trackText, sizeof(trackText), "%03ddeg", aircraft.trackDeg);
+  }
   char rateText[10] = "";
   if (climbing || descending) {
     snprintf(rateText, sizeof(rateText), "%d",
@@ -341,11 +398,27 @@ void draw(tinker::RuntimeContext &runtime, const adsb::Aircraft &aircraft,
     if (rateX - chevronWidth < leftEnd) {
       rateX = leftEnd + chevronWidth;
     }
-    drawText(kTextLeft, kRow3Y, trackText, scaleChannel(kTrackR, level),
-             scaleChannel(kTrackG, level), scaleChannel(kTrackB, level));
+    if (useCompass) {
+      drawCompassText(kTextLeft, kRow3Y, trackText, scaleChannel(kTrackR, level),
+                      scaleChannel(kTrackG, level), scaleChannel(kTrackB, level));
+    } else {
+      drawText(kTextLeft, kRow3Y, trackText, scaleChannel(kTrackR, level),
+               scaleChannel(kTrackG, level), scaleChannel(kTrackB, level));
+    }
     drawChevron(rateX - chevronWidth, kRow3Y + 1, climbing, vertR, vertG,
                 vertB);
     drawText(rateX, kRow3Y, rateText, vertR, vertG, vertB);
+  } else if (useCompass) {
+    drawCompassText(kTextLeft, kRow3Y, trackText, scaleChannel(kTrackR, level),
+                    scaleChannel(kTrackG, level), scaleChannel(kTrackB, level));
+    const int rightWidth = static_cast<int>(font3x5::textWidth(vertLabel));
+    int rightX = static_cast<int>(kWidth) - rightWidth;
+    const int leftEnd =
+        kTextLeft + static_cast<int>(font3x5::textWidth(trackText)) + kPairGap;
+    if (rightX < leftEnd) {
+      rightX = leftEnd;
+    }
+    drawText(rightX, kRow3Y, vertLabel, vertR, vertG, vertB);
   } else {
     drawLeftRight(kRow3Y, trackText, scaleChannel(kTrackR, level),
                   scaleChannel(kTrackG, level), scaleChannel(kTrackB, level),

@@ -128,6 +128,11 @@
           <option value="0">Miles</option>
           <option value="1">Kilometres</option>
         </select>
+        <label for="heading">Heading</label>
+        <select id="heading">
+          <option value="0">Degrees</option>
+          <option value="1">Compass</option>
+        </select>
         <label for="brightness">Brightness (0&ndash;15)</label>
         <input id="brightness" type="number" min="0" max="15"
                value="BRIGHTNESS_PLACEHOLDER" />
@@ -159,6 +164,7 @@
       document.getElementById("radiusUnit").value = "RADIUS_UNIT_PLACEHOLDER";
       document.getElementById("speedUnit").value = "SPEED_UNIT_PLACEHOLDER";
       document.getElementById("distUnit").value = "DIST_UNIT_PLACEHOLDER";
+      document.getElementById("heading").value = "HEADING_PLACEHOLDER";
 
       function setMessage(id, text, isError) {
         const element = document.getElementById(id);
@@ -247,6 +253,7 @@
           radiusUnit: document.getElementById("radiusUnit").value,
           speedUnit: document.getElementById("speedUnit").value,
           distUnit: document.getElementById("distUnit").value,
+          heading: document.getElementById("heading").value,
           brightness: document.getElementById("brightness").value,
           cardDwell: document.getElementById("cardDwell").value,
           trackFlights: document.getElementById("trackFlights").value

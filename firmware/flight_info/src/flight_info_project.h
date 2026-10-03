@@ -42,6 +42,7 @@ private:
   uint8_t lastCardCount_ = 0;
   uint8_t lastSpeedUnit_ = 0;
   uint8_t lastDistanceUnit_ = 0;
+  uint8_t lastHeadingFormat_ = 0;
   unsigned long lastFrameMs_ = 0;
   unsigned long lastCardMs_ = 0;
   String lastStatus_;
