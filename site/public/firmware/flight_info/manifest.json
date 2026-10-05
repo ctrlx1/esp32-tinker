@@ -1,6 +1,6 @@
 {
   "name": "Flight Info",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "builds": [
     {
       "chipFamily": "ESP32",
