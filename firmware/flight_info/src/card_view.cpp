@@ -1,7 +1,9 @@
 #include "card_view.h"
 
+#include "aircraft_sprites.h"
 #include "font3x5.h"
-#include "jet_sprite.h"
+
+#include <esp_random.h>
 #include "../hardware/hub75_profile.h"
 
 #include <Arduino.h>
@@ -608,13 +610,14 @@ void paintBootLine(tinker::RuntimeContext &runtime, const char *text, int x,
 
 void flyBootJet(tinker::RuntimeContext &runtime) {
   constexpr unsigned long kFrameMs = 20;
-  for (int origin = static_cast<int>(kWidth); origin >= -static_cast<int>(kJetWidth);
-       --origin) {
+  const AircraftSprite &sprite = kAircraft[esp_random() % kAircraftCount];
+  for (int origin = static_cast<int>(kWidth);
+       origin >= -static_cast<int>(sprite.width); --origin) {
     fillBackground(0, 0, 0);
-    for (uint8_t row = 0; row < kJetHeight; ++row) {
-      for (uint8_t column = 0; column < kJetWidth; ++column) {
+    for (uint8_t row = 0; row < sprite.height; ++row) {
+      for (uint8_t column = 0; column < sprite.width; ++column) {
         const uint16_t color =
-            kJetPixels[static_cast<uint16_t>(row) * kJetWidth + column];
+            sprite.pixels[static_cast<uint16_t>(row) * sprite.width + column];
         if (color == 0) {
           continue;
         }
