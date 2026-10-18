@@ -2,6 +2,7 @@
 
 #include <HTTPClient.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <cmath>
 #include <cstring>
 #include <freertos/FreeRTOS.h>
@@ -11,12 +12,12 @@
 namespace adsb {
 namespace {
 
-constexpr size_t kMaxBodyBytes = 16384;
+constexpr size_t kMaxBodyBytes = 96UL * 1024UL;
 constexpr unsigned long kRefreshIntervalMs = 45UL * 1000UL;
 constexpr unsigned long kRetryIntervalMs = 20UL * 1000UL;
 constexpr float kMiToNm = 0.868976f;
 constexpr float kKmToNm = 0.539957f;
-constexpr uint32_t kWorkerStackBytes = 12288;
+constexpr uint32_t kWorkerStackBytes = 20UL * 1024UL;
 
 struct FetchRequest {
   float lat;
@@ -561,13 +562,16 @@ bool parseAircraftList(const String &json, FetchResult &result) {
 
 bool httpGetCapped(const String &url, String &body) {
   body = "";
+  WiFiClientSecure client;
+  client.setInsecure();
+  client.setHandshakeTimeout(15);
   HTTPClient http;
   http.setConnectTimeout(5000);
   http.setTimeout(15000);
   http.setReuse(false);
   http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
   http.setUserAgent("ESP32-Tinker-FlightInfo");
-  if (!http.begin(url)) {
+  if (!http.begin(client, url)) {
     return false;
   }
   const int code = http.GET();
@@ -582,7 +586,10 @@ bool httpGetCapped(const String &url, String &body) {
     http.end();
     return false;
   }
-  if (!body.reserve(kMaxBodyBytes)) {
+  const size_t reserveBytes = contentLength >= 0
+                                  ? static_cast<size_t>(contentLength)
+                                  : kMaxBodyBytes;
+  if (!body.reserve(reserveBytes)) {
     http.end();
     return false;
   }
@@ -630,13 +637,13 @@ void fetchWorker(void *) {
   } else {
     char url[128];
     snprintf(url, sizeof(url),
-             "http://api.adsb.lol/v2/lat/%.5f/lon/%.5f/dist/%.2f", request.lat,
+             "https://api.adsb.lol/v2/lat/%.5f/lon/%.5f/dist/%.2f", request.lat,
              request.lon, request.radiusNm);
     String body;
     bool fetched = httpGetCapped(url, body);
     if (!fetched) {
       snprintf(url, sizeof(url),
-               "http://api.adsb.lol/v2/closest/%.5f/%.5f/%.2f", request.lat,
+               "https://api.adsb.lol/v2/closest/%.5f/%.5f/%.2f", request.lat,
                request.lon, request.radiusNm);
       fetched = httpGetCapped(url, body);
     }
