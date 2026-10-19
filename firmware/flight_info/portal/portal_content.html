@@ -104,6 +104,8 @@
             Paste GPS
           </button>
         </div>
+        <input id="coord-paste" type="text" autocomplete="off" autocapitalize="off"
+               spellcheck="false" placeholder="40.64130, -73.77810" hidden />
         <a id="maps-link" class="maps" href="https://www.google.com/maps" target="_blank"
            rel="noopener noreferrer">Open in Google Maps</a>
         <div class="hint">
@@ -208,14 +210,35 @@
         setMessage("save-message", "Pasted " + parsed.lat + ", " + parsed.lon, false);
       }
 
-      document.getElementById("paste-gps").addEventListener("click", function () {
-        if (!navigator.clipboard || !navigator.clipboard.readText) {
-          setMessage("save-message", "Could not read the clipboard.", true);
+      function openCoordPaste() {
+        const field = document.getElementById("coord-paste");
+        field.hidden = false;
+        field.focus();
+        setMessage("save-message", "Paste the coordinates into the box.", false);
+      }
+
+      function takeCoordPaste() {
+        const field = document.getElementById("coord-paste");
+        if (!parseGps(field.value)) {
           return;
         }
-        navigator.clipboard.readText().then(applyGps).catch(function () {
-          setMessage("save-message", "Could not read the clipboard.", true);
-        });
+        applyGps(field.value);
+        field.value = "";
+        field.hidden = true;
+      }
+
+      const coordPaste = document.getElementById("coord-paste");
+      coordPaste.addEventListener("paste", function () {
+        setTimeout(takeCoordPaste, 0);
+      });
+      coordPaste.addEventListener("input", takeCoordPaste);
+
+      document.getElementById("paste-gps").addEventListener("click", async function () {
+        try {
+          applyGps(await navigator.clipboard.readText());
+        } catch (error) {
+          openCoordPaste();
+        }
       });
 
       document.getElementById("lat").addEventListener("input", updateMapsLink);
