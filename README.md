@@ -116,9 +116,9 @@ Registered projects currently include:
 - `moon_phase`: lunar phase animation with nonblocking NTP synchronization;
 - `weather_watch`: animated weather scenes;
 - `real_weather`: live Open-Meteo conditions and forecast;
-- `flight_watch`: nearby aircraft from adsb.lol;
-- `flight_tracker`: HUB75 radar of nearby aircraft from adsb.lol;
-- `flight_info`: HUB75 nearby-aircraft info cards from adsb.lol;
+- `flight_watch`: nearby aircraft from adsb.fi;
+- `flight_tracker`: HUB75 radar of nearby aircraft from adsb.fi;
+- `flight_info`: HUB75 nearby-aircraft info cards from adsb.fi;
 - `starter-max7219`: a minimal configurable “Hello World” MAX7219 firmware;
 - `starter-hub75`: a minimal Hello World color-cycle firmware for a 64×32 HUB75 panel;
 - `starter-template`: a hardware-neutral scaffold that is intentionally not

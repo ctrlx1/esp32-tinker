@@ -2,7 +2,7 @@
 
 ESP32 Tinker firmware for a P4-256x128-2121-A5 HUB75 panel (64×32 RGB,
 1/16 scan, FM6124HJ / FM6124HU drivers). The live program cycles a full-color info card for nearby
-aircraft from [adsb.lol](https://api.adsb.lol): callsign, airline, type,
+aircraft from [adsb.fi](https://opendata.adsb.fi): callsign, airline, type,
 altitude, speed, track, climb/descend, and distance from the viewer.
 
 It is the HUB75 counterpart to Flight Watch. Up to 14 nearest aircraft
@@ -32,5 +32,5 @@ and does not officially support HUB75, so the diagram uses a custom
 profile. The Wokwi firmware bit-bangs those pins instead of starting the DMA
 driver. Unused address `E` is tied to GND. Stop and restart the simulator
 after changing `diagram.json` or the chip binary. Wokwi connects to
-`Wokwi-GUEST` and fetches the same adsb.lol feed as production. If that
+`Wokwi-GUEST` and fetches the same adsb.fi feed as production. If that
 request fails, it falls back to a few demo aircraft cards.

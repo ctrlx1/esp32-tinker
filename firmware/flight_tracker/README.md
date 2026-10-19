@@ -2,7 +2,7 @@
 
 ESP32 Tinker firmware for a P4-256x128-2121-A5 HUB75 panel (64×32 RGB,
 1/16 scan). The live program is a north-up radar: you are the center
-dot, nearby aircraft from [adsb.lol](https://api.adsb.lol) are drawn as
+dot, nearby aircraft from [adsb.fi](https://opendata.adsb.fi) are drawn as
 small heading-oriented planes, and the configured search radius maps
 to the panel corners. Planes clip at the panel edges.
 
@@ -41,7 +41,7 @@ does not officially support HUB75, so the diagram uses a custom
 profile. The Wokwi firmware bit-bangs those pins instead of starting the DMA
 driver. Unused address `E` is tied to GND. Stop and restart the simulator
 after changing `diagram.json` or the chip binary. Wokwi connects to
-`Wokwi-GUEST` and fetches the same adsb.lol feed as production. If that
+`Wokwi-GUEST` and fetches the same adsb.fi feed as production. If that
 request fails, it falls back to a few location-seeded demo tracks.
 
 The Wokwi build fills the panel red as soon as the display adapter starts,

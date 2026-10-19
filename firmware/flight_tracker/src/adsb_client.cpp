@@ -593,16 +593,10 @@ void fetchWorker(void *) {
   } else {
     char url[128];
     snprintf(url, sizeof(url),
-             "https://api.adsb.lol/v2/lat/%.5f/lon/%.5f/dist/%.2f", request.lat,
-             request.lon, request.radiusNm);
+             "https://opendata.adsb.fi/api/v3/lat/%.5f/lon/%.5f/dist/%.2f",
+             request.lat, request.lon, request.radiusNm);
     String body;
-    bool fetched = httpGetCapped(url, body);
-    if (!fetched) {
-      snprintf(url, sizeof(url),
-               "https://api.adsb.lol/v2/closest/%.5f/%.5f/%.2f", request.lat,
-               request.lon, request.radiusNm);
-      fetched = httpGetCapped(url, body);
-    }
+    const bool fetched = httpGetCapped(url, body);
     if (fetched) {
       result.status = parseAircraftList(body, result)
                           ? FetchStatus::Success
