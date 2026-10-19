@@ -21,6 +21,8 @@ struct TextDisplayCapabilities {
   void (*resetAnimation)(void *context);
   char *(*buffer)(void *context);
   size_t (*bufferSize)(void *context);
+  void (*printAligned)(void *context, const char *message,
+                       TextAlignment alignment);
 };
 
 struct BrightnessDisplayCapabilities {

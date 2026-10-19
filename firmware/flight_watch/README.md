@@ -12,6 +12,8 @@ FC16 MAX7219 matrix.
 
 ## Settings
 
+After the IP address, startup shows "Flight" centered, fades it out, then
+shows "Watch" centered and fades that out before the aircraft scroll starts.
 The captive portal configures latitude, longitude, search radius and radius
 unit, displayed speed unit, heading as degrees or a 32-point compass name,
 brightness, and scroll speed. The search radius is

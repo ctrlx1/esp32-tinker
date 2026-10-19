@@ -65,6 +65,15 @@ public:
     }
   }
 
+  void showAlignedMessage(const char *message, TextAlignment alignment) const {
+    if (displayCapabilities_ && displayCapabilities_->text.printAligned) {
+      displayCapabilities_->text.printAligned(displayContext_, message,
+                                              alignment);
+      return;
+    }
+    showMessage(message);
+  }
+
   void startTextScroll(const char *text, TextAlignment alignment,
                        uint16_t speedMs) const {
     if (displayCapabilities_ && displayCapabilities_->text.startScroll) {

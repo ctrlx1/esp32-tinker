@@ -39,7 +39,7 @@ const DisplayCapabilities Max7219Display::kCapabilities = {
     {&Max7219Display::clearText, &Max7219Display::print,
      &Max7219Display::startScroll, &Max7219Display::animate,
      &Max7219Display::resetAnimation, &Max7219Display::buffer,
-     &Max7219Display::bufferSize},
+     &Max7219Display::bufferSize, &Max7219Display::printAligned},
     {&Max7219Display::setBrightness},
     {&Max7219Display::showVersion, &Max7219Display::showIp,
      &Max7219Display::beginSetup, &Max7219Display::tickSetup},
@@ -77,6 +77,15 @@ void Max7219Display::clearText(void *context) {
 
 void Max7219Display::print(void *context, const char *message) {
   parola(context).print(message);
+}
+
+void Max7219Display::printAligned(void *context, const char *message,
+                                  TextAlignment alignment) {
+  MD_Parola &display = parola(context);
+  display.displayReset();
+  display.displayClear();
+  display.setTextAlignment(textPosition(alignment));
+  display.print(message == nullptr ? "" : message);
 }
 
 void Max7219Display::startScroll(void *context, const char *text,

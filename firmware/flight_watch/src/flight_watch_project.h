@@ -22,6 +22,7 @@ public:
 
   void startPrograms();
   void tickPrograms();
+  void showConnectedSplash();
 
 private:
   tinker::RuntimeContext &runtime_;

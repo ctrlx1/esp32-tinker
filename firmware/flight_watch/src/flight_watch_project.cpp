@@ -5,6 +5,7 @@
 #include "programs/program.h"
 #include "setup_html.h"
 
+#include <Arduino.h>
 #include <cmath>
 #include <stdlib.h>
 
@@ -60,6 +61,21 @@ bool validRadius(float radius, uint8_t unit) {
   return std::isfinite(radius) && radius > 0.0f &&
          (unit == FLIGHT_RADIUS_UNIT_MI || unit == FLIGHT_RADIUS_UNIT_KM) &&
          radiusToNm(radius, unit) <= MAX_FLIGHT_RADIUS_NM;
+}
+
+void holdCenteredWord(tinker::RuntimeContext &runtime, const char *word,
+                      uint8_t brightness) {
+  constexpr unsigned long kHoldMs = 1500;
+  constexpr unsigned long kFadeStepMs = 45;
+  runtime.resetTextAnimation();
+  runtime.setBrightness(brightness);
+  runtime.showAlignedMessage(word, tinker::TextAlignment::Center);
+  delay(kHoldMs);
+  for (int level = brightness; level >= 0; --level) {
+    runtime.setBrightness(static_cast<uint8_t>(level));
+    delay(kFadeStepMs);
+  }
+  runtime.clearText();
 }
 } // namespace
 
@@ -226,6 +242,16 @@ bool FlightWatchProject::applyPortalRequest(
   settings_.brightness = static_cast<uint8_t>(brightness);
   settings_.scrollSpeedMs = static_cast<uint16_t>(scrollSpeed);
   return true;
+}
+
+void FlightWatchProject::showConnectedSplash() {
+  uint8_t level = settings_.brightness;
+  if (level > 15) {
+    level = 15;
+  }
+  holdCenteredWord(runtime_, "Flight", level);
+  holdCenteredWord(runtime_, "Watch", level);
+  runtime_.setBrightness(level);
 }
 
 void FlightWatchProject::startPrograms() { flightWatchStart(settings_); }

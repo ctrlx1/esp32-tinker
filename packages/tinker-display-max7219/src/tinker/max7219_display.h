@@ -36,6 +36,8 @@ private:
 
   static void clearText(void *context);
   static void print(void *context, const char *message);
+  static void printAligned(void *context, const char *message,
+                           TextAlignment alignment);
   static void startScroll(void *context, const char *text,
                           TextAlignment alignment, uint16_t speedMs);
   static bool animate(void *context);
