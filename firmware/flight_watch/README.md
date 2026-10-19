@@ -16,7 +16,8 @@ After the IP address, startup shows "Flight" centered, fades it out, then
 shows "Watch" centered and fades that out before the aircraft scroll starts.
 The captive portal configures latitude, longitude, search radius and radius
 unit, displayed speed unit, heading as degrees or a 32-point compass name,
-brightness, and scroll speed. The search radius is
+brightness, and scroll speed. Location uses the same Open in Google Maps
+link and Paste GPS button as Flight Tracker. The search radius is
 strictly limited to 250 nautical miles after converting miles or kilometres.
 Settings use the `flight_watch` NVS namespace with schema version 1.
 

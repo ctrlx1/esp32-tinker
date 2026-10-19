@@ -4,24 +4,73 @@
     <title>Flight Watch Setup</title>
     <style>
       * { box-sizing: border-box; }
-      body { margin: 0; padding: 1rem; background: #101010; color: #eee;
-             font-family: system-ui, sans-serif; }
-      main { width: min(100%, 420px); margin: auto; padding: 1.25rem;
-             border: 1px solid #303030; border-radius: 14px; background: #1a1a1a; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 1rem;
+        display: grid;
+        place-items: center;
+        background: #101010;
+        color: #eee;
+        font-family: system-ui, sans-serif;
+      }
+      main {
+        width: min(100%, 380px);
+        padding: 1.25rem;
+        border: 1px solid #303030;
+        border-radius: 14px;
+        background: #1a1a1a;
+      }
       h1 { margin: 0; font-size: 1.35rem; }
-      section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #303030; }
-      label { display: block; margin: .7rem 0 .3rem; font-weight: 600; }
-      input, select, button { width: 100%; min-height: 42px; padding: .65rem;
-                             border: 1px solid #444; border-radius: 8px;
-                             background: #121212; color: #eee; }
-      button { margin-top: .8rem; background: #e67e22; color: #111;
-               font-weight: 700; cursor: pointer; }
-      button.secondary, .network { background: #242424; color: #eee; }
-      .sub, .hint { color: #999; font-size: .82rem; }
-      .status { margin: .5rem 0; color: #74b9ff; }
-      .message { min-height: 1.2rem; margin-top: .7rem; font-size: .88rem; }
-      .error { color: #ff7675; } .success { color: #55efc4; }
-      progress { width: 100%; margin-top: .7rem; }
+      .sub, .hint { color: #999; font-size: 0.82rem; }
+      .status { margin: 0.5rem 0 1rem; color: #74b9ff; }
+      section {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #303030;
+      }
+      label { display: block; margin: 0.7rem 0 0.3rem; font-weight: 600; }
+      input, select, button {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid #3a3a3a;
+        border-radius: 8px;
+        padding: 0.65rem;
+        background: #121212;
+        color: #eee;
+      }
+      button {
+        margin-top: 0.8rem;
+        cursor: pointer;
+        border-color: #d35400;
+        background: #e67e22;
+        color: #111;
+        font-weight: 700;
+      }
+      button.secondary {
+        background: #242424;
+        border-color: #444;
+        color: #ddd;
+      }
+      .network {
+        text-align: left;
+        margin-top: 0.4rem;
+        background: #242424;
+        border-color: #444;
+        color: #eee;
+      }
+      .row { display: flex; gap: 0.6rem; }
+      .row > * { flex: 1; }
+      a.maps {
+        display: inline-block;
+        margin-top: 0.55rem;
+        color: #74b9ff;
+        font-size: 0.88rem;
+      }
+      .message { min-height: 1.2rem; margin-top: 0.7rem; font-size: 0.88rem; }
+      .error { color: #ff7675; }
+      .success { color: #55efc4; }
+      progress { width: 100%; margin-top: 0.7rem; }
     </style>
   </head>
   <body>
@@ -32,7 +81,9 @@
 
       <section>
         <strong>Wi-Fi</strong>
-        <button class="secondary" type="button" onclick="scanNetworks()">Scan networks</button>
+        <button class="secondary" type="button" onclick="scanNetworks()">
+          Scan for networks
+        </button>
         <div id="networks"></div>
         <label for="ssid">Network name</label>
         <input id="ssid" value="SSID_PLACEHOLDER" placeholder="Keep saved network" />
@@ -43,11 +94,24 @@
       <section>
         <strong>Aircraft search</strong>
         <label for="lat">Latitude</label>
-        <input id="lat" type="number" min="-90" max="90" step="any" value="LAT_PLACEHOLDER" />
+        <input id="lat" type="number" min="-90" max="90" step="any"
+               value="LAT_PLACEHOLDER" />
         <label for="lon">Longitude</label>
-        <input id="lon" type="number" min="-180" max="180" step="any" value="LON_PLACEHOLDER" />
+        <input id="lon" type="number" min="-180" max="180" step="any"
+               value="LON_PLACEHOLDER" />
+        <div class="row">
+          <button class="secondary" type="button" id="paste-gps">
+            Paste GPS
+          </button>
+        </div>
+        <a id="maps-link" class="maps" href="https://www.google.com/maps" target="_blank"
+           rel="noopener noreferrer">Open in Google Maps</a>
+        <div class="hint">
+          Right-click the map and copy coordinates, then use Paste GPS.
+        </div>
         <label for="radius">Radius</label>
-        <input id="radius" type="number" min="0.000001" step="any" value="RADIUS_PLACEHOLDER" />
+        <input id="radius" type="number" min="0.000001" step="any"
+               value="RADIUS_PLACEHOLDER" />
         <label for="radiusUnit">Radius unit</label>
         <select id="radiusUnit">
           <option value="0">Miles</option>
@@ -65,7 +129,8 @@
           <option value="1">Compass</option>
         </select>
         <label for="brightness">Brightness (0&ndash;15)</label>
-        <input id="brightness" type="number" min="0" max="15" value="BRIGHTNESS_PLACEHOLDER" />
+        <input id="brightness" type="number" min="0" max="15"
+               value="BRIGHTNESS_PLACEHOLDER" />
         <label for="scrollSpeed">Scroll speed (ms)</label>
         <input id="scrollSpeed" type="number" min="1" max="10000"
                value="SCROLL_SPEED_PLACEHOLDER" />
@@ -75,58 +140,138 @@
 
       <section>
         <strong>Firmware update</strong>
-        <div class="hint">Expected file: APP_FIRMWARE_FILENAME_PLACEHOLDER</div>
+        <div class="hint">
+          Expected file: APP_FIRMWARE_FILENAME_PLACEHOLDER
+        </div>
         <input id="firmware" type="file" accept=".bin" />
-        <button class="secondary" type="button" onclick="uploadFirmware()">Upload firmware</button>
+        <button class="secondary" type="button" onclick="uploadFirmware()">
+          Upload firmware
+        </button>
         <progress id="progress" value="0" max="100" hidden></progress>
         <div id="ota-message" class="message"></div>
       </section>
     </main>
+
     <script>
       document.getElementById("radiusUnit").value = "RADIUS_UNIT_PLACEHOLDER";
       document.getElementById("speedUnit").value = "SPEED_UNIT_PLACEHOLDER";
       document.getElementById("heading").value = "HEADING_PLACEHOLDER";
-      function message(id, text, bad) {
-        const el = document.getElementById(id);
-        el.textContent = text;
-        el.className = "message " + (bad ? "error" : "success");
+
+      function setMessage(id, text, isError) {
+        const element = document.getElementById(id);
+        element.textContent = text;
+        element.className = "message " + (isError ? "error" : "success");
       }
+
+      function updateMapsLink() {
+        const lat = document.getElementById("lat").value;
+        const lon = document.getElementById("lon").value;
+        document.getElementById("maps-link").href =
+          "https://www.google.com/maps?q=" +
+          encodeURIComponent(lat + "," + lon);
+      }
+
+      function parseGps(text) {
+        const match = String(text).trim().match(
+          /^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/
+        );
+        if (!match) {
+          return null;
+        }
+        const lat = parseFloat(match[1]);
+        const lon = parseFloat(match[2]);
+        if (!isFinite(lat) || !isFinite(lon) || lat < -90 || lat > 90 ||
+            lon < -180 || lon > 180) {
+          return null;
+        }
+        return { lat: lat, lon: lon };
+      }
+
+      function applyGps(text) {
+        const parsed = parseGps(text);
+        if (!parsed) {
+          setMessage("save-message", "Could not parse lat, lon from the clipboard.", true);
+          return;
+        }
+        document.getElementById("lat").value = parsed.lat;
+        document.getElementById("lon").value = parsed.lon;
+        updateMapsLink();
+        setMessage("save-message", "Pasted " + parsed.lat + ", " + parsed.lon, false);
+      }
+
+      document.getElementById("paste-gps").addEventListener("click", function () {
+        if (!navigator.clipboard || !navigator.clipboard.readText) {
+          setMessage("save-message", "Could not read the clipboard.", true);
+          return;
+        }
+        navigator.clipboard.readText().then(applyGps).catch(function () {
+          setMessage("save-message", "Could not read the clipboard.", true);
+        });
+      });
+
+      document.getElementById("lat").addEventListener("input", updateMapsLink);
+      document.getElementById("lon").addEventListener("input", updateMapsLink);
+      updateMapsLink();
+
       async function scanNetworks() {
-        const box = document.getElementById("networks");
-        box.textContent = "Scanning...";
+        const container = document.getElementById("networks");
+        container.textContent = "Scanning...";
         try {
-          const networks = await (await fetch("/scan")).json();
-          box.replaceChildren();
+          const response = await fetch("/scan");
+          const networks = await response.json();
+          container.replaceChildren();
           networks.forEach(function (network) {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "network";
-            button.textContent = network.ssid + " (" + network.rssi + " dBm)";
-            button.onclick = function () { document.getElementById("ssid").value = network.ssid; };
-            box.appendChild(button);
+            button.textContent =
+              network.ssid + " (" + network.rssi + " dBm)" +
+              (network.secure ? " \uD83D\uDD12" : "");
+            button.onclick = function () {
+              document.getElementById("ssid").value = network.ssid;
+            };
+            container.appendChild(button);
           });
-          if (!networks.length) box.textContent = "No networks found.";
-        } catch (_) { box.textContent = "Network scan failed."; }
+          if (!networks.length) container.textContent = "No networks found.";
+        } catch (error) {
+          container.textContent = "Network scan failed.";
+        }
       }
+
       async function saveSettings() {
-        const ids = ["ssid", "pass", "lat", "lon", "radius", "radiusUnit",
-                     "speedUnit", "heading", "brightness", "scrollSpeed"];
-        const params = new URLSearchParams();
-        ids.forEach(function (id) { params.set(id, document.getElementById(id).value); });
+        const params = new URLSearchParams({
+          ssid: document.getElementById("ssid").value,
+          pass: document.getElementById("pass").value,
+          lat: document.getElementById("lat").value,
+          lon: document.getElementById("lon").value,
+          radius: document.getElementById("radius").value,
+          radiusUnit: document.getElementById("radiusUnit").value,
+          speedUnit: document.getElementById("speedUnit").value,
+          heading: document.getElementById("heading").value,
+          brightness: document.getElementById("brightness").value,
+          scrollSpeed: document.getElementById("scrollSpeed").value
+        });
         try {
           const response = await fetch("/save", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: params.toString()
           });
-          message("save-message", await response.text(), !response.ok);
-        } catch (_) { message("save-message", "Save failed.", true); }
+          const text = await response.text();
+          setMessage("save-message", text, !response.ok);
+        } catch (error) {
+          setMessage("save-message", "Save failed.", true);
+        }
       }
+
       function uploadFirmware() {
         const file = document.getElementById("firmware").files[0];
-        if (!file) return message("ota-message", "Choose a .bin file first.", true);
-        const request = new XMLHttpRequest();
+        if (!file) {
+          setMessage("ota-message", "Choose a .bin file first.", true);
+          return;
+        }
         const progress = document.getElementById("progress");
+        const request = new XMLHttpRequest();
         request.open("POST", "/update");
         request.upload.onprogress = function (event) {
           if (event.lengthComputable) {
@@ -135,10 +280,15 @@
           }
         };
         request.onload = function () {
-          message("ota-message", request.status === 200
-            ? "Upload complete. Restarting..." : request.responseText, request.status !== 200);
+          setMessage(
+            "ota-message",
+            request.status === 200 ? "Upload complete. Restarting..." : request.responseText,
+            request.status !== 200
+          );
         };
-        request.onerror = function () { message("ota-message", "Upload failed.", true); };
+        request.onerror = function () {
+          setMessage("ota-message", "Upload failed.", true);
+        };
         const data = new FormData();
         data.append("firmware", file, file.name);
         request.send(data);

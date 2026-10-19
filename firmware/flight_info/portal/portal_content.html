@@ -100,7 +100,7 @@
         <input id="lon" type="number" min="-180" max="180" step="any"
                value="LON_PLACEHOLDER" />
         <div class="row">
-          <button class="secondary" type="button" onclick="pasteGps()">
+          <button class="secondary" type="button" id="paste-gps">
             Paste GPS
           </button>
         </div>
@@ -196,13 +196,7 @@
         return { lat: lat, lon: lon };
       }
 
-      async function pasteGps() {
-        let text = "";
-        try {
-          text = await navigator.clipboard.readText();
-        } catch (_) {
-          text = window.prompt("Paste latitude, longitude") || "";
-        }
+      function applyGps(text) {
         const parsed = parseGps(text);
         if (!parsed) {
           setMessage("save-message", "Could not parse lat, lon from the clipboard.", true);
@@ -213,6 +207,16 @@
         updateMapsLink();
         setMessage("save-message", "Pasted " + parsed.lat + ", " + parsed.lon, false);
       }
+
+      document.getElementById("paste-gps").addEventListener("click", function () {
+        if (!navigator.clipboard || !navigator.clipboard.readText) {
+          setMessage("save-message", "Could not read the clipboard.", true);
+          return;
+        }
+        navigator.clipboard.readText().then(applyGps).catch(function () {
+          setMessage("save-message", "Could not read the clipboard.", true);
+        });
+      });
 
       document.getElementById("lat").addEventListener("input", updateMapsLink);
       document.getElementById("lon").addEventListener("input", updateMapsLink);
