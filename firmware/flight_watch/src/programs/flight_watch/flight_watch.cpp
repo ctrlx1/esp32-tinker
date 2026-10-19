@@ -67,6 +67,7 @@ float lastLon = 0;
 float lastRadius = 0;
 uint8_t lastRadiusUnit = 0;
 uint8_t lastSpeedUnit = 0;
+uint8_t lastHeadingFormat = 0;
 
 portMUX_TYPE workerMux = portMUX_INITIALIZER_UNLOCKED;
 TaskHandle_t workerHandle = nullptr;
@@ -724,6 +725,23 @@ bool consumeResult(FetchResult &result) {
   return true;
 }
 
+const char *compassPoint(int16_t trackDeg) {
+  static const char *kPoints[] = {
+      "N",    "NbE", "NNE", "NEbN", "NE",  "NEbE", "ENE", "EbN",
+      "E",    "EbS", "ESE", "SEbE", "SE",  "SEbS", "SSE", "SbE",
+      "S",    "SbW", "SSW", "SWbS", "SW",  "SWbW", "WSW", "WbS",
+      "W",    "WbN", "WNW", "NWbW", "NW",  "NWbN", "NNW", "NbW"};
+  int degrees = static_cast<int>(trackDeg) % 360;
+  if (degrees < 0) {
+    degrees += 360;
+  }
+  int point = (degrees * 32 + 180) / 360;
+  if (point < 0 || point >= 32) {
+    point = 0;
+  }
+  return kPoints[point];
+}
+
 void setScrollText(const char *text) {
   programRuntimeContext().copyText(text);
 }
@@ -736,7 +754,8 @@ void startScroll(const ProgramConfig &cfg) {
                           cfg.scrollSpeedMs);
 }
 
-void buildAircraftScroll(const Aircraft &aircraft, uint8_t speedUnit) {
+void buildAircraftScroll(const Aircraft &aircraft, uint8_t speedUnit,
+                         uint8_t headingFormat) {
   String message;
   char airline[12];
   if (airlineNameFromCallsign(aircraft.callsign, airline, sizeof(airline))) {
@@ -765,9 +784,14 @@ void buildAircraftScroll(const Aircraft &aircraft, uint8_t speedUnit) {
   message += suffix;
   message += " ";
   char track[8];
-  snprintf(track, sizeof(track), "%03d", aircraft.trackDeg);
-  message += track;
-  message += "deg";
+  if (headingFormat == FLIGHT_HEADING_COMPASS) {
+    snprintf(track, sizeof(track), "%s", compassPoint(aircraft.trackDeg));
+    message += track;
+  } else {
+    snprintf(track, sizeof(track), "%03d", aircraft.trackDeg);
+    message += track;
+    message += "deg";
+  }
   if (aircraft.hasVertRate) {
     message += " ";
     message += String(aircraft.vertRateFpm);
@@ -790,7 +814,8 @@ void showCurrentOrStatus(const ProgramConfig &cfg, FetchStatus status) {
     if (aircraftIndex >= aircraftCount) {
       aircraftIndex = 0;
     }
-    buildAircraftScroll(aircraftQueue[aircraftIndex], cfg.flightSpeedUnit);
+    buildAircraftScroll(aircraftQueue[aircraftIndex], cfg.flightSpeedUnit,
+                        cfg.flightHeading);
   } else if (status == FetchStatus::Success) {
     setScrollText("No aircraft nearby");
   } else if (status == FetchStatus::WifiUnavailable) {
@@ -827,6 +852,7 @@ void flightWatchStart(const ProgramConfig &cfg) {
   }
   rememberFetchConfig(cfg);
   lastSpeedUnit = cfg.flightSpeedUnit;
+  lastHeadingFormat = cfg.flightHeading;
   lastFetchMs = millis();
   aircraftCount = 0;
   aircraftIndex = 0;
@@ -890,8 +916,10 @@ void flightWatchTick(const ProgramConfig &cfg) {
     }
   }
 
-  if (cfg.flightSpeedUnit != lastSpeedUnit) {
+  if (cfg.flightSpeedUnit != lastSpeedUnit ||
+      cfg.flightHeading != lastHeadingFormat) {
     lastSpeedUnit = cfg.flightSpeedUnit;
+    lastHeadingFormat = cfg.flightHeading;
     showCurrentOrStatus(cfg, fetchSucceeded ? FetchStatus::Success
                                             : FetchStatus::HttpFailed);
     return;
@@ -900,7 +928,8 @@ void flightWatchTick(const ProgramConfig &cfg) {
   if (programRuntimeContext().animateText()) {
     if (aircraftCount > 0) {
       aircraftIndex = static_cast<uint8_t>((aircraftIndex + 1) % aircraftCount);
-      buildAircraftScroll(aircraftQueue[aircraftIndex], cfg.flightSpeedUnit);
+      buildAircraftScroll(aircraftQueue[aircraftIndex], cfg.flightSpeedUnit,
+                        cfg.flightHeading);
     }
     startScroll(cfg);
   }

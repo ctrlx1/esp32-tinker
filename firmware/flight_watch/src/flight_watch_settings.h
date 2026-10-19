@@ -7,12 +7,15 @@ constexpr uint8_t FLIGHT_RADIUS_UNIT_KM = 1;
 constexpr uint8_t FLIGHT_SPEED_UNIT_KT = 0;
 constexpr uint8_t FLIGHT_SPEED_UNIT_MPH = 1;
 constexpr uint8_t FLIGHT_SPEED_UNIT_KPH = 2;
+constexpr uint8_t FLIGHT_HEADING_DEGREES = 0;
+constexpr uint8_t FLIGHT_HEADING_COMPASS = 1;
 
 constexpr float DEFAULT_FLIGHT_LAT = 40.6413f;
 constexpr float DEFAULT_FLIGHT_LON = -73.7781f;
 constexpr float DEFAULT_FLIGHT_RADIUS = 25.0f;
 constexpr uint8_t DEFAULT_FLIGHT_RADIUS_UNIT = FLIGHT_RADIUS_UNIT_MI;
 constexpr uint8_t DEFAULT_FLIGHT_SPEED_UNIT = FLIGHT_SPEED_UNIT_KT;
+constexpr uint8_t DEFAULT_FLIGHT_HEADING = FLIGHT_HEADING_DEGREES;
 constexpr uint8_t DEFAULT_BRIGHTNESS = 0;
 constexpr uint16_t DEFAULT_SCROLL_SPEED_MS = 75;
 
@@ -26,6 +29,7 @@ struct FlightWatchSettings {
   float flightRadius = DEFAULT_FLIGHT_RADIUS;
   uint8_t flightRadiusUnit = DEFAULT_FLIGHT_RADIUS_UNIT;
   uint8_t flightSpeedUnit = DEFAULT_FLIGHT_SPEED_UNIT;
+  uint8_t flightHeading = DEFAULT_FLIGHT_HEADING;
   uint8_t brightness = DEFAULT_BRIGHTNESS;
   uint16_t scrollSpeedMs = DEFAULT_SCROLL_SPEED_MS;
 };

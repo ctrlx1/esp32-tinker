@@ -108,6 +108,12 @@ void FlightWatchProject::loadSettings(Preferences &preferences) {
     settings_.flightSpeedUnit = DEFAULT_FLIGHT_SPEED_UNIT;
   }
 
+  settings_.flightHeading =
+      preferences.getUChar("hdgFmt", DEFAULT_FLIGHT_HEADING);
+  if (settings_.flightHeading > FLIGHT_HEADING_COMPASS) {
+    settings_.flightHeading = DEFAULT_FLIGHT_HEADING;
+  }
+
   settings_.brightness =
       preferences.getUChar("brightness", DEFAULT_BRIGHTNESS);
   if (settings_.brightness > 15) {
@@ -128,6 +134,7 @@ void FlightWatchProject::saveSettings(Preferences &preferences) const {
   preferences.putFloat("fltRad", settings_.flightRadius);
   preferences.putUChar("fltRadUnit", settings_.flightRadiusUnit);
   preferences.putUChar("fltSpdUnit", settings_.flightSpeedUnit);
+  preferences.putUChar("hdgFmt", settings_.flightHeading);
   preferences.putUChar("brightness", settings_.brightness);
   preferences.putUInt("scrollSpeed", settings_.scrollSpeedMs);
 }
@@ -147,6 +154,7 @@ String FlightWatchProject::buildPortalPage(const String &ip,
   page.replace("RADIUS_UNIT_PLACEHOLDER",
                String(settings_.flightRadiusUnit));
   page.replace("SPEED_UNIT_PLACEHOLDER", String(settings_.flightSpeedUnit));
+  page.replace("HEADING_PLACEHOLDER", String(settings_.flightHeading));
   page.replace("BRIGHTNESS_PLACEHOLDER", String(settings_.brightness));
   page.replace("SCROLL_SPEED_PLACEHOLDER", String(settings_.scrollSpeedMs));
   return page;
@@ -156,8 +164,8 @@ bool FlightWatchProject::applyPortalRequest(
     const tinker::PortalRequest &request, String &error) {
   if (!request.hasArg("lat") || !request.hasArg("lon") ||
       !request.hasArg("radius") || !request.hasArg("radiusUnit") ||
-      !request.hasArg("speedUnit") || !request.hasArg("brightness") ||
-      !request.hasArg("scrollSpeed")) {
+      !request.hasArg("speedUnit") || !request.hasArg("heading") ||
+      !request.hasArg("brightness") || !request.hasArg("scrollSpeed")) {
     error = "Missing Flight Watch settings.";
     return false;
   }
@@ -167,6 +175,7 @@ bool FlightWatchProject::applyPortalRequest(
   float radius;
   long radiusUnit;
   long speedUnit;
+  long heading;
   long brightness;
   long scrollSpeed;
   if (!parseFloatStrict(request.arg("lat"), -90.0f, 90.0f, lat)) {
@@ -193,6 +202,11 @@ bool FlightWatchProject::applyPortalRequest(
     error = "Speed unit is invalid.";
     return false;
   }
+  if (!parseLongStrict(request.arg("heading"), FLIGHT_HEADING_DEGREES,
+                       FLIGHT_HEADING_COMPASS, heading)) {
+    error = "Heading format is invalid.";
+    return false;
+  }
   if (!parseLongStrict(request.arg("brightness"), 0, 15, brightness)) {
     error = "Brightness must be between 0 and 15.";
     return false;
@@ -208,6 +222,7 @@ bool FlightWatchProject::applyPortalRequest(
   settings_.flightRadius = radius;
   settings_.flightRadiusUnit = static_cast<uint8_t>(radiusUnit);
   settings_.flightSpeedUnit = static_cast<uint8_t>(speedUnit);
+  settings_.flightHeading = static_cast<uint8_t>(heading);
   settings_.brightness = static_cast<uint8_t>(brightness);
   settings_.scrollSpeedMs = static_cast<uint16_t>(scrollSpeed);
   return true;

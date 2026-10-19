@@ -13,7 +13,8 @@ FC16 MAX7219 matrix.
 ## Settings
 
 The captive portal configures latitude, longitude, search radius and radius
-unit, displayed speed unit, brightness, and scroll speed. The search radius is
+unit, displayed speed unit, heading as degrees or a 32-point compass name,
+brightness, and scroll speed. The search radius is
 strictly limited to 250 nautical miles after converting miles or kilometres.
 Settings use the `flight_watch` NVS namespace with schema version 1.
 

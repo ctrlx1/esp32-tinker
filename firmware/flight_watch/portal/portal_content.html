@@ -59,6 +59,11 @@
           <option value="1">Miles/hour</option>
           <option value="2">Kilometres/hour</option>
         </select>
+        <label for="heading">Heading</label>
+        <select id="heading">
+          <option value="0">Degrees</option>
+          <option value="1">Compass</option>
+        </select>
         <label for="brightness">Brightness (0&ndash;15)</label>
         <input id="brightness" type="number" min="0" max="15" value="BRIGHTNESS_PLACEHOLDER" />
         <label for="scrollSpeed">Scroll speed (ms)</label>
@@ -80,6 +85,7 @@
     <script>
       document.getElementById("radiusUnit").value = "RADIUS_UNIT_PLACEHOLDER";
       document.getElementById("speedUnit").value = "SPEED_UNIT_PLACEHOLDER";
+      document.getElementById("heading").value = "HEADING_PLACEHOLDER";
       function message(id, text, bad) {
         const el = document.getElementById(id);
         el.textContent = text;
@@ -104,7 +110,7 @@
       }
       async function saveSettings() {
         const ids = ["ssid", "pass", "lat", "lon", "radius", "radiusUnit",
-                     "speedUnit", "brightness", "scrollSpeed"];
+                     "speedUnit", "heading", "brightness", "scrollSpeed"];
         const params = new URLSearchParams();
         ids.forEach(function (id) { params.set(id, document.getElementById(id).value); });
         try {
