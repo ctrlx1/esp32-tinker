@@ -516,6 +516,58 @@ bool parseAircraftList(const String &json, FetchResult &result) {
   return foundAircraft && cursor.atEnd();
 }
 
+class CappedBodyStream : public Stream {
+public:
+  CappedBodyStream(String &body, size_t cap) : body_(body), cap_(cap) {}
+
+  size_t write(uint8_t value) override { return write(&value, 1); }
+
+  size_t write(const uint8_t *buffer, size_t size) override {
+    if (buffer == nullptr || size == 0 || body_.length() >= cap_) {
+      overflowed_ = body_.length() >= cap_;
+      return 0;
+    }
+    const size_t room = cap_ - body_.length();
+    const size_t take = size < room ? size : room;
+    const size_t need = body_.length() + take;
+    if (reserved_ < need) {
+      size_t grown = reserved_ < 1024 ? 1024 : reserved_;
+      while (grown < need && grown < cap_) {
+        const size_t next = grown * 2;
+        grown = next < grown ? cap_ : next;
+        if (grown > cap_) {
+          grown = cap_;
+        }
+      }
+      if (grown < need || !body_.reserve(grown)) {
+        overflowed_ = true;
+        return 0;
+      }
+      reserved_ = grown;
+    }
+    if (!body_.concat(reinterpret_cast<const char *>(buffer), take)) {
+      overflowed_ = true;
+      return 0;
+    }
+    if (take < size) {
+      overflowed_ = true;
+    }
+    return take;
+  }
+
+  int available() override { return 0; }
+  int read() override { return -1; }
+  int peek() override { return -1; }
+  void flush() override {}
+  bool overflowed() const { return overflowed_; }
+
+private:
+  String &body_;
+  size_t cap_;
+  size_t reserved_ = 0;
+  bool overflowed_ = false;
+};
+
 bool httpGetCapped(const String &url, String &body) {
   body = "";
   WiFiClientSecure client;
@@ -536,48 +588,14 @@ bool httpGetCapped(const String &url, String &body) {
     return false;
   }
 
-  WiFiClient *stream = http.getStreamPtr();
   const int contentLength = http.getSize();
-  if (stream == nullptr || contentLength > static_cast<int>(kMaxBodyBytes)) {
+  if (contentLength > static_cast<int>(kMaxBodyBytes)) {
     http.end();
     return false;
   }
-  const size_t reserveBytes = contentLength >= 0
-                                  ? static_cast<size_t>(contentLength)
-                                  : kMaxBodyBytes;
-  if (!body.reserve(reserveBytes)) {
-    http.end();
-    return false;
-  }
-
-  unsigned long idleStart = millis();
-  while (http.connected() && body.length() < kMaxBodyBytes) {
-    size_t available = stream->available();
-    if (available == 0) {
-      if (contentLength >= 0 &&
-          body.length() >= static_cast<size_t>(contentLength)) {
-        break;
-      }
-      if (millis() - idleStart > 4000) {
-        break;
-      }
-      vTaskDelay(1);
-      continue;
-    }
-    idleStart = millis();
-    while (available-- > 0 && body.length() < kMaxBodyBytes) {
-      const int value = stream->read();
-      if (value < 0) {
-        break;
-      }
-      body += static_cast<char>(value);
-    }
-  }
-  const bool hitUnknownLengthCap =
-      contentLength < 0 && body.length() >= kMaxBodyBytes;
-  const bool complete =
-      body.length() > 0 && !hitUnknownLengthCap &&
-      (contentLength < 0 || body.length() == static_cast<size_t>(contentLength));
+  CappedBodyStream sink(body, kMaxBodyBytes);
+  const int written = http.writeToStream(&sink);
+  const bool complete = written > 0 && !sink.overflowed() && body.length() > 0;
   http.end();
   return complete;
 }
