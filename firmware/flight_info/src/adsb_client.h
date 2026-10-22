@@ -15,6 +15,7 @@ enum class Status : uint8_t {
   WifiUnavailable,
   HttpFailed,
   ParseFailed,
+  TooLarge,
 };
 
 struct Aircraft {

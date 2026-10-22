@@ -79,6 +79,8 @@ const char *statusMessage(adsb::Status status) {
     return "Flight\noffline";
   case adsb::Status::ParseFailed:
     return "Parse\nfailed";
+  case adsb::Status::TooLarge:
+    return "Too many\nflights\nReduce\nradius";
   case adsb::Status::HttpFailed:
   default:
     return "Fetch\nfailed";
