@@ -25,9 +25,11 @@ public:
 
 private:
   void drawRadar();
+  void showTooLarge();
 
   tinker::RuntimeContext &runtime_;
   FlightTrackerSettings settings_;
   bool started_ = false;
+  bool showingTooLarge_ = false;
   unsigned long lastFrameMs_ = 0;
 };

@@ -28,5 +28,6 @@ void tick(const FlightTrackerSettings &settings, unsigned long dtMs);
 
 const TrackedAircraft *tracks();
 uint8_t trackCount();
+bool listTooLarge();
 
 } // namespace adsb

@@ -37,6 +37,7 @@ enum class FetchStatus : uint8_t {
   WifiUnavailable,
   HttpFailed,
   ParseFailed,
+  TooLarge,
 };
 
 struct FetchRequest {
@@ -61,6 +62,7 @@ enum class LaunchStatus : uint8_t {
 
 TrackedAircraft trackTable[kMaxTracks];
 uint8_t trackUsed = 0;
+bool fetchTooLarge = false;
 
 portMUX_TYPE workerMux = portMUX_INITIALIZER_UNLOCKED;
 TaskHandle_t workerHandle = nullptr;
@@ -568,7 +570,9 @@ private:
   bool overflowed_ = false;
 };
 
-bool httpGetCapped(const String &url, String &body) {
+enum class BodyResult : uint8_t { Ok, Failed, TooLarge };
+
+BodyResult httpGetCapped(const String &url, String &body) {
   body = "";
   WiFiClientSecure client;
   client.setInsecure();
@@ -580,24 +584,30 @@ bool httpGetCapped(const String &url, String &body) {
   http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
   http.setUserAgent("ESP32-Tinker-FlightTracker");
   if (!http.begin(client, url)) {
-    return false;
+    return BodyResult::Failed;
   }
   const int code = http.GET();
   if (code != HTTP_CODE_OK) {
     http.end();
-    return false;
+    return BodyResult::Failed;
   }
 
   const int contentLength = http.getSize();
   if (contentLength > static_cast<int>(kMaxBodyBytes)) {
     http.end();
-    return false;
+    return BodyResult::TooLarge;
   }
   CappedBodyStream sink(body, kMaxBodyBytes);
   const int written = http.writeToStream(&sink);
-  const bool complete = written > 0 && !sink.overflowed() && body.length() > 0;
+  const bool overflowed = sink.overflowed();
   http.end();
-  return complete;
+  if (overflowed) {
+    return BodyResult::TooLarge;
+  }
+  if (written > 0 && body.length() > 0) {
+    return BodyResult::Ok;
+  }
+  return BodyResult::Failed;
 }
 
 void fetchWorker(void *) {
@@ -614,11 +624,13 @@ void fetchWorker(void *) {
              "https://opendata.adsb.fi/api/v3/lat/%.5f/lon/%.5f/dist/%.2f",
              request.lat, request.lon, request.radiusNm);
     String body;
-    const bool fetched = httpGetCapped(url, body);
-    if (fetched) {
+    const BodyResult fetched = httpGetCapped(url, body);
+    if (fetched == BodyResult::Ok) {
       result.status = parseAircraftList(body, result)
                           ? FetchStatus::Success
                           : FetchStatus::ParseFailed;
+    } else if (fetched == BodyResult::TooLarge) {
+      result.status = FetchStatus::TooLarge;
     }
   }
 
@@ -744,7 +756,11 @@ void loadFallbackTracks(const FlightTrackerSettings &settings) {
 
 void applyFetch(const FetchResult &result,
                 const FlightTrackerSettings &settings) {
+  fetchTooLarge = result.status == FetchStatus::TooLarge;
   if (result.status != FetchStatus::Success) {
+    if (fetchTooLarge) {
+      trackUsed = 0;
+    }
     Serial.print(" flight_tracker fetch status=");
     Serial.print(static_cast<int>(result.status));
     Serial.print(" lat=");
@@ -889,5 +905,7 @@ void tick(const FlightTrackerSettings &settings, unsigned long dtMs) {
 const TrackedAircraft *tracks() { return trackTable; }
 
 uint8_t trackCount() { return trackUsed; }
+
+bool listTooLarge() { return fetchTooLarge; }
 
 } // namespace adsb

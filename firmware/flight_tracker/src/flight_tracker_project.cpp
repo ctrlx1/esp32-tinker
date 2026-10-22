@@ -207,12 +207,32 @@ bool FlightTrackerProject::applyPortalRequest(
   return true;
 }
 
+void FlightTrackerProject::showTooLarge() {
+  if (showingTooLarge_) {
+    return;
+  }
+  runtime_.setBrightness(settings_.brightness);
+  if (runtime_.hasText()) {
+    runtime_.setTextColor(200, 220, 255);
+    runtime_.clearText();
+    runtime_.showMessage("Too many\nflights\nReduce\nradius");
+  }
+  showingTooLarge_ = true;
+}
+
 void FlightTrackerProject::drawRadar() {
   if (!runtime_.hasColor()) {
     Serial.println("Flight tracker display is missing color.");
     started_ = false;
     return;
   }
+
+  if (adsb::listTooLarge()) {
+    showTooLarge();
+    started_ = true;
+    return;
+  }
+  showingTooLarge_ = false;
 
   runtime_.setBrightness(settings_.brightness);
   radar::draw(runtime_, adsb::tracks(), adsb::trackCount(),

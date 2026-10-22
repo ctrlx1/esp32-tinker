@@ -35,6 +35,7 @@ enum class FetchStatus : uint8_t {
   WifiUnavailable,
   HttpFailed,
   ParseFailed,
+  TooLarge,
 };
 
 struct FetchRequest {
@@ -62,6 +63,7 @@ uint8_t aircraftCount = 0;
 uint8_t aircraftIndex = 0;
 unsigned long lastFetchMs = 0;
 bool fetchSucceeded = false;
+FetchStatus lastFetchStatus = FetchStatus::HttpFailed;
 float lastLat = 0;
 float lastLon = 0;
 float lastRadius = 0;
@@ -627,7 +629,9 @@ private:
   bool overflowed_ = false;
 };
 
-bool httpGetCapped(const String &url, String &body) {
+enum class BodyResult : uint8_t { Ok, Failed, TooLarge };
+
+BodyResult httpGetCapped(const String &url, String &body) {
   body = "";
   WiFiClientSecure client;
   client.setInsecure();
@@ -639,24 +643,30 @@ bool httpGetCapped(const String &url, String &body) {
   http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
   http.setUserAgent("ESP32-Tinker-FlightWatch");
   if (!http.begin(client, url)) {
-    return false;
+    return BodyResult::Failed;
   }
   const int code = http.GET();
   if (code != HTTP_CODE_OK) {
     http.end();
-    return false;
+    return BodyResult::Failed;
   }
 
   const int contentLength = http.getSize();
   if (contentLength > static_cast<int>(MAX_BODY_BYTES)) {
     http.end();
-    return false;
+    return BodyResult::TooLarge;
   }
   CappedBodyStream sink(body, MAX_BODY_BYTES);
   const int written = http.writeToStream(&sink);
-  const bool complete = written > 0 && !sink.overflowed() && body.length() > 0;
+  const bool overflowed = sink.overflowed();
   http.end();
-  return complete;
+  if (overflowed) {
+    return BodyResult::TooLarge;
+  }
+  if (written > 0 && body.length() > 0) {
+    return BodyResult::Ok;
+  }
+  return BodyResult::Failed;
 }
 
 void fetchWorker(void *) {
@@ -673,11 +683,13 @@ void fetchWorker(void *) {
              "https://opendata.adsb.fi/api/v3/lat/%.5f/lon/%.5f/dist/%.2f",
              request.lat, request.lon, request.radiusNm);
     String body;
-    const bool fetched = httpGetCapped(url, body);
-    if (fetched) {
+    const BodyResult fetched = httpGetCapped(url, body);
+    if (fetched == BodyResult::Ok) {
       result.status = parseAircraftList(body, result)
                           ? FetchStatus::Success
                           : FetchStatus::ParseFailed;
+    } else if (fetched == BodyResult::TooLarge) {
+      result.status = FetchStatus::TooLarge;
     }
   }
 
@@ -834,6 +846,8 @@ void showCurrentOrStatus(const ProgramConfig &cfg, FetchStatus status) {
     setScrollText("Flight unavailable");
   } else if (status == FetchStatus::ParseFailed) {
     setScrollText("Flight parse failed");
+  } else if (status == FetchStatus::TooLarge) {
+    setScrollText("Too many flights Reduce radius");
   } else {
     setScrollText("Flight fetch failed");
   }
@@ -877,6 +891,7 @@ void flightWatchStart(const ProgramConfig &cfg) {
     fetchNeeded = false;
   } else if (launch == LaunchStatus::Failed) {
     fetchNeeded = false;
+    lastFetchStatus = FetchStatus::HttpFailed;
     showCurrentOrStatus(cfg, FetchStatus::HttpFailed);
   }
 }
@@ -902,6 +917,7 @@ void flightWatchTick(const ProgramConfig &cfg) {
       aircraftIndex = 0;
       memcpy(aircraftQueue, result.aircraft, sizeof(aircraftQueue));
       fetchSucceeded = result.status == FetchStatus::Success;
+      lastFetchStatus = result.status;
       lastFetchMs = millis();
       fetchNeeded = false;
       showCurrentOrStatus(cfg, result.status);
@@ -923,6 +939,7 @@ void flightWatchTick(const ProgramConfig &cfg) {
       fetchNeeded = false;
       if (launch == LaunchStatus::Failed) {
         fetchSucceeded = false;
+        lastFetchStatus = FetchStatus::HttpFailed;
         showCurrentOrStatus(cfg, FetchStatus::HttpFailed);
       }
     }
@@ -933,7 +950,7 @@ void flightWatchTick(const ProgramConfig &cfg) {
     lastSpeedUnit = cfg.flightSpeedUnit;
     lastHeadingFormat = cfg.flightHeading;
     showCurrentOrStatus(cfg, fetchSucceeded ? FetchStatus::Success
-                                            : FetchStatus::HttpFailed);
+                                            : lastFetchStatus);
     return;
   }
 
