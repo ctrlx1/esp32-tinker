@@ -99,6 +99,48 @@
       }
     },
     {
+      "id": "moon_hub75",
+      "name": "Moon HUB75",
+      "description": "HUB75 lunar phase display with a phase-shaded moon and scrolling phase text.",
+      "path": "firmware/moon_hub75",
+      "versionFile": "firmware/moon_hub75/VERSION",
+      "buildable": true,
+      "environments": {
+        "production": "esp32dev",
+        "wokwi": "wokwi"
+      },
+      "hardware": {
+        "status": "configured",
+        "profile": "hub75-p4-64x32",
+        "chipFamily": "ESP32"
+      },
+      "preBuild": [],
+      "dependencies": {
+        "commands": [],
+        "pythonModules": []
+      },
+      "docs": {
+        "route": "/moon-hub75/",
+        "path": "site/public/firmware/moon_hub75",
+        "manifest": "site/public/firmware/moon_hub75/manifest.json"
+      },
+      "artifacts": {
+        "bootloader": {
+          "source": "bootloader.bin",
+          "offset": 4096
+        },
+        "partitions": {
+          "source": "partitions.bin",
+          "offset": 32768
+        },
+        "app": {
+          "source": "firmware.bin",
+          "offset": 65536,
+          "publishedName": "firmware.bin"
+        }
+      }
+    },
+    {
       "id": "weather_watch",
       "name": "Weather Watch",
       "description": "Animated weather scenes for the four-module MAX7219 display.",

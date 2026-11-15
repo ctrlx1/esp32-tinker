@@ -90,6 +90,7 @@ class ProjectRegistryTests(unittest.TestCase):
             [
                 "justin",
                 "moon_phase",
+                "moon_hub75",
                 "weather_watch",
                 "real_weather",
                 "flight_watch",

@@ -59,6 +59,8 @@ class Stage11CiTests(unittest.TestCase):
                 ("justin", "wokwi"),
                 ("moon_phase", "production"),
                 ("moon_phase", "wokwi"),
+                ("moon_hub75", "production"),
+                ("moon_hub75", "wokwi"),
                 ("weather_watch", "production"),
                 ("weather_watch", "wokwi"),
                 ("real_weather", "production"),
@@ -88,7 +90,7 @@ class Stage11CiTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         data = json.loads(result.stdout)
         self.assertIn("include", data)
-        self.assertEqual(18, len(data["include"]))
+        self.assertEqual(20, len(data["include"]))
 
     def test_validate_site_rejects_version_mismatch(self) -> None:
         fixture = RegistryFixture()

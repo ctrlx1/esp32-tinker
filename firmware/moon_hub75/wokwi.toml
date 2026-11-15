@@ -1,0 +1,16 @@
+[wokwi]
+version = 1
+firmware = ".pio/build/wokwi/firmware.bin"
+elf = ".pio/build/wokwi/firmware.elf"
+rfc2217ServerPort = 4000
+
+[gdb]
+enabled = false
+
+[[net.forward]]
+from = "localhost:8180"
+to = "target:80"
+
+[[chip]]
+name = "hub75-matrix"
+binary = "../../packages/tinker-display-hub75/wokwi/hub75-matrix.chip.wasm"
