@@ -31,6 +31,7 @@ private:
   tinker::RuntimeContext &runtime_;
   MoonHub75Settings settings_;
   bool started_ = false;
+  bool welcomePlayed_ = false;
   bool timeSynced_ = false;
   bool ntpAttempted_ = false;
   unsigned long lastNtpAttemptMs_ = 0;

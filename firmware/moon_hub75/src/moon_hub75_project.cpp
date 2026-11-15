@@ -4,6 +4,7 @@
 #include "font3x5.h"
 #include "full_moon.h"
 #include "setup_html.h"
+#include "welcome_screen.h"
 
 #include <WiFi.h>
 #include <cmath>
@@ -474,6 +475,11 @@ void MoonHub75Project::startPrograms() {
   lineCount_ = 0;
   contentHeight_ = 0;
   runtime_.setBrightness(settings_.brightness);
+  if (!welcomePlayed_ && WiFi.status() == WL_CONNECTED) {
+    welcomePlayed_ = true;
+    runWelcome(runtime_);
+    lastScrollMs_ = millis();
+  }
   updatePhase(lastScrollMs_);
   rebuildLines();
   drawFrame();
