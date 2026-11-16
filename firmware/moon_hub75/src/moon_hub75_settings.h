@@ -22,10 +22,20 @@ constexpr ScrollColor kScrollColors[] = {
 constexpr uint8_t kScrollColorCount =
     sizeof(kScrollColors) / sizeof(kScrollColors[0]);
 
+// Both stays first so a missing saved choice keeps miles and kilometers.
+constexpr const char *kDistanceUnits[] = {"Both", "Miles", "Kilometers"};
+constexpr uint8_t kDistanceUnitCount =
+    sizeof(kDistanceUnits) / sizeof(kDistanceUnits[0]);
+
 struct MoonHub75Settings {
   uint16_t scrollSpeedMs = 75;
   uint8_t brightness = 4;
   uint8_t textColor = 0;
+  uint8_t distanceUnit = 0;
+  bool hasLocation = false;
+  float latitude = 0;
+  float longitude = 0;
+  int16_t tzOffsetMinutes = 0;
 };
 
 constexpr uint16_t MOON_HUB75_MIN_SCROLL_SPEED_MS = 1;

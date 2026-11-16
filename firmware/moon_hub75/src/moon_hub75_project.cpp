@@ -3,12 +3,15 @@
 #include "app_version.h"
 #include "font3x5.h"
 #include "full_moon.h"
+#include "moon_sky.h"
 #include "setup_html.h"
 #include "welcome_screen.h"
 
 #include <WiFi.h>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <time.h>
 
@@ -35,6 +38,91 @@ String htmlEscape(String value) {
   value.replace("<", "&lt;");
   value.replace(">", "&gt;");
   return value;
+}
+
+bool argBlank(const String &value) {
+  String copy = value;
+  copy.trim();
+  return copy.length() == 0;
+}
+
+bool parseDecimal(String value, double minimum, double maximum, double &result) {
+  value.trim();
+  if (value.length() == 0) {
+    return false;
+  }
+  char *end = nullptr;
+  const double parsed = std::strtod(value.c_str(), &end);
+  if (end == value.c_str() || *end != '\0' || !std::isfinite(parsed) ||
+      parsed < minimum || parsed > maximum) {
+    return false;
+  }
+  result = parsed;
+  return true;
+}
+
+void formatLocalClock(time_t utc, int tzOffsetMinutes, char *out, size_t size) {
+  int64_t second = (static_cast<int64_t>(utc) +
+                    static_cast<int64_t>(tzOffsetMinutes) * 60) %
+                   86400;
+  if (second < 0) {
+    second += 86400;
+  }
+  const int minuteOfDay = static_cast<int>(second / 60);
+  const int hour24 = minuteOfDay / 60;
+  const int minute = minuteOfDay % 60;
+  int hour12 = hour24 % 12;
+  if (hour12 == 0) {
+    hour12 = 12;
+  }
+  snprintf(out, size, "%d:%02d %s", hour12, minute, hour24 >= 12 ? "PM" : "AM");
+}
+
+void formatPlaceLine(const MoonView &view, int tzOffsetMinutes, bool hasRise,
+                     time_t riseUtc, bool hasSet, time_t setUtc,
+                     uint8_t distanceUnit, char *out, size_t size) {
+  char rise[24];
+  char set[24];
+  if (hasRise) {
+    char clock[16];
+    formatLocalClock(riseUtc, tzOffsetMinutes, clock, sizeof(clock));
+    snprintf(rise, sizeof(rise), "Moon Rise %s", clock);
+  } else {
+    snprintf(rise, sizeof(rise), "No rise");
+  }
+  if (hasSet) {
+    char clock[16];
+    formatLocalClock(setUtc, tzOffsetMinutes, clock, sizeof(clock));
+    snprintf(set, sizeof(set), "Moon Set %s", clock);
+  } else {
+    snprintf(set, sizeof(set), "No set");
+  }
+  double azimuth = std::fmod(view.azimuthDeg, 360.0);
+  if (azimuth < 0.0) {
+    azimuth += 360.0;
+  }
+  if (azimuth >= 359.99995) {
+    azimuth = 0.0;
+  }
+  double altitude = view.altitudeDeg;
+  if (std::fabs(altitude) < 0.00005) {
+    altitude = 0.0;
+  }
+  const int kilometers = static_cast<int>(std::lround(view.distanceKm));
+  const int miles =
+      static_cast<int>(std::lround(view.distanceKm / 1.609344));
+  char distance[32];
+  if (distanceUnit == 1) {
+    snprintf(distance, sizeof(distance), "Distance\n%dmi", miles);
+  } else if (distanceUnit == 2) {
+    snprintf(distance, sizeof(distance), "Distance\n%dkm", kilometers);
+  } else {
+    snprintf(distance, sizeof(distance), "Distance\n%dmi\n%dkm", miles,
+             kilometers);
+  }
+  snprintf(out, size, "\n%s\n%s\n%s\nMoon Az %.4f\nMoon Alt %.4f", rise, set,
+           distance,
+           azimuth, altitude);
 }
 
 bool parseUnsignedInRange(String value, uint32_t minimum, uint32_t maximum,
@@ -119,17 +207,31 @@ bool moonInDisk(int row, int col) {
   return u * u + v * v <= 1.0f;
 }
 
-bool moonLit(uint8_t row, uint8_t col, float phase) {
+bool moonLit(uint8_t row, uint8_t col, float phase, bool oriented,
+             float brightDeg) {
   float u;
   float v;
   moonUv(row, col, u, v);
-  const float disk = 1.0f - v * v;
-  const float halfWidth = std::sqrt(disk > 0.0f ? disk : 0.0f);
   constexpr float kPi = 3.14159265f;
   const float normalized = normalizePhase(phase);
+  float along = u;
+  float span = v;
+  if (oriented) {
+    const float radians = brightDeg * kPi / 180.0f;
+    const float up = -v;
+    const float sine = std::sin(radians);
+    const float cosine = std::cos(radians);
+    along = u * sine + up * cosine;
+    span = u * cosine - up * sine;
+  }
+  const float disk = 1.0f - span * span;
+  const float halfWidth = std::sqrt(disk > 0.0f ? disk : 0.0f);
   const float limb = std::cos(2.0f * kPi * normalized) * halfWidth;
-  // Waxing light is on the right, matching the northern sky.
-  return normalized <= 0.5f ? u >= limb : u <= -limb;
+  if (!oriented) {
+    // Waxing light is on the right, matching the northern sky.
+    return normalized <= 0.5f ? u >= limb : u <= -limb;
+  }
+  return along >= limb;
 }
 
 bool moonOnRim(uint8_t row, uint8_t col) {
@@ -195,7 +297,7 @@ void appendUpcoming(char *out, size_t outSize, const char *label,
   if (used + 3 >= outSize) {
     return;
   }
-  strncat(out, " | ", outSize - used - 1);
+  strncat(out, "\n", outSize - used - 1);
   used = strlen(out);
   strncat(out, label, outSize - used - 1);
   used = strlen(out);
@@ -240,18 +342,56 @@ void MoonHub75Project::loadSettings(Preferences &preferences) {
     settings_.textColor = 0;
   }
 
+  settings_.distanceUnit = preferences.getUChar("distUnit", 0);
+  if (settings_.distanceUnit >= kDistanceUnitCount) {
+    settings_.distanceUnit = 0;
+  }
+
+  settings_.hasLocation = preferences.getUChar("hasPlace", 0) != 0;
+  if (settings_.hasLocation) {
+    settings_.latitude = preferences.getFloat("lat", 0);
+    settings_.longitude = preferences.getFloat("lon", 0);
+    const int32_t tzMinutes = preferences.getInt("tzMin", 0);
+    if (settings_.latitude < -90.0f || settings_.latitude > 90.0f ||
+        settings_.longitude < -180.0f || settings_.longitude > 180.0f ||
+        tzMinutes < -12 * 60 || tzMinutes > 14 * 60) {
+      settings_.hasLocation = false;
+    } else {
+      settings_.tzOffsetMinutes = static_cast<int16_t>(tzMinutes);
+    }
+  }
+
   Serial.print(" moon_hub75 brightness=");
   Serial.print(settings_.brightness);
   Serial.print(" scroll=");
   Serial.print(settings_.scrollSpeedMs);
   Serial.print(" color=");
-  Serial.println(kScrollColors[settings_.textColor].name);
+  Serial.print(kScrollColors[settings_.textColor].name);
+  Serial.print(" distance=");
+  Serial.print(kDistanceUnits[settings_.distanceUnit]);
+  if (settings_.hasLocation) {
+    Serial.print(" place=");
+    Serial.print(settings_.latitude, 4);
+    Serial.print(",");
+    Serial.print(settings_.longitude, 4);
+    Serial.print(" tzMin=");
+    Serial.println(settings_.tzOffsetMinutes);
+  } else {
+    Serial.println();
+  }
 }
 
 void MoonHub75Project::saveSettings(Preferences &preferences) const {
   preferences.putUChar("brightness", settings_.brightness);
   preferences.putUInt("scrollSpeed", settings_.scrollSpeedMs);
   preferences.putUChar("textColor", settings_.textColor);
+  preferences.putUChar("distUnit", settings_.distanceUnit);
+  preferences.putUChar("hasPlace", settings_.hasLocation ? 1 : 0);
+  if (settings_.hasLocation) {
+    preferences.putFloat("lat", settings_.latitude);
+    preferences.putFloat("lon", settings_.longitude);
+    preferences.putInt("tzMin", settings_.tzOffsetMinutes);
+  }
 }
 
 uint8_t MoonHub75Project::displayBrightness() const {
@@ -278,13 +418,43 @@ String MoonHub75Project::buildPortalPage(const String &ip,
     options += "</option>";
   }
   page.replace("COLOR_OPTIONS_PLACEHOLDER", options);
+  String distanceOptions;
+  for (uint8_t i = 0; i < kDistanceUnitCount; ++i) {
+    distanceOptions += "<option value=\"";
+    distanceOptions += String(i);
+    distanceOptions += "\"";
+    if (i == settings_.distanceUnit) {
+      distanceOptions += " selected";
+    }
+    distanceOptions += ">";
+    distanceOptions += kDistanceUnits[i];
+    distanceOptions += "</option>";
+  }
+  page.replace("DISTANCE_OPTIONS_PLACEHOLDER", distanceOptions);
+  char latitude[24] = "";
+  char longitude[24] = "";
+  char timezone[24] = "";
+  if (settings_.hasLocation) {
+    snprintf(latitude, sizeof(latitude), "%.5f", settings_.latitude);
+    snprintf(longitude, sizeof(longitude), "%.5f", settings_.longitude);
+    if (settings_.tzOffsetMinutes % 60 == 0) {
+      snprintf(timezone, sizeof(timezone), "%d",
+               settings_.tzOffsetMinutes / 60);
+    } else {
+      snprintf(timezone, sizeof(timezone), "%.2f",
+               settings_.tzOffsetMinutes / 60.0);
+    }
+  }
+  page.replace("LAT_PLACEHOLDER", latitude);
+  page.replace("LON_PLACEHOLDER", longitude);
+  page.replace("TZ_PLACEHOLDER", timezone);
   return page;
 }
 
 bool MoonHub75Project::applyPortalRequest(
     const tinker::PortalRequest &request, String &error) {
   if (!request.hasArg("speed") || !request.hasArg("brightness") ||
-      !request.hasArg("color")) {
+      !request.hasArg("color") || !request.hasArg("distance")) {
     error = "Missing moon_hub75 settings.";
     return false;
   }
@@ -310,10 +480,124 @@ bool MoonHub75Project::applyPortalRequest(
     return false;
   }
 
+  uint32_t distance;
+  if (!parseUnsignedInRange(request.arg("distance"), 0, kDistanceUnitCount - 1,
+                            distance)) {
+    error = "Choose a moon distance unit from the list.";
+    return false;
+  }
+
+  bool hasLocation = settings_.hasLocation;
+  float latitude = settings_.latitude;
+  float longitude = settings_.longitude;
+  int16_t tzOffsetMinutes = settings_.tzOffsetMinutes;
+  const bool latitudeBlank =
+      !request.hasArg("lat") || argBlank(request.arg("lat"));
+  const bool longitudeBlank =
+      !request.hasArg("lon") || argBlank(request.arg("lon"));
+  const bool timezoneBlank = !request.hasArg("tz") || argBlank(request.arg("tz"));
+  if (!latitudeBlank || !longitudeBlank || !timezoneBlank) {
+    if (latitudeBlank || longitudeBlank || timezoneBlank) {
+      error = "Enter latitude, longitude, and timezone together.";
+      return false;
+    }
+    double latitudeValue = 0;
+    double longitudeValue = 0;
+    double timezoneHours = 0;
+    if (!parseDecimal(request.arg("lat"), -90.0, 90.0, latitudeValue)) {
+      error = "Latitude must be a number from -90 to 90.";
+      return false;
+    }
+    if (!parseDecimal(request.arg("lon"), -180.0, 180.0, longitudeValue)) {
+      error = "Longitude must be a number from -180 to 180.";
+      return false;
+    }
+    if (!parseDecimal(request.arg("tz"), -12.0, 14.0, timezoneHours)) {
+      error = "Timezone must be hours from -12 to 14.";
+      return false;
+    }
+    const long minutes = std::lround(timezoneHours * 60.0);
+    if (minutes < -12 * 60 || minutes > 14 * 60) {
+      error = "Timezone must be hours from -12 to 14.";
+      return false;
+    }
+    hasLocation = true;
+    latitude = static_cast<float>(latitudeValue);
+    longitude = static_cast<float>(longitudeValue);
+    tzOffsetMinutes = static_cast<int16_t>(minutes);
+  }
+
   settings_.scrollSpeedMs = static_cast<uint16_t>(speed);
   settings_.brightness = static_cast<uint8_t>(brightness);
   settings_.textColor = static_cast<uint8_t>(color);
+  settings_.distanceUnit = static_cast<uint8_t>(distance);
+  settings_.hasLocation = hasLocation;
+  settings_.latitude = latitude;
+  settings_.longitude = longitude;
+  settings_.tzOffsetMinutes = tzOffsetMinutes;
   return true;
+}
+
+void MoonHub75Project::refreshPlaceText() {
+  if (!timeSynced_ || !settings_.hasLocation || time(nullptr) < kMinValidTime) {
+    placeText_[0] = '\0';
+    placeDate_ = 0;
+    placeMinute_ = -1;
+    limbOriented_ = false;
+    limbAngleDeg_ = 90.0f;
+    return;
+  }
+
+  const time_t utc = time(nullptr);
+  const time_t localClock = static_cast<time_t>(
+      static_cast<int64_t>(utc) +
+      static_cast<int64_t>(settings_.tzOffsetMinutes) * 60);
+  struct tm localTime;
+  if (gmtime_r(&localClock, &localTime) == nullptr) {
+    placeText_[0] = '\0';
+    limbOriented_ = false;
+    limbAngleDeg_ = 90.0f;
+    return;
+  }
+  const int date = (localTime.tm_year + 1900) * 10000 +
+                   (localTime.tm_mon + 1) * 100 + localTime.tm_mday;
+  const bool moved = date != placeDate_ || settings_.latitude != placeLat_ ||
+                     settings_.longitude != placeLon_ ||
+                     settings_.tzOffsetMinutes != placeTz_;
+  const int64_t minuteKey = static_cast<int64_t>(utc) / 60;
+  if (moved) {
+    const MoonView day =
+        moonViewForDay(utc, settings_.tzOffsetMinutes, settings_.latitude,
+                       settings_.longitude);
+    placeHasRise_ = day.hasRise;
+    placeHasSet_ = day.hasSet;
+    placeRiseUtc_ = day.riseUtc;
+    placeSetUtc_ = day.setUtc;
+    placeDate_ = date;
+    placeLat_ = settings_.latitude;
+    placeLon_ = settings_.longitude;
+    placeTz_ = settings_.tzOffsetMinutes;
+    formatPlaceLine(day, settings_.tzOffsetMinutes, placeHasRise_,
+                    placeRiseUtc_, placeHasSet_, placeSetUtc_,
+                    settings_.distanceUnit, placeText_, sizeof(placeText_));
+    limbAngleDeg_ = static_cast<float>(moonBrightLimbDeg(
+        utc, settings_.latitude, settings_.longitude));
+    limbOriented_ = true;
+    placeMinute_ = minuteKey;
+    return;
+  }
+  if (minuteKey == placeMinute_) {
+    return;
+  }
+  const MoonView now =
+      moonViewAt(utc, settings_.latitude, settings_.longitude);
+  formatPlaceLine(now, settings_.tzOffsetMinutes, placeHasRise_, placeRiseUtc_,
+                  placeHasSet_, placeSetUtc_, settings_.distanceUnit, placeText_,
+                  sizeof(placeText_));
+  limbAngleDeg_ = static_cast<float>(
+      moonBrightLimbDeg(utc, settings_.latitude, settings_.longitude));
+  limbOriented_ = true;
+  placeMinute_ = minuteKey;
 }
 
 void MoonHub75Project::updatePhase(unsigned long now) {
@@ -348,28 +632,49 @@ void MoonHub75Project::updatePhase(unsigned long now) {
 }
 
 void MoonHub75Project::rebuildLines() {
-  char message[384];
+  refreshPlaceText();
+  char message[512];
   snprintf(message, sizeof(message), "%s %u%%", phaseName(phase_),
            static_cast<unsigned>(illuminationPercent_));
   appendUpcoming(message, sizeof(message), "New", phase_, 0.0f);
   appendUpcoming(message, sizeof(message), "1st Qtr", phase_, 0.25f);
   appendUpcoming(message, sizeof(message), "Full", phase_, 0.5f);
   appendUpcoming(message, sizeof(message), "Last Qtr", phase_, 0.75f);
+  if (placeText_[0] != '\0') {
+    const size_t used = strlen(message);
+    if (used + 1 < sizeof(message)) {
+      strncat(message, placeText_, sizeof(message) - used - 1);
+    }
+  }
 
   char wrapped[kMaxLines][kMaxLineChars + 1] = {};
   uint8_t count = 0;
   char current[kMaxLineChars + 1] = "";
   const char *cursor = message;
   while (*cursor && count < kMaxLines) {
+    if (*cursor == '\n') {
+      if (current[0] != '\0') {
+        strncpy(wrapped[count], current, kMaxLineChars);
+        wrapped[count][kMaxLineChars] = '\0';
+        ++count;
+        current[0] = '\0';
+      }
+      ++cursor;
+      continue;
+    }
     while (*cursor == ' ') {
       ++cursor;
     }
     if (!*cursor) {
       break;
     }
+    if (*cursor == '\n') {
+      continue;
+    }
     char word[32];
     size_t length = 0;
-    while (*cursor && *cursor != ' ' && length + 1 < sizeof(word)) {
+    while (*cursor && *cursor != ' ' && *cursor != '\n' &&
+           length + 1 < sizeof(word)) {
       word[length++] = *cursor++;
     }
     word[length] = '\0';
@@ -444,7 +749,8 @@ void MoonHub75Project::drawFrame() {
       uint8_t red = static_cast<uint8_t>(((pixel >> 11) & 0x1F) << 3);
       uint8_t green = static_cast<uint8_t>(((pixel >> 5) & 0x3F) << 2);
       uint8_t blue = static_cast<uint8_t>((pixel & 0x1F) << 3);
-      if (!moonInDisk(row, col) || !moonLit(row, col, phase_)) {
+      if (!moonInDisk(row, col) ||
+          !moonLit(row, col, phase_, limbOriented_, limbAngleDeg_)) {
         const bool rim = moonOnRim(row, col);
         red = scaleChannel(red, 1, rim ? 2 : 6);
         green = scaleChannel(green, 1, rim ? 2 : 6);
@@ -500,6 +806,9 @@ void MoonHub75Project::startPrograms() {
   lastNtpAttemptMs_ = 0;
   lastScrollMs_ = millis();
   scrollOffset_ = kPanelHeight;
+  placeDate_ = 0;
+  placeMinute_ = -1;
+  placeText_[0] = '\0';
   lineCount_ = 0;
   contentHeight_ = 0;
   runtime_.setBrightness(settings_.brightness);

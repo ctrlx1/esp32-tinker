@@ -5,16 +5,24 @@ FM6124HJ / FM6124HU, 1/16 scan).
 
 Startup shows the wolf-and-moon picture, then the title “Phases / Of The /
 Moon,” and clears that title with one of five random animations. After that,
-a 32×32 moon stays on the right and is shaded to the current phase, bright
-on the right while waxing and on the left while waning. The left column
+a 32×32 moon stays on the right and is shaded to the current phase. With a
+saved place, the bright limb points toward the Sun in that sky, so the top
+of the disk is up from the horizon. Without a place, waxing stays bright on
+the right and waning on the left. The left column
 scrolls the current phase, illumination, and the time until the next new
-moon, first quarter, full moon, and last quarter. The clock comes from NTP. Until the time is
+moon, first quarter, full moon, and last quarter. Each phrase starts at the
+left of its own line. After that it shows today's moonrise and moonset, a
+Distance label in miles, kilometers, or both, and the current azimuth and altitude. Those lines appear once the setup page has a
+latitude, longitude, and timezone offset. The clock comes from NTP. Until the time is
 valid, the phase cycles once per minute so the panel still moves.
 
 The setup page stores display brightness (default `4`), scroll speed
-(default `75 ms`), and the scroll-text color (default Ice) in the
-`moon_hub75` NVS namespace. The color list is Ice, Silver, White, Gold, Amber, Rose, Mint, Violet,
-Light Blue, Blue, and Dark Blue.
+(default `75 ms`), the scroll-text color (default Ice), and the moon
+distance unit (default Both) in the `moon_hub75` NVS namespace. The color
+list is Ice, Silver, White, Gold, Amber, Rose, Mint, Violet, Light Blue,
+Blue, and Dark Blue. Distance can be Both, Miles, or Kilometers. Latitude,
+longitude, and the timezone offset are saved there too. Leave them blank to
+keep the place already stored.
 
 From the repository root:
 

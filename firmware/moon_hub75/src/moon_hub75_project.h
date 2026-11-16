@@ -3,6 +3,8 @@
 #include "moon_hub75_settings.h"
 
 #include <Preferences.h>
+#include <stdint.h>
+#include <time.h>
 #include <tinker/portal_request.h>
 #include <tinker/project_definition.h>
 #include <tinker/runtime_context.h>
@@ -25,6 +27,7 @@ public:
 
 private:
   void updatePhase(unsigned long now);
+  void refreshPlaceText();
   void rebuildLines();
   void drawFrame();
 
@@ -38,6 +41,18 @@ private:
   unsigned long lastScrollMs_ = 0;
   float phase_ = 0.0f;
   uint8_t illuminationPercent_ = 0;
+  bool limbOriented_ = false;
+  float limbAngleDeg_ = 90.0f;
+  char placeText_[160] = {};
+  int placeDate_ = 0;
+  int64_t placeMinute_ = -1;
+  float placeLat_ = 0;
+  float placeLon_ = 0;
+  int16_t placeTz_ = 0;
+  bool placeHasRise_ = false;
+  bool placeHasSet_ = false;
+  time_t placeRiseUtc_ = 0;
+  time_t placeSetUtc_ = 0;
   int scrollOffset_ = 0;
   uint8_t lineCount_ = 0;
   int contentHeight_ = 0;

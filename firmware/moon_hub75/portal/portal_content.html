@@ -95,6 +95,26 @@
         <select id="color">
           COLOR_OPTIONS_PLACEHOLDER
         </select>
+        <label for="distance">Moon distance</label>
+        <select id="distance">
+          DISTANCE_OPTIONS_PLACEHOLDER
+        </select>
+        <label for="lat">Latitude</label>
+        <input id="lat" type="number" step="any" min="-90" max="90"
+               inputmode="decimal" placeholder="-90 to 90"
+               value="LAT_PLACEHOLDER" />
+        <label for="lon">Longitude</label>
+        <input id="lon" type="number" step="any" min="-180" max="180"
+               inputmode="decimal" placeholder="-180 to 180"
+               value="LON_PLACEHOLDER" />
+        <label for="tz">Timezone offset (hours from UTC)</label>
+        <input id="tz" type="number" step="any" min="-12" max="14"
+               inputmode="decimal" placeholder="-5 or 5.5"
+               value="TZ_PLACEHOLDER" />
+        <div class="hint">
+          Leave blank to keep the saved place. Rise, set, distance, azimuth,
+          and altitude use this location and your wall-clock offset.
+        </div>
         <button type="button" onclick="saveSettings()">Save &amp; restart</button>
         <div id="save-message" class="message"></div>
       </section>
@@ -151,7 +171,11 @@
           pass: document.getElementById("pass").value,
           speed: document.getElementById("speed").value,
           brightness: document.getElementById("brightness").value,
-          color: document.getElementById("color").value
+          color: document.getElementById("color").value,
+          distance: document.getElementById("distance").value,
+          lat: document.getElementById("lat").value,
+          lon: document.getElementById("lon").value,
+          tz: document.getElementById("tz").value
         });
         try {
           const response = await fetch("/save", {
