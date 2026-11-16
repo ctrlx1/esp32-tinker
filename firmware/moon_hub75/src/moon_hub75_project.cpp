@@ -23,9 +23,6 @@ constexpr uint8_t kMoonColumn = 32;
 constexpr uint8_t kLinePitch = 6;
 constexpr uint8_t kMaxLineChars = 8;
 constexpr uint8_t kMaxLines = 48;
-constexpr uint8_t kTextR = 200;
-constexpr uint8_t kTextG = 220;
-constexpr uint8_t kTextB = 255;
 constexpr unsigned long kNtpRetryMs = 30000UL;
 constexpr time_t kMinValidTime = 1609459200;
 constexpr double kSynodicMonthDays = 29.530588853;
@@ -238,15 +235,23 @@ void MoonHub75Project::loadSettings(Preferences &preferences) {
           ? static_cast<uint16_t>(storedScrollSpeed)
           : kDefaultScrollSpeedMs;
 
+  settings_.textColor = preferences.getUChar("textColor", 0);
+  if (settings_.textColor >= kScrollColorCount) {
+    settings_.textColor = 0;
+  }
+
   Serial.print(" moon_hub75 brightness=");
   Serial.print(settings_.brightness);
   Serial.print(" scroll=");
-  Serial.println(settings_.scrollSpeedMs);
+  Serial.print(settings_.scrollSpeedMs);
+  Serial.print(" color=");
+  Serial.println(kScrollColors[settings_.textColor].name);
 }
 
 void MoonHub75Project::saveSettings(Preferences &preferences) const {
   preferences.putUChar("brightness", settings_.brightness);
   preferences.putUInt("scrollSpeed", settings_.scrollSpeedMs);
+  preferences.putUChar("textColor", settings_.textColor);
 }
 
 uint8_t MoonHub75Project::displayBrightness() const {
@@ -260,12 +265,26 @@ String MoonHub75Project::buildPortalPage(const String &ip,
   page.replace("SSID_PLACEHOLDER", htmlEscape(ssid));
   page.replace("SPEED_PLACEHOLDER", String(settings_.scrollSpeedMs));
   page.replace("BRIGHTNESS_PLACEHOLDER", String(settings_.brightness));
+  String options;
+  for (uint8_t i = 0; i < kScrollColorCount; ++i) {
+    options += "<option value=\"";
+    options += String(i);
+    options += "\"";
+    if (i == settings_.textColor) {
+      options += " selected";
+    }
+    options += ">";
+    options += kScrollColors[i].name;
+    options += "</option>";
+  }
+  page.replace("COLOR_OPTIONS_PLACEHOLDER", options);
   return page;
 }
 
 bool MoonHub75Project::applyPortalRequest(
     const tinker::PortalRequest &request, String &error) {
-  if (!request.hasArg("speed") || !request.hasArg("brightness")) {
+  if (!request.hasArg("speed") || !request.hasArg("brightness") ||
+      !request.hasArg("color")) {
     error = "Missing moon_hub75 settings.";
     return false;
   }
@@ -284,8 +303,16 @@ bool MoonHub75Project::applyPortalRequest(
     return false;
   }
 
+  uint32_t color;
+  if (!parseUnsignedInRange(request.arg("color"), 0, kScrollColorCount - 1,
+                            color)) {
+    error = "Choose a scroll color from the list.";
+    return false;
+  }
+
   settings_.scrollSpeedMs = static_cast<uint16_t>(speed);
   settings_.brightness = static_cast<uint8_t>(brightness);
+  settings_.textColor = static_cast<uint8_t>(color);
   return true;
 }
 
@@ -428,6 +455,7 @@ void MoonHub75Project::drawFrame() {
     }
   }
 
+  const ScrollColor &color = kScrollColors[settings_.textColor];
   for (uint8_t line = 0; line < lineCount_; ++line) {
     const int top =
         kPanelHeight + static_cast<int>(line) * kLinePitch - scrollOffset_;
@@ -455,8 +483,8 @@ void MoonHub75Project::drawFrame() {
             continue;
           }
           runtime_.setPixelColor(static_cast<uint8_t>(py),
-                                 static_cast<uint16_t>(px), kTextR, kTextG,
-                                 kTextB);
+                                 static_cast<uint16_t>(px), color.red,
+                                 color.green, color.blue);
         }
       }
       x += font3x5::kWidth;

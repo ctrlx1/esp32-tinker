@@ -16,7 +16,14 @@ constexpr uint8_t kHeight = 32;
 constexpr unsigned long kFrameMs = 33;
 constexpr uint8_t kFadeFrames = 30;
 constexpr unsigned long kHoldMs = 5000;
-constexpr unsigned long kTitleMs = 5000;
+constexpr unsigned long kTitleMs = 6000;
+constexpr unsigned long kSilverMs = 600;
+constexpr unsigned long kSheenMs = 1200;
+constexpr uint8_t kSilverR = 176;
+constexpr uint8_t kSilverG = 186;
+constexpr uint8_t kSilverB = 204;
+constexpr uint8_t kSheenRadius = 2;
+constexpr uint8_t kMaxLetterPixels = 40;
 constexpr uint16_t kCenterX = 31;
 constexpr uint16_t kCenterY = 15;
 constexpr uint8_t kDissolveBatch = 12;
@@ -25,7 +32,11 @@ struct TitleChar {
   char glyph;
   int16_t x;
   int16_t y;
-  uint16_t hueOffset;
+};
+
+struct LetterPixels {
+  uint16_t index[kMaxLetterPixels];
+  uint8_t count;
 };
 
 uint16_t packRgb565(uint8_t red, uint8_t green, uint8_t blue) {
@@ -37,46 +48,6 @@ void unpackRgb565(uint16_t pixel, uint8_t &red, uint8_t &green, uint8_t &blue) {
   red = static_cast<uint8_t>(((pixel >> 11) & 0x1F) << 3);
   green = static_cast<uint8_t>(((pixel >> 5) & 0x3F) << 2);
   blue = static_cast<uint8_t>((pixel & 0x1F) << 3);
-}
-
-void hsvToRgb(uint16_t hue, uint8_t &red, uint8_t &green, uint8_t &blue) {
-  hue = static_cast<uint16_t>(hue % 360);
-  const uint8_t region = static_cast<uint8_t>(hue / 60);
-  const uint8_t remainder = static_cast<uint8_t>(((hue % 60) * 255) / 60);
-  const uint8_t rising = remainder;
-  const uint8_t falling = static_cast<uint8_t>(255 - remainder);
-  switch (region) {
-  case 0:
-    red = 255;
-    green = rising;
-    blue = 0;
-    break;
-  case 1:
-    red = falling;
-    green = 255;
-    blue = 0;
-    break;
-  case 2:
-    red = 0;
-    green = 255;
-    blue = rising;
-    break;
-  case 3:
-    red = 0;
-    green = falling;
-    blue = 255;
-    break;
-  case 4:
-    red = rising;
-    green = 0;
-    blue = 255;
-    break;
-  default:
-    red = 255;
-    green = 0;
-    blue = falling;
-    break;
-  }
 }
 
 uint8_t scaleChannel(uint8_t value, uint8_t level) {
@@ -139,33 +110,107 @@ uint8_t layoutTitle(TitleChar *chars) {
   const char *lines[] = {"Phases", "Of The", "Moon"};
   const int16_t tops[] = {4, 12, 20};
   uint8_t count = 0;
-  uint16_t hue = 0;
   for (uint8_t line = 0; line < 3; ++line) {
     const uint8_t length = static_cast<uint8_t>(strlen(lines[line]));
     int16_t x = static_cast<int16_t>((kWidth - length * 6) / 2);
     for (uint8_t i = 0; i < length; ++i) {
-      chars[count++] = {lines[line][i], x, tops[line], hue};
+      chars[count++] = {lines[line][i], x, tops[line]};
       x = static_cast<int16_t>(x + 6);
-      hue = static_cast<uint16_t>((hue + 28) % 360);
     }
   }
   return count;
 }
 
-void paintTitle(GFXcanvas16 &canvas, const TitleChar *chars, uint8_t count,
-                uint16_t baseHue) {
+void paintSilver(GFXcanvas16 &canvas, const TitleChar *chars, uint8_t count) {
   canvas.fillScreen(0);
+  const uint16_t color = packRgb565(kSilverR, kSilverG, kSilverB);
   for (uint8_t i = 0; i < count; ++i) {
     if (chars[i].glyph == ' ') {
       continue;
     }
-    uint8_t red = 0;
-    uint8_t green = 0;
-    uint8_t blue = 0;
-    hsvToRgb(static_cast<uint16_t>(baseHue + chars[i].hueOffset), red, green,
-             blue);
-    const uint16_t color = packRgb565(red, green, blue);
     canvas.drawChar(chars[i].x, chars[i].y, chars[i].glyph, color, color, 1);
+  }
+}
+
+void collectLetterPixels(const uint16_t *frame, const TitleChar *chars,
+                         uint8_t count, LetterPixels *letters) {
+  for (uint8_t i = 0; i < count; ++i) {
+    letters[i].count = 0;
+    if (chars[i].glyph == ' ') {
+      continue;
+    }
+    for (int8_t dy = 0; dy < 8; ++dy) {
+      for (int8_t dx = 0; dx < 6; ++dx) {
+        const int x = chars[i].x + dx;
+        const int y = chars[i].y + dy;
+        if (x < 0 || y < 0 || x >= kWidth || y >= kHeight) {
+          continue;
+        }
+        const uint16_t index = static_cast<uint16_t>(y * kWidth + x);
+        if (frame[index] == 0 || letters[i].count >= kMaxLetterPixels) {
+          continue;
+        }
+        letters[i].index[letters[i].count++] = index;
+      }
+    }
+  }
+}
+
+void sheenBounds(const LetterPixels *letters, uint8_t count, int &minDiag,
+                 int &maxDiag) {
+  minDiag = kWidth + kHeight;
+  maxDiag = 0;
+  for (uint8_t i = 0; i < count; ++i) {
+    for (uint8_t p = 0; p < letters[i].count; ++p) {
+      const uint16_t index = letters[i].index[p];
+      const int diag = static_cast<int>(index % kWidth) +
+                       static_cast<int>(index / kWidth);
+      if (diag < minDiag) {
+        minDiag = diag;
+      }
+      if (diag > maxDiag) {
+        maxDiag = diag;
+      }
+    }
+  }
+}
+
+void applySheen(uint16_t *frame, const LetterPixels *letters, uint8_t count,
+                unsigned long elapsed) {
+  int minDiag = 0;
+  int maxDiag = 0;
+  sheenBounds(letters, count, minDiag, maxDiag);
+  const int start = minDiag - kSheenRadius;
+  const int end = maxDiag + kSheenRadius;
+  const int span = end - start;
+  if (span <= 0) {
+    return;
+  }
+  const int center =
+      start + static_cast<int>((elapsed * static_cast<unsigned long>(span)) /
+                               kSheenMs);
+  const uint16_t sheen = packRgb565(255, 255, 255);
+  for (uint8_t i = 0; i < count; ++i) {
+    for (uint8_t p = 0; p < letters[i].count; ++p) {
+      const uint16_t index = letters[i].index[p];
+      const int diag = static_cast<int>(index % kWidth) +
+                       static_cast<int>(index / kWidth);
+      const int delta = diag > center ? diag - center : center - diag;
+      if (delta <= kSheenRadius) {
+        frame[index] = sheen;
+      }
+    }
+  }
+}
+
+void applySparkle(uint16_t *frame, const LetterPixels *letters, uint8_t count) {
+  const uint16_t spark = packRgb565(255, 255, 255);
+  for (uint8_t i = 0; i < count; ++i) {
+    if (letters[i].count == 0) {
+      continue;
+    }
+    const uint8_t pick = static_cast<uint8_t>(random(letters[i].count));
+    frame[letters[i].index[pick]] = spark;
   }
 }
 
@@ -385,15 +430,30 @@ void runWelcome(tinker::RuntimeContext &runtime) {
     return;
   }
 
+  LetterPixels letters[16];
+  paintSilver(canvas, chars, count);
+  collectLetterPixels(frame, chars, count, letters);
+  randomSeed(esp_random());
+
   const unsigned long titleStart = millis();
   unsigned long nextFrameMs = titleStart;
+  bool sparkleOn = false;
   while (millis() - titleStart < kTitleMs) {
     pace(nextFrameMs);
-    const uint16_t hue = static_cast<uint16_t>(
-        ((millis() - titleStart) * 360UL) / kTitleMs);
-    paintTitle(canvas, chars, count, hue);
+    const unsigned long elapsed = millis() - titleStart;
+    paintSilver(canvas, chars, count);
+    if (elapsed >= kSilverMs && elapsed < kSilverMs + kSheenMs) {
+      applySheen(frame, letters, count, elapsed - kSilverMs);
+    } else if (elapsed >= kSilverMs + kSheenMs) {
+      if (sparkleOn) {
+        applySparkle(frame, letters, count);
+      }
+      sparkleOn = !sparkleOn;
+    }
     presentBuffer(runtime, frame);
   }
+  paintSilver(canvas, chars, count);
+  presentBuffer(runtime, frame);
 
   uint16_t *scratch = static_cast<uint16_t *>(
       malloc(static_cast<size_t>(kWidth) * kHeight * sizeof(uint16_t)));
@@ -401,7 +461,6 @@ void runWelcome(tinker::RuntimeContext &runtime) {
     clearPanel(runtime);
     return;
   }
-  randomSeed(esp_random());
   switch (random(5)) {
   case 0:
     playDissolve(runtime, frame, scratch);

@@ -30,7 +30,7 @@
         border-top: 1px solid #303030;
       }
       label { display: block; margin: 0.7rem 0 0.3rem; font-weight: 600; }
-      input, button {
+      input, select, button {
         width: 100%;
         min-height: 42px;
         border: 1px solid #3a3a3a;
@@ -91,6 +91,10 @@
         <label for="brightness">Brightness (0&ndash;15)</label>
         <input id="brightness" type="number" min="0" max="15"
                value="BRIGHTNESS_PLACEHOLDER" />
+        <label for="color">Scroll color</label>
+        <select id="color">
+          COLOR_OPTIONS_PLACEHOLDER
+        </select>
         <button type="button" onclick="saveSettings()">Save &amp; restart</button>
         <div id="save-message" class="message"></div>
       </section>
@@ -146,7 +150,8 @@
           ssid: document.getElementById("ssid").value,
           pass: document.getElementById("pass").value,
           speed: document.getElementById("speed").value,
-          brightness: document.getElementById("brightness").value
+          brightness: document.getElementById("brightness").value,
+          color: document.getElementById("color").value
         });
         try {
           const response = await fetch("/save", {

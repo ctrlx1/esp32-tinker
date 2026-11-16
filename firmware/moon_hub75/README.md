@@ -11,8 +11,10 @@ scrolls the current phase, illumination, and the time until the next new
 moon, first quarter, full moon, and last quarter. The clock comes from NTP. Until the time is
 valid, the phase cycles once per minute so the panel still moves.
 
-The setup page stores display brightness (default `4`) and scroll speed
-(default `75 ms`) in the `moon_hub75` NVS namespace.
+The setup page stores display brightness (default `4`), scroll speed
+(default `75 ms`), and the scroll-text color (default Ice) in the
+`moon_hub75` NVS namespace. The color list is Ice, Silver, White, Gold, Amber, Rose, Mint, Violet,
+Light Blue, Blue, and Dark Blue.
 
 From the repository root:
 
