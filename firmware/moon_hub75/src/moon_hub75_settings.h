@@ -30,6 +30,7 @@ constexpr uint8_t kDistanceUnitCount =
 struct MoonHub75Settings {
   uint16_t scrollSpeedMs = 75;
   uint8_t brightness = 4;
+  uint8_t textBrightness = 4;
   uint8_t textColor = 0;
   uint8_t distanceUnit = 0;
   bool hasLocation = false;

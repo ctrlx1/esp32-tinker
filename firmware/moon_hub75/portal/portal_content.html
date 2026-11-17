@@ -90,7 +90,16 @@
                value="SPEED_PLACEHOLDER" />
         <label for="brightness">Brightness (0&ndash;15)</label>
         <input id="brightness" type="number" min="0" max="15"
-               value="BRIGHTNESS_PLACEHOLDER" />
+               value="BRIGHTNESS_PLACEHOLDER" oninput="limitTextBrightness()" />
+        <label for="text-brightness">Text brightness (0&ndash;panel)</label>
+        <input id="text-brightness" type="number" min="0"
+               max="BRIGHTNESS_PLACEHOLDER"
+               value="TEXT_LEVEL_PLACEHOLDER"
+               oninput="limitTextBrightness()" />
+        <div class="hint">
+          Dims the scrolling text only. It cannot be brighter than the panel,
+          and the moon stays at the panel brightness.
+        </div>
         <label for="color">Scroll color</label>
         <select id="color">
           COLOR_OPTIONS_PLACEHOLDER
@@ -134,6 +143,21 @@
     </main>
 
     <script>
+      function limitTextBrightness() {
+        const panel = document.getElementById("brightness");
+        const text = document.getElementById("text-brightness");
+        const parsed = parseInt(panel.value, 10);
+        if (!Number.isFinite(parsed)) {
+          return;
+        }
+        const max = Math.min(15, Math.max(0, parsed));
+        text.max = String(max);
+        const current = parseInt(text.value, 10);
+        if (Number.isFinite(current) && current > max) {
+          text.value = String(max);
+        }
+      }
+
       function setMessage(id, text, isError) {
         const element = document.getElementById(id);
         element.textContent = text;
@@ -166,11 +190,13 @@
       }
 
       async function saveSettings() {
+        limitTextBrightness();
         const params = new URLSearchParams({
           ssid: document.getElementById("ssid").value,
           pass: document.getElementById("pass").value,
           speed: document.getElementById("speed").value,
           brightness: document.getElementById("brightness").value,
+          textBright: document.getElementById("text-brightness").value,
           color: document.getElementById("color").value,
           distance: document.getElementById("distance").value,
           lat: document.getElementById("lat").value,
@@ -219,5 +245,7 @@
         data.append("firmware", file, file.name);
         request.send(data);
       }
+
+      limitTextBrightness();
     </script>
   </body>

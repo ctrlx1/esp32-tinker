@@ -328,6 +328,11 @@ void MoonHub75Project::loadSettings(Preferences &preferences) {
   if (settings_.brightness > 15) {
     settings_.brightness = kDefaultBrightness;
   }
+  settings_.textBrightness =
+      preferences.getUChar("textBright", settings_.brightness);
+  if (settings_.textBrightness > settings_.brightness) {
+    settings_.textBrightness = settings_.brightness;
+  }
 
   const uint32_t storedScrollSpeed =
       preferences.getUInt("scrollSpeed", kDefaultScrollSpeedMs);
@@ -363,6 +368,8 @@ void MoonHub75Project::loadSettings(Preferences &preferences) {
 
   Serial.print(" moon_hub75 brightness=");
   Serial.print(settings_.brightness);
+  Serial.print(" text=");
+  Serial.print(settings_.textBrightness);
   Serial.print(" scroll=");
   Serial.print(settings_.scrollSpeedMs);
   Serial.print(" color=");
@@ -383,6 +390,7 @@ void MoonHub75Project::loadSettings(Preferences &preferences) {
 
 void MoonHub75Project::saveSettings(Preferences &preferences) const {
   preferences.putUChar("brightness", settings_.brightness);
+  preferences.putUChar("textBright", settings_.textBrightness);
   preferences.putUInt("scrollSpeed", settings_.scrollSpeedMs);
   preferences.putUChar("textColor", settings_.textColor);
   preferences.putUChar("distUnit", settings_.distanceUnit);
@@ -405,6 +413,7 @@ String MoonHub75Project::buildPortalPage(const String &ip,
   page.replace("SSID_PLACEHOLDER", htmlEscape(ssid));
   page.replace("SPEED_PLACEHOLDER", String(settings_.scrollSpeedMs));
   page.replace("BRIGHTNESS_PLACEHOLDER", String(settings_.brightness));
+  page.replace("TEXT_LEVEL_PLACEHOLDER", String(settings_.textBrightness));
   String options;
   for (uint8_t i = 0; i < kScrollColorCount; ++i) {
     options += "<option value=\"";
@@ -454,7 +463,8 @@ String MoonHub75Project::buildPortalPage(const String &ip,
 bool MoonHub75Project::applyPortalRequest(
     const tinker::PortalRequest &request, String &error) {
   if (!request.hasArg("speed") || !request.hasArg("brightness") ||
-      !request.hasArg("color") || !request.hasArg("distance")) {
+      !request.hasArg("textBright") || !request.hasArg("color") ||
+      !request.hasArg("distance")) {
     error = "Missing moon_hub75 settings.";
     return false;
   }
@@ -470,6 +480,13 @@ bool MoonHub75Project::applyPortalRequest(
   uint32_t brightness;
   if (!parseUnsignedInRange(request.arg("brightness"), 0, 15, brightness)) {
     error = "Brightness must be an integer from 0 to 15.";
+    return false;
+  }
+
+  uint32_t textBrightness;
+  if (!parseUnsignedInRange(request.arg("textBright"), 0, brightness,
+                            textBrightness)) {
+    error = "Text brightness must be an integer from 0 to the panel brightness.";
     return false;
   }
 
@@ -529,6 +546,7 @@ bool MoonHub75Project::applyPortalRequest(
 
   settings_.scrollSpeedMs = static_cast<uint16_t>(speed);
   settings_.brightness = static_cast<uint8_t>(brightness);
+  settings_.textBrightness = static_cast<uint8_t>(textBrightness);
   settings_.textColor = static_cast<uint8_t>(color);
   settings_.distanceUnit = static_cast<uint8_t>(distance);
   settings_.hasLocation = hasLocation;
@@ -762,6 +780,20 @@ void MoonHub75Project::drawFrame() {
   }
 
   const ScrollColor &color = kScrollColors[settings_.textColor];
+  uint8_t textRed = color.red;
+  uint8_t textGreen = color.green;
+  uint8_t textBlue = color.blue;
+  if (settings_.brightness == 0 || settings_.textBrightness == 0) {
+    textRed = 0;
+    textGreen = 0;
+    textBlue = 0;
+  } else if (settings_.textBrightness < settings_.brightness) {
+    textRed = scaleChannel(textRed, settings_.textBrightness, settings_.brightness);
+    textGreen =
+        scaleChannel(textGreen, settings_.textBrightness, settings_.brightness);
+    textBlue =
+        scaleChannel(textBlue, settings_.textBrightness, settings_.brightness);
+  }
   for (uint8_t line = 0; line < lineCount_; ++line) {
     const int top =
         kPanelHeight + static_cast<int>(line) * kLinePitch - scrollOffset_;
@@ -789,8 +821,8 @@ void MoonHub75Project::drawFrame() {
             continue;
           }
           runtime_.setPixelColor(static_cast<uint8_t>(py),
-                                 static_cast<uint16_t>(px), color.red,
-                                 color.green, color.blue);
+                                 static_cast<uint16_t>(px), textRed, textGreen,
+                                 textBlue);
         }
       }
       x += font3x5::kWidth;

@@ -17,8 +17,10 @@ latitude, longitude, and timezone offset. The clock comes from NTP. Until the ti
 valid, the phase cycles once per minute so the panel still moves.
 
 The setup page stores display brightness (default `4`), scroll speed
-(default `75 ms`), the scroll-text color (default Ice), and the moon
-distance unit (default Both) in the `moon_hub75` NVS namespace. The color
+(default `75 ms`), the scroll-text color (default Ice), text brightness,
+and the moon distance unit (default Both) in the `moon_hub75` NVS namespace.
+Text brightness starts at the panel brightness and can be lowered, down to
+0, without dimming the moon. The color
 list is Ice, Silver, White, Gold, Amber, Rose, Mint, Violet, Light Blue,
 Blue, and Dark Blue. Distance can be Both, Miles, or Kilometers. Latitude,
 longitude, and the timezone offset are saved there too. Leave them blank to
