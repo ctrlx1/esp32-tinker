@@ -40,7 +40,7 @@ private:
   unsigned long lastNtpAttemptMs_ = 0;
   unsigned long lastScrollMs_ = 0;
   float phase_ = 0.0f;
-  uint8_t illuminationPercent_ = 0;
+  double illuminationPercent_ = 0;
   bool limbOriented_ = false;
   float limbAngleDeg_ = 90.0f;
   char placeText_[160] = {};

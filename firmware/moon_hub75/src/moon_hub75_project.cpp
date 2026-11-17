@@ -247,17 +247,17 @@ uint8_t scaleChannel(uint8_t value, uint8_t numerator, uint8_t denominator) {
                               denominator);
 }
 
-uint8_t illuminationPercent(float phase) {
-  constexpr float kPi = 3.14159265f;
-  const float fraction =
-      0.5f * (1.0f - std::cos(2.0f * kPi * normalizePhase(phase)));
-  int percent = static_cast<int>(std::lround(fraction * 100.0f));
-  if (percent < 0) {
-    percent = 0;
-  } else if (percent > 100) {
-    percent = 100;
+double illuminationPercent(float phase) {
+  constexpr double kPi = 3.141592653589793;
+  const double fraction =
+      0.5 * (1.0 - std::cos(2.0 * kPi * normalizePhase(phase)));
+  double percent = fraction * 100.0;
+  if (percent < 0.0) {
+    percent = 0.0;
+  } else if (percent > 100.0) {
+    percent = 100.0;
   }
-  return static_cast<uint8_t>(percent);
+  return percent;
 }
 
 double daysUntilPhase(float currentPhase, float targetPhase) {
@@ -652,8 +652,8 @@ void MoonHub75Project::updatePhase(unsigned long now) {
 void MoonHub75Project::rebuildLines() {
   refreshPlaceText();
   char message[512];
-  snprintf(message, sizeof(message), "%s %u%%", phaseName(phase_),
-           static_cast<unsigned>(illuminationPercent_));
+  snprintf(message, sizeof(message), "%s %.4f%%", phaseName(phase_),
+           illuminationPercent_);
   appendUpcoming(message, sizeof(message), "New", phase_, 0.0f);
   appendUpcoming(message, sizeof(message), "1st Qtr", phase_, 0.25f);
   appendUpcoming(message, sizeof(message), "Full", phase_, 0.5f);
