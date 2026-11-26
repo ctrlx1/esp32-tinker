@@ -11,7 +11,8 @@
 namespace {
 
 constexpr int kHowlPin = 18;
-constexpr int kHowlGain = 12;
+constexpr int kHowlSamplePeak = 126;
+constexpr int kHowlDutyPeak = 90;
 constexpr uint8_t kHowlVolumeMax = 15;
 constexpr uint64_t kHowlPeriodUs = 1000000ULL / kWolfHowlRate;
 
@@ -30,12 +31,12 @@ void howlTick(void *) {
     howlActive = false;
     return;
   }
-  int sample = (static_cast<int>(kWolfHowl[howlIndex++]) - 128) * kHowlGain *
-               howlVolume / kHowlVolumeMax;
-  if (sample > 127) {
-    sample = 127;
-  } else if (sample < -128) {
-    sample = -128;
+  int sample = (static_cast<int>(kWolfHowl[howlIndex++]) - 128) * kHowlDutyPeak /
+               kHowlSamplePeak * howlVolume / kHowlVolumeMax;
+  if (sample > kHowlDutyPeak) {
+    sample = kHowlDutyPeak;
+  } else if (sample < -kHowlDutyPeak) {
+    sample = -kHowlDutyPeak;
   }
   sigmadelta_set_duty(SIGMADELTA_CHANNEL_0, static_cast<int8_t>(sample));
 }
