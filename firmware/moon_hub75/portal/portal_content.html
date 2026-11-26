@@ -108,6 +108,17 @@
         <select id="distance">
           DISTANCE_OPTIONS_PLACEHOLDER
         </select>
+        <label for="howl-before">Howl start (% before full)</label>
+        <input id="howl-before" type="number" min="0" max="100" step="0.0001"
+               inputmode="decimal" value="HOWL_BEFORE_PLACEHOLDER" />
+        <label for="howl-after">Howl end (% after full)</label>
+        <input id="howl-after" type="number" min="0" max="100" step="0.0001"
+               inputmode="decimal" value="HOWL_AFTER_PLACEHOLDER" />
+        <div class="hint">
+          Four decimal places, such as 1.2500. The wolf howl plays once an
+          hour from that far before full until that far after full. The
+          startup picture always howls.
+        </div>
         <label for="lat">Latitude</label>
         <input id="lat" type="number" step="any" min="-90" max="90"
                inputmode="decimal" placeholder="-90 to 90"
@@ -199,6 +210,8 @@
           textBright: document.getElementById("text-brightness").value,
           color: document.getElementById("color").value,
           distance: document.getElementById("distance").value,
+          howlBefore: document.getElementById("howl-before").value,
+          howlAfter: document.getElementById("howl-after").value,
           lat: document.getElementById("lat").value,
           lon: document.getElementById("lon").value,
           tz: document.getElementById("tz").value

@@ -1,5 +1,6 @@
 #include "welcome_screen.h"
 
+#include "howl_player.h"
 #include "wolf_moon.h"
 
 #include <Adafruit_GFX.h>
@@ -417,9 +418,11 @@ void runWelcome(tinker::RuntimeContext &runtime) {
     return;
   }
 
+  howlPlay();
   fadeImage(runtime, true);
   delay(kHoldMs);
   fadeImage(runtime, false);
+  howlStop();
 
   TitleChar chars[16];
   const uint8_t count = layoutTitle(chars);

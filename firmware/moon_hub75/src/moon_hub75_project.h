@@ -30,6 +30,8 @@ private:
   void refreshPlaceText();
   void rebuildLines();
   void drawFrame();
+  bool howlWindowActive() const;
+  void maybePlayHowl(unsigned long now);
 
   tinker::RuntimeContext &runtime_;
   MoonHub75Settings settings_;
@@ -53,6 +55,8 @@ private:
   bool placeHasSet_ = false;
   time_t placeRiseUtc_ = 0;
   time_t placeSetUtc_ = 0;
+  unsigned long lastHowlMs_ = 0;
+  bool howlWindowArmed_ = true;
   int scrollOffset_ = 0;
   uint8_t lineCount_ = 0;
   int contentHeight_ = 0;

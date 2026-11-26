@@ -37,6 +37,9 @@ struct MoonHub75Settings {
   float latitude = 0;
   float longitude = 0;
   int16_t tzOffsetMinutes = 0;
+  // Percent before and after full, in units of 0.0001.
+  int32_t howlBefore = 0;
+  int32_t howlAfter = 0;
 };
 
 constexpr uint16_t MOON_HUB75_MIN_SCROLL_SPEED_MS = 1;

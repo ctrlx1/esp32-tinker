@@ -3,6 +3,7 @@
 #include "app_version.h"
 #include "font3x5.h"
 #include "full_moon.h"
+#include "howl_player.h"
 #include "moon_sky.h"
 #include "setup_html.h"
 #include "welcome_screen.h"
@@ -18,6 +19,9 @@
 namespace {
 
 constexpr uint8_t kSettingsVersion = 1;
+constexpr unsigned long kHowlIntervalMs = 60UL * 60UL * 1000UL;
+constexpr int32_t kHowlPercentScale = 10000;
+constexpr int32_t kHowlPercentMax = 100 * kHowlPercentScale;
 constexpr uint8_t kDefaultBrightness = 4;
 constexpr uint16_t kDefaultScrollSpeedMs = 75;
 constexpr uint8_t kPanelHeight = 32;
@@ -59,6 +63,52 @@ bool parseDecimal(String value, double minimum, double maximum, double &result) 
   }
   result = parsed;
   return true;
+}
+
+bool parseHowlPercent(String value, int32_t &scaled) {
+  value.trim();
+  if (value.length() == 0 || value.length() > 8) {
+    return false;
+  }
+  int32_t whole = 0;
+  int32_t fraction = 0;
+  int fractionDigits = 0;
+  bool dot = false;
+  for (size_t i = 0; i < value.length(); ++i) {
+    const char character = value.charAt(i);
+    if (character == '.' && !dot) {
+      dot = true;
+      continue;
+    }
+    if (character < '0' || character > '9') {
+      return false;
+    }
+    if (!dot) {
+      whole = whole * 10 + (character - '0');
+      if (whole > 100) {
+        return false;
+      }
+    } else if (fractionDigits == 4) {
+      return false;
+    } else {
+      fraction = fraction * 10 + (character - '0');
+      ++fractionDigits;
+    }
+  }
+  while (fractionDigits < 4) {
+    fraction *= 10;
+    ++fractionDigits;
+  }
+  if (whole == 100 && fraction != 0) {
+    return false;
+  }
+  scaled = whole * kHowlPercentScale + fraction;
+  return scaled >= 0 && scaled <= kHowlPercentMax;
+}
+
+void formatHowlPercent(int32_t scaled, char *out, size_t size) {
+  snprintf(out, size, "%ld.%04ld", static_cast<long>(scaled / kHowlPercentScale),
+           static_cast<long>(scaled % kHowlPercentScale));
 }
 
 void formatLocalClock(time_t utc, int tzOffsetMinutes, char *out, size_t size) {
@@ -366,6 +416,15 @@ void MoonHub75Project::loadSettings(Preferences &preferences) {
     }
   }
 
+  settings_.howlBefore = preferences.getInt("howlBefore", 0);
+  settings_.howlAfter = preferences.getInt("howlAfter", 0);
+  if (settings_.howlBefore < 0 || settings_.howlBefore > kHowlPercentMax) {
+    settings_.howlBefore = 0;
+  }
+  if (settings_.howlAfter < 0 || settings_.howlAfter > kHowlPercentMax) {
+    settings_.howlAfter = 0;
+  }
+
   Serial.print(" moon_hub75 brightness=");
   Serial.print(settings_.brightness);
   Serial.print(" text=");
@@ -376,6 +435,14 @@ void MoonHub75Project::loadSettings(Preferences &preferences) {
   Serial.print(kScrollColors[settings_.textColor].name);
   Serial.print(" distance=");
   Serial.print(kDistanceUnits[settings_.distanceUnit]);
+  char howlBefore[12];
+  char howlAfter[12];
+  formatHowlPercent(settings_.howlBefore, howlBefore, sizeof(howlBefore));
+  formatHowlPercent(settings_.howlAfter, howlAfter, sizeof(howlAfter));
+  Serial.print(" howl=");
+  Serial.print(howlBefore);
+  Serial.print("/");
+  Serial.print(howlAfter);
   if (settings_.hasLocation) {
     Serial.print(" place=");
     Serial.print(settings_.latitude, 4);
@@ -395,6 +462,8 @@ void MoonHub75Project::saveSettings(Preferences &preferences) const {
   preferences.putUChar("textColor", settings_.textColor);
   preferences.putUChar("distUnit", settings_.distanceUnit);
   preferences.putUChar("hasPlace", settings_.hasLocation ? 1 : 0);
+  preferences.putInt("howlBefore", settings_.howlBefore);
+  preferences.putInt("howlAfter", settings_.howlAfter);
   if (settings_.hasLocation) {
     preferences.putFloat("lat", settings_.latitude);
     preferences.putFloat("lon", settings_.longitude);
@@ -457,6 +526,12 @@ String MoonHub75Project::buildPortalPage(const String &ip,
   page.replace("LAT_PLACEHOLDER", latitude);
   page.replace("LON_PLACEHOLDER", longitude);
   page.replace("TZ_PLACEHOLDER", timezone);
+  char howlBefore[12];
+  char howlAfter[12];
+  formatHowlPercent(settings_.howlBefore, howlBefore, sizeof(howlBefore));
+  formatHowlPercent(settings_.howlAfter, howlAfter, sizeof(howlAfter));
+  page.replace("HOWL_BEFORE_PLACEHOLDER", howlBefore);
+  page.replace("HOWL_AFTER_PLACEHOLDER", howlAfter);
   return page;
 }
 
@@ -464,7 +539,8 @@ bool MoonHub75Project::applyPortalRequest(
     const tinker::PortalRequest &request, String &error) {
   if (!request.hasArg("speed") || !request.hasArg("brightness") ||
       !request.hasArg("textBright") || !request.hasArg("color") ||
-      !request.hasArg("distance")) {
+      !request.hasArg("distance") || !request.hasArg("howlBefore") ||
+      !request.hasArg("howlAfter")) {
     error = "Missing moon_hub75 settings.";
     return false;
   }
@@ -544,6 +620,17 @@ bool MoonHub75Project::applyPortalRequest(
     tzOffsetMinutes = static_cast<int16_t>(minutes);
   }
 
+  int32_t howlBefore = 0;
+  int32_t howlAfter = 0;
+  if (!parseHowlPercent(request.arg("howlBefore"), howlBefore)) {
+    error = "Howl start must be a percent from 0.0000 to 100.0000.";
+    return false;
+  }
+  if (!parseHowlPercent(request.arg("howlAfter"), howlAfter)) {
+    error = "Howl end must be a percent from 0.0000 to 100.0000.";
+    return false;
+  }
+
   settings_.scrollSpeedMs = static_cast<uint16_t>(speed);
   settings_.brightness = static_cast<uint8_t>(brightness);
   settings_.textBrightness = static_cast<uint8_t>(textBrightness);
@@ -553,7 +640,32 @@ bool MoonHub75Project::applyPortalRequest(
   settings_.latitude = latitude;
   settings_.longitude = longitude;
   settings_.tzOffsetMinutes = tzOffsetMinutes;
+  settings_.howlBefore = howlBefore;
+  settings_.howlAfter = howlAfter;
   return true;
+}
+
+bool MoonHub75Project::howlWindowActive() const {
+  const int32_t span = phase_ < 0.5f ? settings_.howlBefore : settings_.howlAfter;
+  return illuminationPercent_ + (static_cast<double>(span) / kHowlPercentScale) >=
+         100.0;
+}
+
+void MoonHub75Project::maybePlayHowl(unsigned long now) {
+  if (!howlWindowActive()) {
+    howlWindowArmed_ = true;
+    return;
+  }
+  if (howlPlaying()) {
+    return;
+  }
+  if (!howlWindowArmed_ && lastHowlMs_ != 0 &&
+      now - lastHowlMs_ < kHowlIntervalMs) {
+    return;
+  }
+  howlPlay();
+  lastHowlMs_ = now;
+  howlWindowArmed_ = false;
 }
 
 void MoonHub75Project::refreshPlaceText() {
@@ -850,6 +962,10 @@ void MoonHub75Project::startPrograms() {
     lastScrollMs_ = millis();
   }
   updatePhase(lastScrollMs_);
+  if (howlWindowActive()) {
+    lastHowlMs_ = lastScrollMs_;
+    howlWindowArmed_ = false;
+  }
   rebuildLines();
   drawFrame();
 }
@@ -861,6 +977,7 @@ void MoonHub75Project::tickPrograms() {
   }
 
   const unsigned long now = millis();
+  maybePlayHowl(now);
   if (now - lastScrollMs_ < settings_.scrollSpeedMs) {
     return;
   }

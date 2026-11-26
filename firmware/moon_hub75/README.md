@@ -20,7 +20,10 @@ The setup page stores display brightness (default `4`), scroll speed
 (default `75 ms`), the scroll-text color (default Ice), text brightness,
 and the moon distance unit (default Both) in the `moon_hub75` NVS namespace.
 Text brightness starts at the panel brightness and can be lowered, down to
-0, without dimming the moon. The color
+0, without dimming the moon. Howl start and howl end are percents before
+and after full, to four decimal places. Inside that window the wolf howl
+plays once an hour on GPIO 18, and the startup wolf picture plays it too.
+The color
 list is Ice, Silver, White, Gold, Amber, Rose, Mint, Violet, Light Blue,
 Blue, and Dark Blue. Distance can be Both, Miles, or Kilometers. Latitude,
 longitude, and the timezone offset are saved there too. Leave them blank to
