@@ -19,7 +19,8 @@
 namespace {
 
 constexpr uint8_t kSettingsVersion = 1;
-constexpr unsigned long kHowlIntervalMs = 60UL * 60UL * 1000UL;
+constexpr uint16_t kHowlEveryDefaultMinutes = 60;
+constexpr uint16_t kHowlEveryMaxMinutes = 1440;
 constexpr int32_t kHowlPercentScale = 10000;
 constexpr int32_t kHowlPercentMax = 100 * kHowlPercentScale;
 constexpr uint8_t kDefaultBrightness = 4;
@@ -429,6 +430,11 @@ void MoonHub75Project::loadSettings(Preferences &preferences) {
     settings_.howlVolume = 15;
   }
   howlSetVolume(settings_.howlVolume);
+  const uint32_t howlEvery = preferences.getUShort("howlEvery", kHowlEveryDefaultMinutes);
+  settings_.howlEveryMinutes =
+      howlEvery >= 1 && howlEvery <= kHowlEveryMaxMinutes
+          ? static_cast<uint16_t>(howlEvery)
+          : kHowlEveryDefaultMinutes;
 
   Serial.print(" moon_hub75 brightness=");
   Serial.print(settings_.brightness);
@@ -450,6 +456,8 @@ void MoonHub75Project::loadSettings(Preferences &preferences) {
   Serial.print(howlAfter);
   Serial.print(" vol=");
   Serial.print(settings_.howlVolume);
+  Serial.print(" every=");
+  Serial.print(settings_.howlEveryMinutes);
   if (settings_.hasLocation) {
     Serial.print(" place=");
     Serial.print(settings_.latitude, 4);
@@ -472,6 +480,7 @@ void MoonHub75Project::saveSettings(Preferences &preferences) const {
   preferences.putInt("howlBefore", settings_.howlBefore);
   preferences.putInt("howlAfter", settings_.howlAfter);
   preferences.putUChar("howlVol", settings_.howlVolume);
+  preferences.putUShort("howlEvery", settings_.howlEveryMinutes);
   if (settings_.hasLocation) {
     preferences.putFloat("lat", settings_.latitude);
     preferences.putFloat("lon", settings_.longitude);
@@ -541,6 +550,7 @@ String MoonHub75Project::buildPortalPage(const String &ip,
   page.replace("HOWL_BEFORE_PLACEHOLDER", howlBefore);
   page.replace("HOWL_AFTER_PLACEHOLDER", howlAfter);
   page.replace("HOWL_LEVEL_PLACEHOLDER", String(settings_.howlVolume));
+  page.replace("HOWL_EVERY_PLACEHOLDER", String(settings_.howlEveryMinutes));
   return page;
 }
 
@@ -549,7 +559,8 @@ bool MoonHub75Project::applyPortalRequest(
   if (!request.hasArg("speed") || !request.hasArg("brightness") ||
       !request.hasArg("textBright") || !request.hasArg("color") ||
       !request.hasArg("distance") || !request.hasArg("howlBefore") ||
-      !request.hasArg("howlAfter") || !request.hasArg("howlVolume")) {
+      !request.hasArg("howlAfter") || !request.hasArg("howlVolume") ||
+      !request.hasArg("howlEvery")) {
     error = "Missing moon_hub75 settings.";
     return false;
   }
@@ -646,6 +657,13 @@ bool MoonHub75Project::applyPortalRequest(
     return false;
   }
 
+  uint32_t howlEvery;
+  if (!parseUnsignedInRange(request.arg("howlEvery"), 1, kHowlEveryMaxMinutes,
+                            howlEvery)) {
+    error = "Howl interval must be an integer from 1 to 1440 minutes.";
+    return false;
+  }
+
   settings_.scrollSpeedMs = static_cast<uint16_t>(speed);
   settings_.brightness = static_cast<uint8_t>(brightness);
   settings_.textBrightness = static_cast<uint8_t>(textBrightness);
@@ -658,6 +676,7 @@ bool MoonHub75Project::applyPortalRequest(
   settings_.howlBefore = howlBefore;
   settings_.howlAfter = howlAfter;
   settings_.howlVolume = static_cast<uint8_t>(howlVolume);
+  settings_.howlEveryMinutes = static_cast<uint16_t>(howlEvery);
   howlSetVolume(settings_.howlVolume);
   return true;
 }
@@ -676,8 +695,10 @@ void MoonHub75Project::maybePlayHowl(unsigned long now) {
   if (howlPlaying()) {
     return;
   }
+  const unsigned long howlIntervalMs =
+      static_cast<unsigned long>(settings_.howlEveryMinutes) * 60UL * 1000UL;
   if (!howlWindowArmed_ && lastHowlMs_ != 0 &&
-      now - lastHowlMs_ < kHowlIntervalMs) {
+      now - lastHowlMs_ < howlIntervalMs) {
     return;
   }
   howlPlay();

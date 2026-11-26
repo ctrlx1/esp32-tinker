@@ -22,7 +22,8 @@ and the moon distance unit (default Both) in the `moon_hub75` NVS namespace.
 Text brightness starts at the panel brightness and can be lowered, down to
 0, without dimming the moon. Howl start and howl end are percents before
 and after full, to four decimal places. Inside that window the wolf howl
-plays once an hour on GPIO 18, and the startup wolf picture plays it too.
+repeats on GPIO 18 after the saved number of minutes (default 60), and the
+startup wolf picture plays it too.
 Howl volume is 0 to 15, and a board with no saved volume starts at 15.
 The color
 list is Ice, Silver, White, Gold, Amber, Rose, Mint, Violet, Light Blue,

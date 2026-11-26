@@ -41,6 +41,7 @@ struct MoonHub75Settings {
   int32_t howlBefore = 0;
   int32_t howlAfter = 0;
   uint8_t howlVolume = 15;
+  uint16_t howlEveryMinutes = 60;
 };
 
 constexpr uint16_t MOON_HUB75_MIN_SCROLL_SPEED_MS = 1;
