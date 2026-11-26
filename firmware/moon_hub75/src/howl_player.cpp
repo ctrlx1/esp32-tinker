@@ -26,13 +26,27 @@ volatile uint8_t howlVolume = kHowlVolumeMax;
 esp_timer_handle_t howlTimer = nullptr;
 bool howlReady = false;
 
+void releaseHowlPin() {
+  howlActive = false;
+  if (howlTimer != nullptr) {
+    esp_timer_stop(howlTimer);
+  }
+  if (!howlReady) {
+    return;
+  }
+  // Duty 0 holds the pin at half of 3.3 V. Let it go so that voltage does not
+  // sit on the amplifier between howls.
+  sigmadelta_set_duty(SIGMADELTA_CHANNEL_0, 0);
+  sigmaDeltaDetachPin(kHowlPin);
+  pinMode(kHowlPin, INPUT);
+}
+
 void howlTick(void *) {
   if (!howlActive) {
     return;
   }
   if (howlIndex >= kWolfHowlSamples) {
-    sigmadelta_set_duty(SIGMADELTA_CHANNEL_0, 0);
-    howlActive = false;
+    releaseHowlPin();
     return;
   }
   int sample = (static_cast<int>(kWolfHowl[howlIndex++]) - 128) * kHowlDutyPeak *
@@ -81,18 +95,14 @@ void howlPlay() {
   howlActive = false;
   esp_timer_stop(howlTimer);
   howlIndex = 0;
+  sigmadelta_set_pin(SIGMADELTA_CHANNEL_0, static_cast<gpio_num_t>(kHowlPin));
+  sigmadelta_set_duty(SIGMADELTA_CHANNEL_0, 0);
   howlActive = true;
   esp_timer_start_periodic(howlTimer, kHowlPeriodUs);
 }
 
 void howlStop() {
-  howlActive = false;
-  if (howlTimer != nullptr) {
-    esp_timer_stop(howlTimer);
-  }
-  if (howlReady) {
-    sigmadelta_set_duty(SIGMADELTA_CHANNEL_0, 0);
-  }
+  releaseHowlPin();
 }
 
 bool howlPlaying() { return howlActive; }
