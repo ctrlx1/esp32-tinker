@@ -1,6 +1,6 @@
 {
   "name": "Moon HUB75",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "builds": [
     {
       "chipFamily": "ESP32",
