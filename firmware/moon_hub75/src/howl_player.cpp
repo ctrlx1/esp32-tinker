@@ -11,8 +11,10 @@
 namespace {
 
 constexpr int kHowlPin = 18;
-constexpr int kHowlSamplePeak = 126;
-constexpr int kHowlDutyPeak = 32;
+// Most of the howl sits near deviation 69. The rare spike of 126 is limited
+// with it. Duty past ±90 makes this pulse output harsh.
+constexpr int kHowlSampleLoud = 69;
+constexpr int kHowlDutyPeak = 90;
 // 80 MHz / 80 = 1 MHz, slow enough for the RC filter to build a real audio voltage.
 constexpr uint8_t kHowlPrescale = 80;
 constexpr uint8_t kHowlVolumeMax = 15;
@@ -34,7 +36,7 @@ void howlTick(void *) {
     return;
   }
   int sample = (static_cast<int>(kWolfHowl[howlIndex++]) - 128) * kHowlDutyPeak *
-               howlVolume / (kHowlSamplePeak * kHowlVolumeMax);
+               howlVolume / (kHowlSampleLoud * kHowlVolumeMax);
   if (sample > kHowlDutyPeak) {
     sample = kHowlDutyPeak;
   } else if (sample < -kHowlDutyPeak) {
