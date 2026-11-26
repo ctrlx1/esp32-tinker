@@ -9,7 +9,8 @@
         min-height: 100vh;
         padding: 1rem;
         display: grid;
-        place-items: center;
+        justify-items: center;
+        align-items: start;
         background: #101010;
         color: #eee;
         font-family: system-ui, sans-serif;
@@ -60,6 +61,17 @@
         color: #eee;
       }
       .message { min-height: 1.2rem; margin-top: 0.7rem; font-size: 0.88rem; }
+      .save-bar {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        margin: 1rem -1.25rem -1.25rem;
+        padding: 0.75rem 1.25rem 1rem;
+        background: #1a1a1a;
+        border-top: 1px solid #303030;
+      }
+      .save-bar button { margin-top: 0; }
+      .save-bar .message { margin-top: 0.45rem; }
       .error { color: #ff7675; }
       .success { color: #55efc4; }
       progress { width: 100%; margin-top: 0.7rem; }
@@ -139,8 +151,6 @@
           Leave blank to keep the saved place. Rise, set, distance, azimuth,
           and altitude use this location and your wall-clock offset.
         </div>
-        <button type="button" onclick="saveSettings()">Save &amp; restart</button>
-        <div id="save-message" class="message"></div>
       </section>
 
       <section>
@@ -155,6 +165,10 @@
         <progress id="progress" value="0" max="100" hidden></progress>
         <div id="ota-message" class="message"></div>
       </section>
+      <div class="save-bar">
+        <button type="button" onclick="saveSettings()">Save and restart</button>
+        <div id="save-message" class="message"></div>
+      </div>
     </main>
 
     <script>
