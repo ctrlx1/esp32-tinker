@@ -11,10 +11,10 @@
 namespace {
 
 constexpr int kHowlPin = 18;
-// The strong part of the howl is deviation 59. Duty stops at ±100 so the
-// spikes stay just short of the harsh full-scale pulse.
+// The strong part of the howl is deviation 59. Duty stops at ±36 so volume
+// 15 is the amplifier's clean full level and each lower step gets quieter.
 constexpr int kHowlSampleLoud = 59;
-constexpr int kHowlDutyPeak = 100;
+constexpr int kHowlDutyPeak = 36;
 // 80 MHz / 80 = 1 MHz, slow enough for the RC filter to build a real audio voltage.
 constexpr uint8_t kHowlPrescale = 80;
 constexpr uint8_t kHowlVolumeMax = 15;
