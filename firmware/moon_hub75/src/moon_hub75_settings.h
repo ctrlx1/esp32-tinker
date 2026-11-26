@@ -40,6 +40,7 @@ struct MoonHub75Settings {
   // Percent before and after full, in units of 0.0001.
   int32_t howlBefore = 0;
   int32_t howlAfter = 0;
+  uint8_t howlVolume = 15;
 };
 
 constexpr uint16_t MOON_HUB75_MIN_SCROLL_SPEED_MS = 1;

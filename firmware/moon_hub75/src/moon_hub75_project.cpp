@@ -424,6 +424,11 @@ void MoonHub75Project::loadSettings(Preferences &preferences) {
   if (settings_.howlAfter < 0 || settings_.howlAfter > kHowlPercentMax) {
     settings_.howlAfter = 0;
   }
+  settings_.howlVolume = preferences.getUChar("howlVol", 15);
+  if (settings_.howlVolume > 15) {
+    settings_.howlVolume = 15;
+  }
+  howlSetVolume(settings_.howlVolume);
 
   Serial.print(" moon_hub75 brightness=");
   Serial.print(settings_.brightness);
@@ -443,6 +448,8 @@ void MoonHub75Project::loadSettings(Preferences &preferences) {
   Serial.print(howlBefore);
   Serial.print("/");
   Serial.print(howlAfter);
+  Serial.print(" vol=");
+  Serial.print(settings_.howlVolume);
   if (settings_.hasLocation) {
     Serial.print(" place=");
     Serial.print(settings_.latitude, 4);
@@ -464,6 +471,7 @@ void MoonHub75Project::saveSettings(Preferences &preferences) const {
   preferences.putUChar("hasPlace", settings_.hasLocation ? 1 : 0);
   preferences.putInt("howlBefore", settings_.howlBefore);
   preferences.putInt("howlAfter", settings_.howlAfter);
+  preferences.putUChar("howlVol", settings_.howlVolume);
   if (settings_.hasLocation) {
     preferences.putFloat("lat", settings_.latitude);
     preferences.putFloat("lon", settings_.longitude);
@@ -532,6 +540,7 @@ String MoonHub75Project::buildPortalPage(const String &ip,
   formatHowlPercent(settings_.howlAfter, howlAfter, sizeof(howlAfter));
   page.replace("HOWL_BEFORE_PLACEHOLDER", howlBefore);
   page.replace("HOWL_AFTER_PLACEHOLDER", howlAfter);
+  page.replace("HOWL_LEVEL_PLACEHOLDER", String(settings_.howlVolume));
   return page;
 }
 
@@ -540,7 +549,7 @@ bool MoonHub75Project::applyPortalRequest(
   if (!request.hasArg("speed") || !request.hasArg("brightness") ||
       !request.hasArg("textBright") || !request.hasArg("color") ||
       !request.hasArg("distance") || !request.hasArg("howlBefore") ||
-      !request.hasArg("howlAfter")) {
+      !request.hasArg("howlAfter") || !request.hasArg("howlVolume")) {
     error = "Missing moon_hub75 settings.";
     return false;
   }
@@ -631,6 +640,12 @@ bool MoonHub75Project::applyPortalRequest(
     return false;
   }
 
+  uint32_t howlVolume;
+  if (!parseUnsignedInRange(request.arg("howlVolume"), 0, 15, howlVolume)) {
+    error = "Howl volume must be an integer from 0 to 15.";
+    return false;
+  }
+
   settings_.scrollSpeedMs = static_cast<uint16_t>(speed);
   settings_.brightness = static_cast<uint8_t>(brightness);
   settings_.textBrightness = static_cast<uint8_t>(textBrightness);
@@ -642,6 +657,8 @@ bool MoonHub75Project::applyPortalRequest(
   settings_.tzOffsetMinutes = tzOffsetMinutes;
   settings_.howlBefore = howlBefore;
   settings_.howlAfter = howlAfter;
+  settings_.howlVolume = static_cast<uint8_t>(howlVolume);
+  howlSetVolume(settings_.howlVolume);
   return true;
 }
 

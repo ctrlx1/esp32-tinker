@@ -11,10 +11,13 @@
 namespace {
 
 constexpr int kHowlPin = 18;
+constexpr int kHowlGain = 12;
+constexpr uint8_t kHowlVolumeMax = 15;
 constexpr uint64_t kHowlPeriodUs = 1000000ULL / kWolfHowlRate;
 
 volatile size_t howlIndex = 0;
 volatile bool howlActive = false;
+volatile uint8_t howlVolume = kHowlVolumeMax;
 esp_timer_handle_t howlTimer = nullptr;
 bool howlReady = false;
 
@@ -27,7 +30,13 @@ void howlTick(void *) {
     howlActive = false;
     return;
   }
-  const int sample = (static_cast<int>(kWolfHowl[howlIndex++]) - 128) * 90 / 128;
+  int sample = (static_cast<int>(kWolfHowl[howlIndex++]) - 128) * kHowlGain *
+               howlVolume / kHowlVolumeMax;
+  if (sample > 127) {
+    sample = 127;
+  } else if (sample < -128) {
+    sample = -128;
+  }
   sigmadelta_set_duty(SIGMADELTA_CHANNEL_0, static_cast<int8_t>(sample));
 }
 
@@ -51,6 +60,13 @@ void ensureHowl() {
 }
 
 } // namespace
+
+void howlSetVolume(uint8_t volume) {
+  if (volume > kHowlVolumeMax) {
+    volume = kHowlVolumeMax;
+  }
+  howlVolume = volume;
+}
 
 void howlPlay() {
   ensureHowl();
@@ -77,6 +93,8 @@ void howlStop() {
 bool howlPlaying() { return howlActive; }
 
 #else
+
+void howlSetVolume(uint8_t) {}
 
 void howlPlay() {}
 
