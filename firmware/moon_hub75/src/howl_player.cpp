@@ -11,7 +11,6 @@
 namespace {
 
 constexpr int kHowlPin = 18;
-constexpr int kHowlGain = 6;
 constexpr int kHowlDutyPeak = 127;
 // 80 MHz / 80 = 1 MHz, slow enough for the RC filter to build a real audio voltage.
 constexpr uint8_t kHowlPrescale = 80;
@@ -33,8 +32,8 @@ void howlTick(void *) {
     howlActive = false;
     return;
   }
-  int sample = (static_cast<int>(kWolfHowl[howlIndex++]) - 128) * kHowlGain *
-               howlVolume / kHowlVolumeMax;
+  int sample = (static_cast<int>(kWolfHowl[howlIndex++]) - 128) * howlVolume /
+               kHowlVolumeMax;
   if (sample > kHowlDutyPeak) {
     sample = kHowlDutyPeak;
   } else if (sample < -kHowlDutyPeak) {
