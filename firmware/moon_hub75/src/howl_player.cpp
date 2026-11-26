@@ -11,10 +11,10 @@
 namespace {
 
 constexpr int kHowlPin = 18;
-// Most of the howl sits near deviation 69. The rare spike of 126 is limited
-// with it. Duty past ±90 makes this pulse output harsh.
-constexpr int kHowlSampleLoud = 69;
-constexpr int kHowlDutyPeak = 90;
+// The strong part of the howl is deviation 59. Duty stops at ±100 so the
+// spikes stay just short of the harsh full-scale pulse.
+constexpr int kHowlSampleLoud = 59;
+constexpr int kHowlDutyPeak = 100;
 // 80 MHz / 80 = 1 MHz, slow enough for the RC filter to build a real audio voltage.
 constexpr uint8_t kHowlPrescale = 80;
 constexpr uint8_t kHowlVolumeMax = 15;
