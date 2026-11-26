@@ -13,6 +13,8 @@ namespace {
 constexpr int kHowlPin = 18;
 constexpr int kHowlGain = 6;
 constexpr int kHowlDutyPeak = 127;
+// 80 MHz / 80 = 1 MHz, slow enough for the RC filter to build a real audio voltage.
+constexpr uint8_t kHowlPrescale = 80;
 constexpr uint8_t kHowlVolumeMax = 15;
 constexpr uint64_t kHowlPeriodUs = 1000000ULL / kWolfHowlRate;
 
@@ -48,7 +50,7 @@ void ensureHowl() {
   sigmadelta_config_t config = {};
   config.channel = SIGMADELTA_CHANNEL_0;
   config.sigmadelta_gpio = kHowlPin;
-  config.sigmadelta_prescale = 0;
+  config.sigmadelta_prescale = kHowlPrescale;
   config.sigmadelta_duty = 0;
   sigmadelta_config(&config);
 
