@@ -5,39 +5,44 @@
 #include <Arduino.h>
 
 #include "wolf_howl.h"
-#include <driver/sigmadelta.h>
 #include <esp_timer.h>
 
 namespace {
 
 constexpr int kHowlPin = 18;
-// The strong part of the howl is deviation 59. Duty stops at ±36 so volume
-// 15 is the amplifier's clean full level and each lower step gets quieter.
+constexpr uint8_t kHowlChannel = 0;
+// A steady 150 kHz pulse. The 22 nF filter averages it. The old sigma-delta
+// stream was noisy enough to crackle through that same filter.
+constexpr uint32_t kHowlPwmHz = 150000;
+constexpr uint8_t kHowlPwmBits = 8;
+constexpr int kHowlPwmMid = 128;
+// The strong part of the howl is deviation 59. Volume 15 stops near the
+// highest setting that stayed unclipped on the previous scale.
 constexpr int kHowlSampleLoud = 59;
-constexpr int kHowlDutyPeak = 36;
-// 80 MHz / 80 = 1 MHz, slow enough for the RC filter to build a real audio voltage.
-constexpr uint8_t kHowlPrescale = 80;
+constexpr int kHowlDutyPeak = 8;
 constexpr uint8_t kHowlVolumeMax = 15;
 constexpr uint64_t kHowlPeriodUs = 1000000ULL / kWolfHowlRate;
 
 volatile size_t howlIndex = 0;
 volatile bool howlActive = false;
 volatile uint8_t howlVolume = kHowlVolumeMax;
+int howlError = 0;
 esp_timer_handle_t howlTimer = nullptr;
 bool howlReady = false;
 
 void releaseHowlPin() {
   howlActive = false;
+  howlError = 0;
   if (howlTimer != nullptr) {
     esp_timer_stop(howlTimer);
   }
   if (!howlReady) {
     return;
   }
-  // Duty 0 holds the pin at half of 3.3 V. Let it go so that voltage does not
-  // sit on the amplifier between howls.
-  sigmadelta_set_duty(SIGMADELTA_CHANNEL_0, 0);
-  sigmaDeltaDetachPin(kHowlPin);
+  // Mid duty holds the pin at half of 3.3 V. Let it go so that voltage does
+  // not sit on the amplifier between howls.
+  ledcWrite(kHowlChannel, kHowlPwmMid);
+  ledcDetachPin(kHowlPin);
   pinMode(kHowlPin, INPUT);
 }
 
@@ -49,26 +54,28 @@ void howlTick(void *) {
     releaseHowlPin();
     return;
   }
-  int sample = (static_cast<int>(kWolfHowl[howlIndex++]) - 128) * kHowlDutyPeak *
-               howlVolume / (kHowlSampleLoud * kHowlVolumeMax);
+  const int dev = static_cast<int>(kWolfHowl[howlIndex++]) - 128;
+  const int denom = kHowlSampleLoud * kHowlVolumeMax;
+  const int scaled = dev * kHowlDutyPeak * static_cast<int>(howlVolume) + howlError;
+  int sample = scaled / denom;
+  howlError = scaled - sample * denom;
   if (sample > kHowlDutyPeak) {
     sample = kHowlDutyPeak;
+    howlError = 0;
   } else if (sample < -kHowlDutyPeak) {
     sample = -kHowlDutyPeak;
+    howlError = 0;
   }
-  sigmadelta_set_duty(SIGMADELTA_CHANNEL_0, static_cast<int8_t>(sample));
+  ledcWrite(kHowlChannel, kHowlPwmMid + sample);
 }
 
 void ensureHowl() {
   if (howlReady) {
     return;
   }
-  sigmadelta_config_t config = {};
-  config.channel = SIGMADELTA_CHANNEL_0;
-  config.sigmadelta_gpio = kHowlPin;
-  config.sigmadelta_prescale = kHowlPrescale;
-  config.sigmadelta_duty = 0;
-  sigmadelta_config(&config);
+  if (ledcSetup(kHowlChannel, kHowlPwmHz, kHowlPwmBits) == 0) {
+    return;
+  }
 
   esp_timer_create_args_t args = {};
   args.callback = &howlTick;
@@ -95,8 +102,9 @@ void howlPlay() {
   howlActive = false;
   esp_timer_stop(howlTimer);
   howlIndex = 0;
-  sigmadelta_set_pin(SIGMADELTA_CHANNEL_0, static_cast<gpio_num_t>(kHowlPin));
-  sigmadelta_set_duty(SIGMADELTA_CHANNEL_0, 0);
+  howlError = 0;
+  ledcAttachPin(kHowlPin, kHowlChannel);
+  ledcWrite(kHowlChannel, kHowlPwmMid);
   howlActive = true;
   esp_timer_start_periodic(howlTimer, kHowlPeriodUs);
 }
