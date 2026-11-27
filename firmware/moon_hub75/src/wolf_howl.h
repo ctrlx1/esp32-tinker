@@ -3,10 +3,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <esp_attr.h>
+
 constexpr uint16_t kWolfHowlRate = 11025;
 constexpr size_t kWolfHowlSamples = 56280;
 
-static const uint8_t kWolfHowl[kWolfHowlSamples] = {
+// Internal RAM. Reading this from flash inside the sample timer stalls and pops.
+static const DRAM_ATTR uint8_t kWolfHowl[kWolfHowlSamples] = {
 130,132,132,130,128,127,126,123,121,120,121,121,121,122,124,124,
 124,126,127,129,130,130,130,129,129,129,128,126,125,123,122,121,
 121,123,123,123,124,124,123,122,122,123,123,125,126,125,125,124,
